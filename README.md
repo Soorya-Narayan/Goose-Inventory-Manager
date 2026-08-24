@@ -13,26 +13,19 @@
 
 ---
 
-## 📸 System Interface Screenshots
+## 📸 System Screenshots
 
 ### 📊 Store Overview Dashboard
 Real-time operational summary displaying total inventory count, low stock threshold alerts, priority items, and quick management actions.
 
-![Store Overview Dashboard](docs/screenshots/overview.png)
+![Store Overview](docs/screenshots/overview.png)
 
 ---
 
 ### 📦 Material Directory & Inventory Management
 Search and filter over 4,000+ industrial materials by zone (Mechanical, Electrical, Consumables), stock status, category, or shelf location.
 
-![Store Inventory Directory](docs/screenshots/inventory.png)
-
----
-
-### 🔄 Stock Movements & Allocation Audit Log
-Complete audit trail recording every inward receipt and outward allocation to specific engineers, projects, customers, or vendors.
-
-![Stock Movements Log](docs/screenshots/movements.png)
+![Store Inventory](docs/screenshots/inventory.png)
 
 ---
 
@@ -43,38 +36,17 @@ Review, approve, and track material requisition requests submitted by site engin
 
 ---
 
-### ⚙️ Store Manager Control Menu
+### 🔄 Stock Movements & Allocation Audit Log
+Complete audit trail recording every inward receipt and outward allocation to specific engineers, projects, customers, or vendors.
+
+![Stock Movements](docs/screenshots/movements.png)
+
+---
+
+### ⚙️ Store Manager Options Menu
 Quick options menu for updating manager credentials, toggling Dark/Light themes, and triggering live Zoho Books API synchronization.
 
 ![Store Manager Options Menu](docs/screenshots/manager_menu.png)
-
----
-
-### 🌙 Industrial Dark Mode Interface
-High-contrast dark theme designed for low-light factory environments and industrial control rooms.
-
-<div align="center">
-  <img src="docs/screenshots/overview_dark.png" alt="Dark Mode Overview" width="48%" />
-  <img src="docs/screenshots/inventory_dark.png" alt="Dark Mode Inventory" width="48%" />
-</div>
-
----
-
-## ⚙️ Industrial Equipment & Materials Gallery
-
-Catalog of equipment, valves, tanks, VFD panels, and spare parts tracked within the store system:
-
-| Image | Material Name | Category | Zone |
-|---|---|---|---|
-| <img src="images/VFD.png" width="120" /> | **120 HP VFD Panel** | Electrical | Electrical (Left Side) |
-| <img src="images/4 Tank CIP.jpeg" width="120" /> | **4-Tank CIP System** | Process Equipment | Consumables (Back) |
-| <img src="images/CIP Tank.jpeg" width="120" /> | **1 KL CIP Storage Tank** | Process Tanks | Consumables (Back) |
-| <img src="images/Dosing Tank.jpeg" width="120" /> | **Chemical Dosing Tank** | Process Tanks | Consumables (Back) |
-| <img src="images/3 Way Valve.jpeg" width="120" /> | **3-Way Sanitary Valve** | Mechanical Valves | Mechanical (Right Side) |
-| <img src="images/Butterfly Valve.jpg" width="120" /> | **Sanitary Butterfly Valve** | Mechanical Valves | Mechanical (Right Side) |
-| <img src="images/HMI.jpeg" width="120" /> | **Industrial Touch HMI** | Electrical & Automation | Electrical (Left Side) |
-| <img src="images/Switch.jpeg" width="120" /> | **Selector Switch** | Electrical Controls | Electrical (Left Side) |
-| <img src="images/Spanner.jpeg" width="120" /> | **Plant Tool Set** | Tools & Consumables | Consumables (Back) |
 
 ---
 
