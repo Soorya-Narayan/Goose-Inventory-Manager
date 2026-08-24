@@ -517,29 +517,29 @@
     <div class="modal card" style="max-width:480px" onclick="event.stopPropagation()">
       <div class="modal-hdr">
         <h2 class="modal-title">System Settings</h2>
-        <button class="modal-close-btn" onclick="closeSettingsModal()">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="closeSettingsModal()">&times;</button>
       </div>
-      <div class="modal-body" style="padding:1.5rem">
-        <form id="form-settings" onsubmit="handleSaveSettings(event)">
+      <form id="form-settings" onsubmit="handleSaveSettings(event)">
+        <div class="modal-body">
           <div class="field-group" style="margin-bottom:1.25rem">
             <label class="field-label">UPDATE STORE MANAGER PIN</label>
             <input type="password" id="settings-manager-pin" class="field-input mono" value="1234" maxlength="10" required />
-            <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:0.3rem">Security PIN required to access Store Manager account</div>
+            <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:0.35rem">Security PIN required to access Store Manager account</div>
           </div>
           <div class="field-group" style="margin-bottom:1.25rem">
             <label class="field-label">COMPANY / ORGANIZATION NAME</label>
             <input type="text" id="settings-store-name" class="field-input" value="Goose Industrial Systems" required />
           </div>
-          <div class="field-group" style="margin-bottom:1.5rem">
+          <div class="field-group" style="margin-bottom:0">
             <label class="field-label">DEFAULT REORDER THRESHOLD</label>
             <input type="number" id="settings-default-minstock" class="field-input mono" value="1" min="0" required />
           </div>
-          <div style="display:flex;justify-content:flex-end;gap:0.75rem">
-            <button type="button" class="btn btn-ghost" onclick="closeSettingsModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary">Save Settings</button>
-          </div>
-        </form>
-      </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeSettingsModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+      </form>
     </div>
   </div>
 
