@@ -863,95 +863,53 @@ async function renderTransactions() {
   `;
 }
 
-async function deleteTransaction(id) {
-  try {
-    await api.delete(`/api/transactions/${id}`);
-    // Remove row from DOM without full reload
-    document.getElementById(`txn-row-${id}`)?.remove();
-    showToast('Log entry deleted', 'success');
-  } catch (err) {
-    showToast('Failed to delete entry', 'error');
-  }
-}
+function renderOverview() {
+  const items = state.items || [];
+  const s = state.stats || {};
+  const alertItems = items.filter(i => getStockStatus(i) !== 'ok');
 
-async function clearAllTransactions() {
-  showConfirmModal({
-    title: 'Clear All Logs',
-    message: 'Remove all stock movement entries? This cannot be undone.',
-    confirmLabel: 'Clear All',
-    onConfirm: async () => {
-      try {
-        await api.delete('/api/transactions');
-        showToast('All transaction logs cleared', 'success');
-        renderTransactions();
-      } catch (err) {
-        showToast('Failed to clear logs', 'error');
-      }
-    }
-  });
-}
+  const totalCount = items.length || 1;
+  const outStockCount = items.filter(i => (i.quantity || 0) === 0).length;
+  const lowStockCount = items.filter(i => (i.quantity || 0) > 0 && (i.quantity || 0) <= (i.minStock || 0)).length;
+  const inStockCount = Math.max(0, items.length - outStockCount - lowStockCount);
 
-// ═══════════════════════════════════════════════════════════════════════════════
-//  LABEL DESIGNER — Coming Soon
-// ═══════════════════════════════════════════════════════════════════════════════
-function renderLabelDesigner() {
-  document.getElementById('view-labeldesigner').innerHTML = `
-    <div class="page-hdr">
-      <div>
-        <h1 class="page-title">Label Designer</h1>
-      </div>
-    </div>
-    <div class="card" style="padding:4rem 2rem;max-width:600px;margin:2rem auto;text-align:center;background:var(--bg-raised)">
-      <div style="font-size:1.5rem;font-weight:700;color:var(--text-primary)">
-        Coming Soon
-      </div>
-    </div>
-  `;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-//  DASHBOARD (Compact Zero-Scroll Overview)
-// ═══════════════════════════════════════════════════════════════════════════════
-function renderDashboard() {
-  const s = state.stats;
-  const alertItems = state.items.filter(i => getStockStatus(i) !== 'ok');
-  const isManager = state.user?.role === 'manager';
+  const inStockPct = ((inStockCount / totalCount) * 100).toFixed(1);
+  const lowStockPct = ((lowStockCount / totalCount) * 100).toFixed(1);
+  const outStockPct = ((outStockCount / totalCount) * 100).toFixed(1);
 
   document.getElementById('view-dashboard').innerHTML = `
-    <div class="compact-overview-container">
-      
-      <!-- Top Overview Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-        <div>
-          <h1 class="page-title" style="font-size:1.3rem;margin-bottom:0.15rem">Store Overview</h1>
-          <p class="page-subtitle" style="font-size:0.78rem">${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} &middot; Goose Industrial Systems</p>
-        </div>
-        <div style="display:flex;gap:0.5rem">
-          <button class="btn btn-ghost btn-sm" onclick="loadAll().then(()=>renderView('dashboard'))">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            Refresh
-          </button>
-          ${isManager ? `
-            <button class="btn btn-primary btn-sm" onclick="openAddItemModal()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              + Add Item
-            </button>
-          ` : `
-            <button class="btn btn-primary btn-sm" onclick="openRequestModal()">
-              + Request Material
-            </button>
-          `}
-        </div>
+    <div class="page-hdr">
+      <div>
+        <h1 class="page-title">Store Overview</h1>
+        <p class="page-subtitle">${new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' })} &middot; Goose Industrial Systems</p>
       </div>
+      <div style="display:flex;gap:0.75rem;align-items:center">
+        <button class="btn btn-ghost" onclick="loadAll().then(()=>renderView('dashboard'))">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Refresh
+        </button>
+        ${state.user?.role === 'manager' ? `
+          <button class="btn btn-primary btn-sm" onclick="openAddItemModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            + Add Item
+          </button>
+        ` : `
+          <button class="btn btn-primary btn-sm" onclick="openRequestModal()">
+            + Request Material
+          </button>
+        `}
+      </div>
+    </div>
 
-      <!-- 3 Compact Stat Cards (1 Row) -->
+    <div class="compact-dashboard">
+      
       <div class="compact-stats-row">
         <div class="compact-stat-card" style="--card-accent:var(--accent-cyan);--card-dim:rgba(0,198,255,0.12)">
           <div class="compact-stat-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           </div>
           <div>
-            <div class="compact-stat-val">${s.totalItems ?? 0}</div>
+            <div class="compact-stat-val">${items.length}</div>
             <div class="compact-stat-lbl">Total Materials</div>
           </div>
         </div>
@@ -977,10 +935,7 @@ function renderDashboard() {
         </div>
       </div>
 
-      <!-- Main Overview Content (Side-by-Side Flex) -->
       <div class="compact-main-row">
-        
-        <!-- Left Panel: Stock Alerts / Priority Items -->
         <div class="compact-panel">
           <div class="compact-panel-hdr">
             <span class="compact-panel-title">
@@ -1008,40 +963,62 @@ function renderDashboard() {
           </div>
         </div>
 
-        <!-- Right Panel: Quick Navigation Operations -->
+        <!-- Right Panel: Stock Health Analytics Chart -->
         <div class="compact-panel">
           <div class="compact-panel-hdr">
             <span class="compact-panel-title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              Quick Operations &amp; Management
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+              Stock Health &amp; Distribution
             </span>
+            <span style="font-size:0.72rem;color:var(--text-tertiary);font-weight:600">LIVE BREAKDOWN</span>
           </div>
-          <div class="compact-panel-body" style="gap:0.75rem">
+          <div class="compact-panel-body" style="display:flex;flex-direction:row;align-items:center;justify-content:space-around;padding:1rem 0.875rem;gap:1rem">
             
-            <!-- Fast Nav Shortcuts -->
-            <button class="btn btn-ghost" onclick="navigateTo('inventory')" style="justify-content:flex-start;background:var(--bg-elevated);padding:0.875rem 1rem">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-              <div>
-                <div style="font-weight:600;color:var(--text-primary)">Material Directory</div>
-                <div style="font-size:0.75rem;color:var(--text-tertiary)">Browse &amp; filter complete inventory catalog</div>
-              </div>
-            </button>
+            <!-- Doughnut Chart Canvas Container -->
+            <div style="position:relative;width:140px;height:140px;flex-shrink:0">
+              <canvas id="overview-stock-chart"></canvas>
+            </div>
 
-            <button class="btn btn-ghost" onclick="navigateTo('requests')" style="justify-content:flex-start;background:var(--bg-elevated);padding:0.875rem 1rem">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
-              <div>
-                <div style="font-weight:600;color:var(--text-primary)">Material Requests</div>
-                <div style="font-size:0.75rem;color:var(--text-tertiary)">View &amp; manage engineer stock requests</div>
+            <!-- Legend & Metric Breakdown -->
+            <div style="display:flex;flex-direction:column;gap:0.5rem;font-size:0.8rem;flex-grow:1">
+              
+              <!-- In Stock -->
+              <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg-elevated);padding:0.4rem 0.6rem;border-radius:var(--radius);border:1px solid var(--border-subtle)">
+                <span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block;flex-shrink:0"></span>
+                <div style="flex-grow:1">
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-weight:600;color:var(--text-primary)">In Stock</span>
+                    <span style="font-weight:700;font-family:var(--font-mono);color:var(--ok)">${inStockCount}</span>
+                  </div>
+                  <div style="font-size:0.68rem;color:var(--text-tertiary)">${inStockPct}% healthy stock</div>
+                </div>
               </div>
-            </button>
 
-            <button class="btn btn-ghost" onclick="openZohoModal()" style="justify-content:flex-start;background:var(--bg-elevated);padding:0.875rem 1rem">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-              <div>
-                <div style="font-weight:600;color:var(--text-primary)">Zoho Books Sync</div>
-                <div style="font-size:0.75rem;color:var(--text-tertiary)">Import CSV catalog or sync live via REST API</div>
+              <!-- Low Stock -->
+              <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg-elevated);padding:0.4rem 0.6rem;border-radius:var(--radius);border:1px solid var(--border-subtle)">
+                <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0"></span>
+                <div style="flex-grow:1">
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-weight:600;color:var(--text-primary)">Low Stock</span>
+                    <span style="font-weight:700;font-family:var(--font-mono);color:var(--warn)">${lowStockCount}</span>
+                  </div>
+                  <div style="font-size:0.68rem;color:var(--text-tertiary)">${lowStockPct}% reorder alert</div>
+                </div>
               </div>
-            </button>
+
+              <!-- Out of Stock -->
+              <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg-elevated);padding:0.4rem 0.6rem;border-radius:var(--radius);border:1px solid var(--border-subtle)">
+                <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;flex-shrink:0"></span>
+                <div style="flex-grow:1">
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-weight:600;color:var(--text-primary)">Out of Stock</span>
+                    <span style="font-weight:700;font-family:var(--font-mono);color:var(--danger)">${outStockCount}</span>
+                  </div>
+                  <div style="font-size:0.68rem;color:var(--text-tertiary)">${outStockPct}% zero inventory</div>
+                </div>
+              </div>
+
+            </div>
 
           </div>
         </div>
@@ -1050,6 +1027,53 @@ function renderDashboard() {
 
     </div>
   `;
+
+  setTimeout(() => {
+    renderOverviewStockChart(inStockCount, lowStockCount, outStockCount);
+  }, 50);
+}
+
+function renderOverviewStockChart(inStock, lowStock, outOfStock) {
+  const canvas = document.getElementById('overview-stock-chart');
+  if (!canvas || !window.Chart) return;
+
+  if (window._overviewChartInstance) {
+    window._overviewChartInstance.destroy();
+  }
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const borderColor = isDark ? '#1e293b' : '#ffffff';
+
+  window._overviewChartInstance = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: ['In Stock', 'Low Stock', 'Out of Stock'],
+      datasets: [{
+        data: [inStock, lowStock, outOfStock],
+        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+        borderWidth: 2,
+        borderColor: borderColor,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: isDark ? '#0f172a' : '#ffffff',
+          titleColor: isDark ? '#f8fafc' : '#0f172a',
+          bodyColor: isDark ? '#cbd5e1' : '#334155',
+          borderColor: isDark ? '#334155' : '#e2e8f0',
+          borderWidth: 1,
+          padding: 8,
+          boxPadding: 4
+        }
+      }
+    }
+  });
 }
 
 function filterZone(zone) {
