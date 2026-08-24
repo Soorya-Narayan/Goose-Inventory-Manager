@@ -400,34 +400,7 @@ app.delete('/api/transactions', (req, res) => {
   res.json({ success: true, message: 'All transactions cleared' });
 });
 
-// ─── Direct Raw Thermal Printing Endpoint (Raster Image for YXWL Y50 / Tej C15) ─────
-app.post('/api/print-tspl', (req, res) => {
-  const { name = 'MATERIAL ITEM', sku = 'MEC-001', location = 'A1', zone = 'MECH', copies = 1 } = req.body;
-  const { execFile } = require('child_process');
 
-  const pyScript = path.join(__dirname, 'print_sticker.py');
-
-  execFile('python3', [pyScript, name, sku, location, zone, String(copies)], (err, stdout, stderr) => {
-    if (err) {
-      console.error('Python print script error:', stderr || err.message);
-      return res.status(500).json({ error: 'print_failed', message: 'Failed to execute printer command', details: stderr || err.message });
-    }
-
-    try {
-      const result = JSON.parse(stdout.trim());
-      if (result.success) {
-        console.log(`[RASTER PRINT SUCCESS] Sent sticker for ${name} (${sku}) to YXWL_Y50_SEZNIK printer`);
-        return res.json({ success: true, message: `Sent ${copies} sticker(s) to Tej C15 printer!` });
-      } else {
-        console.warn('[RASTER PRINT FAILED]', result.output);
-        return res.status(500).json({ error: 'printer_error', message: 'Printer reported error', details: result.output });
-      }
-    } catch (parseErr) {
-      console.error('Failed to parse python output:', stdout);
-      return res.json({ success: true, message: 'Print job dispatched to printer queue' });
-    }
-  });
-});
 
 // ─── Server Start ────────────────────────────────────────────────────────────
 app.listen(PORT, '0.0.0.0', () => {
