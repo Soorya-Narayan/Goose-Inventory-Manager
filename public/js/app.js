@@ -1263,15 +1263,17 @@ function closeConfirmModal() {
 
 // ─── Delete Item ──────────────────────────────────────────────────────────────
 async function deleteItem(id, name) {
+  const item = state.items.find(i => i.id === id);
+  const itemName = item ? item.name : (name || 'this material');
   showConfirmModal({
     title: 'Delete Material',
-    message: `Remove "${name}" from inventory? This cannot be undone.`,
+    message: `Remove "${itemName}" from inventory? This cannot be undone.`,
     confirmLabel: 'Delete',
     onConfirm: async () => {
       try {
         const res = await api.delete(`/api/items/${id}`);
         if (res.success) {
-          showToast(`"${name}" deleted from inventory`, 'success');
+          showToast(`"${itemName}" deleted from inventory`, 'success');
           await loadAll();
           renderView(state.currentView);
         } else {

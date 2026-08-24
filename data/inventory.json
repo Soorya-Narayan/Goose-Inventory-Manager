@@ -76018,6 +76018,25 @@
       "imageUrl": "/uploads/item_1787302448416_0a54e1c5.png",
       "addedAt": "2026-08-21T08:45:53.610Z",
       "updatedAt": "2026-08-21T08:54:10.136Z"
+    },
+    {
+      "id": "GIS-2608-5992",
+      "name": "Bag",
+      "sku": "GIS-2608-5992",
+      "zone": "consumables",
+      "category": "goods",
+      "quantity": 0,
+      "unit": "pcs",
+      "minStock": 0,
+      "location": "A1",
+      "barcode": "GIS-2608-5992",
+      "rate": 0,
+      "purchaseRate": 0,
+      "hsn": "",
+      "notes": "",
+      "imageUrl": "",
+      "addedAt": "2026-08-24T11:37:44.035Z",
+      "updatedAt": "2026-08-24T11:39:57.674Z"
     }
   ],
   "requests": [
@@ -76040,6 +76059,76 @@
     }
   ],
   "transactions": [
+    {
+      "id": "1bef0705-3782-4e7b-a371-f7ca50198109",
+      "itemId": "GIS-TEST-9868",
+      "itemName": "Test Automation Item 1787573923774",
+      "sku": "GIS-TEST-9868",
+      "type": "outward",
+      "allocationType": "project",
+      "recipientName": "Vikram Singh",
+      "projectName": "Project Alpha Test",
+      "delta": -3,
+      "newQuantity": 12,
+      "notes": "",
+      "timestamp": "2026-08-24T12:18:43.804Z"
+    },
+    {
+      "id": "03c250ef-9328-461c-be95-54e385739bc9",
+      "itemId": "GIS-TEST-9868",
+      "itemName": "Test Automation Item 1787573923774",
+      "sku": "GIS-TEST-9868",
+      "type": "inward",
+      "allocationType": "inward",
+      "recipientName": "Store Manager",
+      "projectName": "Central Stock",
+      "delta": 5,
+      "newQuantity": 15,
+      "notes": "",
+      "timestamp": "2026-08-24T12:18:43.792Z"
+    },
+    {
+      "id": "0950b3d9-cc62-4dec-b4d9-4491ed3955d2",
+      "itemId": "GIS-TEST-2232",
+      "itemName": "Test Automation Item 1787573753507",
+      "sku": "GIS-TEST-2232",
+      "type": "outward",
+      "allocationType": "project",
+      "recipientName": "Vikram Singh",
+      "projectName": "Project Alpha Test",
+      "delta": -3,
+      "newQuantity": 12,
+      "notes": "",
+      "timestamp": "2026-08-24T12:15:53.539Z"
+    },
+    {
+      "id": "a6bab078-c1a8-43e2-954d-5c438219b718",
+      "itemId": "GIS-TEST-2232",
+      "itemName": "Test Automation Item 1787573753507",
+      "sku": "GIS-TEST-2232",
+      "type": "inward",
+      "allocationType": "inward",
+      "recipientName": "Store Manager",
+      "projectName": "Central Stock",
+      "delta": 5,
+      "newQuantity": 15,
+      "notes": "",
+      "timestamp": "2026-08-24T12:15:53.528Z"
+    },
+    {
+      "id": "b5942a82-572e-408b-8b26-146966935fd7",
+      "itemId": "GIS-2608-5992",
+      "itemName": "Bag",
+      "sku": "GIS-2608-5992",
+      "type": "outward",
+      "allocationType": "project",
+      "recipientName": "Surya",
+      "projectName": "HeatWatch",
+      "delta": -1,
+      "newQuantity": 0,
+      "notes": "Project Allocation to Surya (HeatWatch)",
+      "timestamp": "2026-08-24T11:39:57.677Z"
+    },
     {
       "id": "26fd0098-abfa-4838-8581-fa2776408001",
       "itemId": "GIS-2608-7608",
