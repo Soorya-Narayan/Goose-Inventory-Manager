@@ -230,29 +230,29 @@
         </button>
       </div>
       <form id="form-item" onsubmit="handleItemSubmit(event)">
-        <div class="modal-body">
-          <div class="field-grid two-col">
+        <div class="modal-body" style="padding:1.125rem 1.35rem;display:flex;flex-direction:column;gap:0.65rem">
+          <div class="field-grid two-col" style="gap:0.75rem">
             <div class="field-group">
               <label class="field-label">ITEM NAME <span class="req">*</span></label>
               <input type="text" id="item-name" class="field-input" placeholder="e.g. Hex Bolt M10×40" required />
             </div>
             <div class="field-group">
-              <label class="field-label">PRODUCT ID <span class="req">*</span> <span style="font-size:0.68rem;color:var(--text-tertiary);font-weight:400;text-transform:none">(auto-generated barcode number)</span></label>
-              <div style="display:flex;gap:0.5rem;align-items:center">
+              <label class="field-label">PRODUCT ID <span class="req">*</span></label>
+              <div style="display:flex;gap:0.4rem;align-items:center">
                 <input type="text" id="item-sku" class="field-input mono" placeholder="GIS-2408-0001" required style="font-weight:700;color:var(--goose);letter-spacing:0.05em" readonly />
-                <button type="button" class="btn btn-ghost btn-sm" onclick="generateProductId()" title="Generate new ID" style="flex-shrink:0;font-size:0.78rem">Regenerate</button>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="generateProductId()" title="Generate new ID" style="flex-shrink:0;font-size:0.75rem;padding:0.35rem 0.6rem">Regenerate</button>
               </div>
-              <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:0.3rem" id="sku-hint">This ID will be printed on the barcode sticker and used for scanning</div>
             </div>
           </div>
-          <div class="field-grid two-col">
+
+          <div class="field-grid two-col" style="gap:0.75rem">
             <div class="field-group">
               <label class="field-label">ZONE <span class="req">*</span></label>
               <select id="item-zone" class="field-input field-select" required>
                 <option value="">Select zone</option>
-                <option value="mechanical">Mechanical — Right Side</option>
-                <option value="electrical">Electrical — Left Side</option>
-                <option value="consumables">Consumables — Back Shelf</option>
+                <option value="mechanical">Mechanical</option>
+                <option value="electrical">Electrical</option>
+                <option value="consumables">Consumables</option>
               </select>
             </div>
             <div class="field-group">
@@ -260,7 +260,8 @@
               <input type="text" id="item-category" class="field-input" placeholder="e.g. Fasteners" required />
             </div>
           </div>
-          <div class="field-grid three-col">
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1.2fr;gap:0.65rem">
             <div class="field-group">
               <label class="field-label">QUANTITY <span class="req">*</span></label>
               <input type="number" id="item-quantity" class="field-input mono" min="0" placeholder="0" required />
@@ -281,42 +282,43 @@
               </select>
             </div>
             <div class="field-group">
-              <label class="field-label">MIN STOCK LEVEL</label>
+              <label class="field-label">MIN STOCK</label>
               <input type="number" id="item-min-stock" class="field-input mono" min="0" placeholder="0" />
             </div>
-          </div>
-          <div class="field-grid two-col">
             <div class="field-group">
-              <label class="field-label">SHELF LOCATION <span class="req">*</span></label>
-              <input type="text" id="item-location" class="field-input mono" placeholder="e.g. R-A1, L-B3, B-C2" required />
+              <label class="field-label">SHELF <span class="req">*</span></label>
+              <input type="text" id="item-location" class="field-input mono" placeholder="e.g. R-A1" required />
             </div>
             <input type="hidden" id="item-barcode" />
           </div>
-          <div id="duplicate-warning" class="hidden" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.4);border-radius:var(--radius);padding:0.75rem 1rem;margin-bottom:0.5rem;font-size:0.8rem;color:var(--text-secondary)">
-            <strong style="color:#b45309">Possible duplicate detected:</strong> <span id="duplicate-warning-text"></span>
+
+          <div id="duplicate-warning" class="hidden" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.4);border-radius:var(--radius);padding:0.4rem 0.65rem;font-size:0.75rem;color:var(--text-secondary)">
+            <strong style="color:#b45309">Possible duplicate:</strong> <span id="duplicate-warning-text"></span>
           </div>
-          <div class="field-group">
-            <label class="field-label">NOTES / SPECIFICATIONS</label>
-            <textarea id="item-notes" class="field-input field-textarea" rows="2" placeholder="Grade, dimensions, supplier info, etc."></textarea>
-          </div>
-          <div class="field-group">
-            <label class="field-label">MATERIAL PHOTO</label>
-            <div class="image-upload-wrap">
-              <div class="image-preview-box" id="item-img-preview-box">
-                <img id="item-img-preview" class="image-preview-img hidden" alt="Material preview" />
-                <div id="item-img-placeholder" class="image-placeholder">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  <span>No photo</span>
+
+          <div class="field-grid two-col" style="gap:0.75rem">
+            <div class="field-group">
+              <label class="field-label">NOTES / SPECIFICATIONS</label>
+              <input type="text" id="item-notes" class="field-input" placeholder="Grade, dimensions, supplier info, etc." />
+            </div>
+            <div class="field-group">
+              <label class="field-label">MATERIAL PHOTO</label>
+              <div class="image-upload-wrap" style="gap:0.5rem">
+                <div class="image-preview-box" id="item-img-preview-box" style="width:38px;height:38px;border-radius:6px">
+                  <img id="item-img-preview" class="image-preview-img hidden" alt="Material preview" />
+                  <div id="item-img-placeholder" class="image-placeholder" style="font-size:0.65rem">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  </div>
                 </div>
-              </div>
-              <div class="image-upload-controls">
-                <input type="file" id="item-img-file" accept="image/*" capture="environment" class="hidden" onchange="handleImageFileSelect(event)" />
-                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('item-img-file').click()">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                  Upload Photo
-                </button>
-                <button type="button" id="btn-remove-img" class="btn btn-ghost btn-sm danger-hover hidden" onclick="removeSelectedImage()">Remove</button>
-                <input type="hidden" id="item-imageUrl" value="" />
+                <div class="image-upload-controls" style="display:flex;gap:0.4rem;align-items:center">
+                  <input type="file" id="item-img-file" accept="image/*" capture="environment" class="hidden" onchange="handleImageFileSelect(event)" />
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('item-img-file').click()" style="padding:0.35rem 0.65rem;font-size:0.75rem">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Upload Photo
+                  </button>
+                  <button type="button" id="btn-remove-img" class="btn btn-ghost btn-sm danger-hover hidden" onclick="removeSelectedImage()" style="padding:0.35rem 0.5rem;font-size:0.75rem">Remove</button>
+                  <input type="hidden" id="item-imageUrl" value="" />
+                </div>
               </div>
             </div>
           </div>

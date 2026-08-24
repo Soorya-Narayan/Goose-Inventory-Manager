@@ -863,6 +863,32 @@ async function renderTransactions() {
   `;
 }
 
+function renderLabelDesigner() {
+  document.getElementById('view-labeldesigner').innerHTML = `
+    <div class="page-hdr">
+      <div>
+        <h1 class="page-title">Thermal Label Designer</h1>
+        <p class="page-subtitle">Custom barcode sticker layouts &amp; thermal printer template studio</p>
+      </div>
+    </div>
+
+    <div class="card" style="padding:3.5rem 2rem;max-width:640px;margin:2rem auto;text-align:center;background:var(--bg-raised);border:1px solid var(--border-muted);border-radius:var(--radius-lg);box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+      <div style="width:64px;height:64px;border-radius:16px;background:var(--goose-dim);color:var(--goose);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><line x1="6" y1="18" x2="18" y2="18"/><line x1="6" y1="14" x2="18" y2="14"/><rect x="8" y="5" width="8" height="5"/></svg>
+      </div>
+      <div style="font-size:0.75rem;font-weight:700;color:var(--goose);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.5rem">MODULE IN DEVELOPMENT</div>
+      <h2 style="font-size:1.6rem;font-weight:800;color:var(--text-primary);margin-bottom:0.75rem">Visual Label Designer — Coming Soon</h2>
+      <p style="color:var(--text-secondary);font-size:0.9rem;line-height:1.6;max-width:520px;margin:0 auto 1.75rem">
+        Drag-and-drop thermal label template editor for Tej C15 &amp; FlashLabel Pro printers. Custom QR codes, logos, HSN tags, and batch printing rules will be available here.
+      </p>
+      <div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 1rem;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);font-size:0.8rem;color:var(--text-tertiary)">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--warn);display:inline-block"></span>
+        Scheduled for v1.2 Release &middot; 1-Click FlashLabel Pro helper is currently active in Inventory.
+      </div>
+    </div>
+  `;
+}
+
 function renderDashboard() {
   const items = state.items || [];
   const s = state.stats || {};
