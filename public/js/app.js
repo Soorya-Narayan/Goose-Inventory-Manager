@@ -1050,7 +1050,7 @@ function renderOverviewStockChart(inStock, lowStock, outOfStock) {
   const borderColor = isDark ? '#1e293b' : '#ffffff';
 
   window._overviewChartInstance = new Chart(canvas, {
-    type: 'doughnut',
+    type: 'pie',
     data: {
       labels: ['In Stock', 'Low Stock', 'Out of Stock'],
       datasets: [{
@@ -1058,13 +1058,12 @@ function renderOverviewStockChart(inStock, lowStock, outOfStock) {
         backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
         borderWidth: 2,
         borderColor: borderColor,
-        hoverOffset: 4
+        hoverOffset: 6
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: '72%',
       plugins: {
         legend: { display: false },
         tooltip: {
