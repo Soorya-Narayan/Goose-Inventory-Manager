@@ -347,7 +347,7 @@ textarea {
 }
 
 .nav-center-logo {
-  height: 32px;
+  height: 38px;
   width: auto;
   object-fit: contain;
   background: transparent !important;
@@ -356,11 +356,11 @@ textarea {
 }
 
 [data-theme="dark"] .nav-center-logo {
-  filter: brightness(1.15) drop-shadow(0 2px 8px rgba(0, 198, 255, 0.25));
+  filter: brightness(1.2) drop-shadow(0 2px 8px rgba(0, 198, 255, 0.2));
 }
 
 [data-theme="light"] .nav-center-logo {
-  filter: drop-shadow(0 1px 4px rgba(0, 114, 255, 0.2));
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15));
 }
 
 /* ─── Right-side Options Menu Dropdown ──────────────────────────────────── */
