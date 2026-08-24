@@ -940,6 +940,7 @@ function renderOverview() {
       </div>
 
       <div class="compact-main-row">
+        <!-- Left Panel: Stock Alerts / Priority Items -->
         <div class="compact-panel">
           <div class="compact-panel-hdr">
             <span class="compact-panel-title">
@@ -948,15 +949,15 @@ function renderOverview() {
             </span>
             <button class="btn btn-ghost btn-sm" onclick="navigateTo('inventory')">View All &rarr;</button>
           </div>
-          <div class="compact-panel-body">
+          <div class="compact-panel-body" style="justify-content:flex-start;gap:0.6rem;padding:1rem 1.125rem">
             ${alertItems.length === 0 ? `
-              <div style="text-align:center;padding:2rem 1rem;color:var(--text-tertiary)">
+              <div style="text-align:center;padding:2rem 1rem;color:var(--text-tertiary);margin:auto">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2" style="margin-bottom:0.5rem"><polyline points="20 6 9 17 4 12"/></svg>
                 <div style="font-weight:600;color:var(--text-primary);margin-bottom:0.25rem">All stock levels optimal</div>
                 <div style="font-size:0.78rem">No materials are currently below minimum stock threshold.</div>
               </div>
             ` : alertItems.slice(0, 5).map(i => `
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:0.625rem 0.875rem;background:var(--bg-elevated);border-radius:var(--radius);border:1px solid var(--border-subtle)">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:0.65rem 0.875rem;background:var(--bg-elevated);border-radius:var(--radius-md);border:1px solid var(--border-subtle)">
                 <div>
                   <div style="font-weight:600;font-size:0.85rem;color:var(--text-primary)">${escHtml(i.name)}</div>
                   <div style="font-size:0.72rem;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:0.15rem">SKU: ${escHtml(i.sku)} &middot; Shelf ${escHtml(i.location)}</div>
@@ -976,18 +977,18 @@ function renderOverview() {
             </span>
             <span style="font-size:0.72rem;color:var(--text-tertiary);font-weight:600">LIVE BREAKDOWN</span>
           </div>
-          <div class="compact-panel-body" style="display:flex;flex-direction:row;align-items:center;justify-content:space-around;padding:1rem 0.875rem;gap:1rem">
+          <div class="compact-panel-body" style="display:flex;flex-direction:row;align-items:center;justify-content:space-evenly;padding:1.25rem 1.125rem;gap:1.25rem">
             
             <!-- Doughnut Chart Canvas Container -->
-            <div style="position:relative;width:140px;height:140px;flex-shrink:0">
+            <div style="position:relative;width:150px;height:150px;flex-shrink:0">
               <canvas id="overview-stock-chart"></canvas>
             </div>
 
             <!-- Legend & Metric Breakdown -->
-            <div style="display:flex;flex-direction:column;gap:0.5rem;font-size:0.8rem;flex-grow:1">
+            <div style="display:flex;flex-direction:column;gap:0.6rem;font-size:0.8rem;flex-grow:1;max-width:250px">
               
               <!-- In Stock -->
-              <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg-elevated);padding:0.4rem 0.6rem;border-radius:var(--radius);border:1px solid var(--border-subtle)">
+              <div style="display:flex;align-items:center;gap:0.6rem;background:var(--bg-elevated);padding:0.5rem 0.75rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle)">
                 <span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block;flex-shrink:0"></span>
                 <div style="flex-grow:1">
                   <div style="display:flex;justify-content:space-between;align-items:center">
@@ -999,7 +1000,7 @@ function renderOverview() {
               </div>
 
               <!-- Low Stock -->
-              <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg-elevated);padding:0.4rem 0.6rem;border-radius:var(--radius);border:1px solid var(--border-subtle)">
+              <div style="display:flex;align-items:center;gap:0.6rem;background:var(--bg-elevated);padding:0.5rem 0.75rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle)">
                 <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0"></span>
                 <div style="flex-grow:1">
                   <div style="display:flex;justify-content:space-between;align-items:center">
@@ -1011,7 +1012,7 @@ function renderOverview() {
               </div>
 
               <!-- Out of Stock -->
-              <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg-elevated);padding:0.4rem 0.6rem;border-radius:var(--radius);border:1px solid var(--border-subtle)">
+              <div style="display:flex;align-items:center;gap:0.6rem;background:var(--bg-elevated);padding:0.5rem 0.75rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle)">
                 <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;flex-shrink:0"></span>
                 <div style="flex-grow:1">
                   <div style="display:flex;justify-content:space-between;align-items:center">
