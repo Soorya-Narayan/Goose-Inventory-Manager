@@ -1076,6 +1076,184 @@ function renderStoreMap() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//  EXPORT INVENTORY DATA (CSV & PDF FORMATS)
+// ═══════════════════════════════════════════════════════════════════════════════
+function exportInventoryCSV() {
+  const items = state.items;
+  if (!items || items.length === 0) {
+    showToast('No material inventory to export', 'warning');
+    return;
+  }
+
+  const headers = [
+    'Item ID', 'SKU / Barcode', 'Material Name', 'Zone', 'Category', 
+    'Quantity', 'Unit', 'Unit Rate (INR)', 'Total Value (INR)', 'Min Stock', 
+    'Shelf Location', 'HSN', 'Notes', 'Added Date'
+  ];
+
+  const escapeCSV = (str) => {
+    if (str === null || str === undefined) return '""';
+    const val = String(str).replace(/"/g, '""');
+    return `"${val}"`;
+  };
+
+  const rows = items.map(item => {
+    const qty = parseInt(item.quantity) || 0;
+    const rate = parseFloat(item.rate) || 0;
+    const totalVal = (qty * rate).toFixed(2);
+
+    return [
+      escapeCSV(item.id),
+      escapeCSV(item.sku || item.barcode || ''),
+      escapeCSV(item.name || ''),
+      escapeCSV(item.zone || ''),
+      escapeCSV(item.category || ''),
+      qty,
+      escapeCSV(item.unit || 'pcs'),
+      rate.toFixed(2),
+      totalVal,
+      item.minStock ?? 0,
+      escapeCSV(item.location || ''),
+      escapeCSV(item.hsn || ''),
+      escapeCSV(item.notes || ''),
+      escapeCSV(item.addedAt ? item.addedAt.split('T')[0] : '')
+    ].join(',');
+  });
+
+  const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows].join('\n');
+  const encodedUri = encodeURI(csvContent);
+
+  const link = document.createElement('a');
+  const dateStr = new Date().toISOString().split('T')[0];
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `Goose_Store_Inventory_${dateStr}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  showToast(`Exported ${items.length} materials to CSV spreadsheet!`, 'success');
+}
+
+function exportInventoryPDF() {
+  const items = state.items;
+  if (!items || items.length === 0) {
+    showToast('No material inventory to export', 'warning');
+    return;
+  }
+
+  showToast('Generating Inventory PDF Report...', 'info');
+
+  try {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      showToast('Preparing PDF generator... Opening print view.', 'info');
+      window.print();
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+    const totalQty = items.reduce((sum, i) => sum + (parseInt(i.quantity) || 0), 0);
+    const totalValue = items.reduce((sum, i) => sum + ((parseInt(i.quantity) || 0) * (parseFloat(i.rate) || 0)), 0);
+
+    // Title Header
+    doc.setFillColor(15, 23, 42); // Dark industrial navy
+    doc.rect(0, 0, 210, 26, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(255, 255, 255);
+    doc.text('GOOSE INDUSTRIAL SYSTEMS', 14, 11);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(56, 189, 248);
+    doc.text('STORE INVENTORY MANAGEMENT REPORT', 14, 19);
+
+    doc.setFontSize(8);
+    doc.setTextColor(203, 213, 225);
+    doc.text(`Generated: ${dateStr}, ${timeStr}`, 145, 19);
+
+    // Summary Box
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(14, 30, 182, 14, 2, 2, 'FD');
+
+    doc.setFontSize(8.5);
+    doc.setTextColor(51, 65, 85);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total Materials: ${items.length}`, 18, 39);
+    doc.text(`Total Stock Quantity: ${totalQty.toLocaleString('en-IN')} pcs`, 75, 39);
+    doc.text(`Total Inventory Value: INR ${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 132, 39);
+
+    // AutoTable
+    const tableHeaders = [['#', 'SKU / CODE', 'MATERIAL NAME', 'ZONE', 'QTY', 'UNIT RATE', 'LOCATION']];
+    const tableRows = items.map((item, index) => {
+      const zoneName = item.zone ? item.zone.charAt(0).toUpperCase() + item.zone.slice(1) : 'General';
+      const rateStr = item.rate ? `INR ${parseFloat(item.rate).toLocaleString('en-IN')}` : 'INR 0';
+      return [
+        index + 1,
+        item.sku || item.barcode || '-',
+        item.name.length > 32 ? item.name.slice(0, 32) + '...' : item.name,
+        zoneName,
+        `${item.quantity || 0} ${item.unit || 'pcs'}`,
+        rateStr,
+        item.location || 'A1'
+      ];
+    });
+
+    if (doc.autoTable) {
+      doc.autoTable({
+        head: tableHeaders,
+        body: tableRows,
+        startY: 48,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [30, 41, 59],
+          textColor: [255, 255, 255],
+          fontSize: 8,
+          fontStyle: 'bold',
+          halign: 'left'
+        },
+        bodyStyles: {
+          fontSize: 7.5,
+          textColor: [30, 41, 59]
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252]
+        },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 32, fontStyle: 'bold' },
+          2: { cellWidth: 60 },
+          3: { cellWidth: 26 },
+          4: { cellWidth: 20, fontStyle: 'bold' },
+          5: { cellWidth: 24 },
+          6: { cellWidth: 15 }
+        },
+        didDrawPage: function (data) {
+          doc.setFontSize(7.5);
+          doc.setTextColor(148, 163, 184);
+          doc.text(`Page ${data.pageNumber} — Goose Store Inventory System`, 14, doc.internal.pageSize.height - 8);
+          doc.text('Store Manager Sign-Off: ____________________', 125, doc.internal.pageSize.height - 8);
+        }
+      });
+    }
+
+    doc.save(`Goose_Store_Inventory_${now.toISOString().split('T')[0]}.pdf`);
+    showToast('Inventory PDF report downloaded successfully!', 'success');
+  } catch (err) {
+    console.error('PDF Export Error:', err);
+    showToast('Failed to generate PDF. Opening printable report...', 'warning');
+    window.print();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //  INVENTORY
 // ═══════════════════════════════════════════════════════════════════════════════
 function renderInventory() {
@@ -1100,7 +1278,17 @@ function renderInventory() {
         <h1 class="page-title">Store Inventory</h1>
         <p class="page-subtitle">Showing ${items.length} of ${state.items.length} materials</p>
       </div>
-      ${isManager ? `<button class="btn btn-primary" onclick="openAddItemModal()">+ Add Item</button>` : ''}
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <button class="btn btn-ghost btn-sm" onclick="exportInventoryCSV()" title="Export Inventory to CSV Spreadsheet" style="display:inline-flex;align-items:center;gap:0.4rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportInventoryPDF()" title="Export Inventory PDF Report" style="display:inline-flex;align-items:center;gap:0.4rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Export PDF
+        </button>
+        ${isManager ? `<button class="btn btn-primary" onclick="openAddItemModal()">+ Add Item</button>` : ''}
+      </div>
     </div>
 
     <!-- Search Input -->
