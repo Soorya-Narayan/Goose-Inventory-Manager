@@ -863,6 +863,10 @@ async function renderTransactions() {
   `;
 }
 
+function renderDashboard() {
+  renderOverview();
+}
+
 function renderOverview() {
   const items = state.items || [];
   const s = state.stats || {};
