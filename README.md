@@ -18,35 +18,35 @@
 ### 📊 Store Overview Dashboard
 Real-time operational summary displaying total inventory count, low stock threshold alerts, priority items, and quick management actions.
 
-![Store Overview](docs/screenshots/overview.png)
+![Store Overview](pictures/overview.png)
 
 ---
 
 ### 📦 Material Directory & Inventory Management
 Search and filter over 4,000+ industrial materials by zone (Mechanical, Electrical, Consumables), stock status, category, or shelf location.
 
-![Store Inventory](docs/screenshots/inventory.png)
+![Store Inventory](pictures/store_inventory.png)
 
 ---
 
 ### 📝 Material Requests Workflow
 Review, approve, and track material requisition requests submitted by site engineers and project teams.
 
-![Material Requests](docs/screenshots/requests.png)
+![Material Requests](pictures/material_requests.png)
 
 ---
 
 ### 🔄 Stock Movements & Allocation Audit Log
 Complete audit trail recording every inward receipt and outward allocation to specific engineers, projects, customers, or vendors.
 
-![Stock Movements](docs/screenshots/movements.png)
+![Stock Movements](pictures/stock_movments.png)
 
 ---
 
 ### ⚙️ Store Manager Options Menu
 Quick options menu for updating manager credentials, toggling Dark/Light themes, and triggering live Zoho Books API synchronization.
 
-![Store Manager Options Menu](docs/screenshots/manager_menu.png)
+![Store Manager Options Menu](pictures/admin_options.png)
 
 ---
 
