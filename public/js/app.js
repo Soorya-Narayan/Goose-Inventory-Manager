@@ -864,10 +864,6 @@ async function renderTransactions() {
 }
 
 function renderDashboard() {
-  renderOverview();
-}
-
-function renderOverview() {
   const items = state.items || [];
   const s = state.stats || {};
   const alertItems = items.filter(i => getStockStatus(i) !== 'ok');
@@ -887,17 +883,15 @@ function renderOverview() {
         <h1 class="page-title">Store Overview</h1>
         <p class="page-subtitle">${new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' })} &middot; Goose Industrial Systems</p>
       </div>
-      <div style="display:flex;gap:0.75rem;align-items:center">
-        <button class="btn btn-ghost" onclick="loadAll().then(()=>renderView('dashboard'))">
+      <div style="display:flex;gap:0.625rem;align-items:center">
+        <button class="btn btn-ghost" onclick="loadAll().then(()=>renderView('dashboard'))" style="display:inline-flex;align-items:center;gap:0.4rem">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           Refresh
         </button>
         ${state.user?.role === 'manager' ? `
-          <button class="btn btn-primary btn-sm" onclick="openAddItemModal()">+ Add Item</button>
+          <button class="btn btn-primary" onclick="openAddItemModal()">+ Add Item</button>
         ` : `
-          <button class="btn btn-primary btn-sm" onclick="openRequestModal()">
-            + Request Material
-          </button>
+          <button class="btn btn-primary" onclick="openRequestModal()">+ Request Material</button>
         `}
       </div>
     </div>
@@ -1290,12 +1284,12 @@ function renderInventory() {
         <h1 class="page-title">Store Inventory</h1>
         <p class="page-subtitle" id="inventory-subtitle-count">Showing 0 of 0 materials</p>
       </div>
-      <div style="display:flex;gap:0.5rem;align-items:center">
-        <button class="btn btn-ghost btn-sm" onclick="exportInventoryCSV()" title="Export Inventory to CSV Spreadsheet" style="display:inline-flex;align-items:center;gap:0.4rem">
+      <div style="display:flex;gap:0.625rem;align-items:center">
+        <button class="btn btn-ghost" onclick="exportInventoryCSV()" title="Export Inventory to CSV Spreadsheet" style="display:inline-flex;align-items:center;gap:0.4rem">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export CSV
         </button>
-        <button class="btn btn-ghost btn-sm" onclick="exportInventoryPDF()" title="Export Inventory PDF Report" style="display:inline-flex;align-items:center;gap:0.4rem">
+        <button class="btn btn-ghost" onclick="exportInventoryPDF()" title="Export Inventory PDF Report" style="display:inline-flex;align-items:center;gap:0.4rem">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           Export PDF
         </button>
