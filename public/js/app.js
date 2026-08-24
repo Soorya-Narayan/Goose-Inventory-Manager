@@ -1257,26 +1257,13 @@ function exportInventoryPDF() {
 //  INVENTORY
 // ═══════════════════════════════════════════════════════════════════════════════
 function renderInventory() {
-  let items = [...state.items];
-  if (state.filters.zone !== 'all') items = items.filter(i => i.zone === state.filters.zone);
-  
-  const avail = state.filters.stockAvailability || 'all';
-  if (avail === 'instock') items = items.filter(i => (i.quantity || 0) > 0);
-  if (avail === 'out') items = items.filter(i => (i.quantity || 0) === 0);
-  if (avail === 'low') items = items.filter(i => getStockStatus(i) !== 'ok');
-
-  if (state.searchQuery) {
-    const q = state.searchQuery.toLowerCase();
-    items = items.filter(i => i.name.toLowerCase().includes(q) || i.sku.toLowerCase().includes(q) || i.location.toLowerCase().includes(q));
-  }
-
   const isManager = state.user?.role === 'manager';
 
   document.getElementById('view-inventory').innerHTML = `
     <div class="page-hdr">
       <div>
         <h1 class="page-title">Store Inventory</h1>
-        <p class="page-subtitle">Showing ${items.length} of ${state.items.length} materials</p>
+        <p class="page-subtitle" id="inventory-subtitle-count">Showing 0 of 0 materials</p>
       </div>
       <div style="display:flex;gap:0.5rem;align-items:center">
         <button class="btn btn-ghost btn-sm" onclick="exportInventoryCSV()" title="Export Inventory to CSV Spreadsheet" style="display:inline-flex;align-items:center;gap:0.4rem">
@@ -1291,10 +1278,10 @@ function renderInventory() {
       </div>
     </div>
 
-    <!-- Search Input -->
+    <!-- Search Input (Kept intact during typing) -->
     <div style="margin-bottom:1rem">
-      <input type="text" class="field-input" placeholder="Search materials by name, SKU, shelf location..."
-        value="${escHtml(state.searchQuery)}" oninput="state.searchQuery=this.value;renderInventory()" style="font-size:0.9rem;padding:0.7rem 0.875rem" />
+      <input type="text" id="inventory-search-input" class="field-input" placeholder="Search materials by name, SKU, shelf location..."
+        value="${escHtml(state.searchQuery)}" oninput="state.searchQuery=this.value;filterAndRenderInventoryRows()" style="font-size:0.9rem;padding:0.7rem 0.875rem" />
     </div>
 
     <!-- Filter Bar: Zone & Stock Availability -->
@@ -1336,37 +1323,74 @@ function renderInventory() {
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>
-            ${items.map(item => `
-              <tr>
-                <td>${getItemImageHtml(item)}</td>
-                <td style="font-family:var(--font-mono);font-size:0.75rem">${escHtml(item.sku)}</td>
-                <td>
-                  <strong style="font-size:0.85rem">${escHtml(item.name)}</strong>
-                  ${item.notes ? `<div style="font-size:0.7rem;color:var(--text-tertiary)">${escHtml(item.notes)}</div>` : ''}
-                </td>
-                <td>${zoneInlineTag(item.zone)}</td>
-                <td style="color:var(--text-tertiary);font-size:0.75rem">${escHtml(item.category)}</td>
-                <td style="font-family:var(--font-mono);font-weight:600">${item.quantity} ${item.unit}</td>
-                <td style="font-family:var(--font-mono);font-size:0.75rem">${escHtml(item.location)}</td>
-                <td>${stockTag(item)}</td>
-                <td>
-                  <div style="display:flex;gap:0.3rem">
-                    <button class="btn btn-ghost btn-sm" title="Print Barcode on Tej C15" onclick="openPrintModal('${item.id}')">Sticker</button>
-                    <button class="btn btn-ghost btn-sm" title="Request Material" onclick="openRequestModal('${item.id}')">Request</button>
-                    ${isManager ? `<button class="btn btn-ghost btn-sm" onclick="openEditItemModal('${item.id}')">Edit</button>` : ''}
-                    ${isManager ? `<button class="btn btn-ghost btn-sm" onclick="deleteItem('${item.id}', '${item.name.replace(/'/g, '\\&apos;')}')" title="Delete this material" style="color:var(--danger)">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                    </button>` : ''}
-                  </div>
-                </td>
-              </tr>
-            `).join('')}
+          <tbody id="inventory-tbody-content">
           </tbody>
         </table>
       </div>
     </div>
   `;
+
+  filterAndRenderInventoryRows();
+}
+
+function filterAndRenderInventoryRows() {
+  let items = [...state.items];
+  if (state.filters.zone !== 'all') items = items.filter(i => i.zone === state.filters.zone);
+  
+  const avail = state.filters.stockAvailability || 'all';
+  if (avail === 'instock') items = items.filter(i => (i.quantity || 0) > 0);
+  if (avail === 'out') items = items.filter(i => (i.quantity || 0) === 0);
+  if (avail === 'low') items = items.filter(i => getStockStatus(i) !== 'ok');
+
+  if (state.searchQuery) {
+    const q = state.searchQuery.toLowerCase();
+    items = items.filter(i => i.name.toLowerCase().includes(q) || i.sku.toLowerCase().includes(q) || (i.location && i.location.toLowerCase().includes(q)));
+  }
+
+  const subtitle = document.getElementById('inventory-subtitle-count');
+  if (subtitle) subtitle.textContent = `Showing ${items.length} of ${state.items.length} materials`;
+
+  const tbody = document.getElementById('inventory-tbody-content');
+  if (!tbody) return;
+
+  const isManager = state.user?.role === 'manager';
+
+  if (items.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align:center;padding:3rem;color:var(--text-tertiary)">
+          No materials matching "${escHtml(state.searchQuery)}"
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = items.map(item => `
+    <tr>
+      <td>${getItemImageHtml(item)}</td>
+      <td style="font-family:var(--font-mono);font-size:0.75rem">${escHtml(item.sku)}</td>
+      <td>
+        <strong style="font-size:0.85rem">${escHtml(item.name)}</strong>
+        ${item.notes ? `<div style="font-size:0.7rem;color:var(--text-tertiary)">${escHtml(item.notes)}</div>` : ''}
+      </td>
+      <td>${zoneInlineTag(item.zone)}</td>
+      <td style="color:var(--text-tertiary);font-size:0.75rem">${escHtml(item.category)}</td>
+      <td style="font-family:var(--font-mono);font-weight:600">${item.quantity} ${item.unit}</td>
+      <td style="font-family:var(--font-mono);font-size:0.75rem">${escHtml(item.location)}</td>
+      <td>${stockTag(item)}</td>
+      <td>
+        <div style="display:flex;gap:0.3rem">
+          <button class="btn btn-ghost btn-sm" title="Print Barcode on Tej C15" onclick="openPrintModal('${item.id}')">Sticker</button>
+          <button class="btn btn-ghost btn-sm" title="Request Material" onclick="openRequestModal('${item.id}')">Request</button>
+          ${isManager ? `<button class="btn btn-ghost btn-sm" onclick="openEditItemModal('${item.id}')">Edit</button>` : ''}
+          ${isManager ? `<button class="btn btn-ghost btn-sm" onclick="deleteItem('${item.id}')" title="Delete this material" style="color:var(--danger)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>` : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
