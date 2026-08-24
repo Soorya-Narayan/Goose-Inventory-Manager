@@ -1319,17 +1319,17 @@ function renderInventory() {
       <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
         <span style="font-size:0.75rem;font-weight:600;color:var(--text-tertiary);display:flex;align-items:center;margin-right:0.25rem">ZONE:</span>
         <button class="btn btn-ghost btn-sm ${state.filters.zone==='all'?'btn-primary':''}" onclick="state.filters.zone='all';renderInventory()">All Zones</button>
-        <button class="btn btn-ghost btn-sm ${state.filters.zone==='mechanical'?'btn-primary':''}" onclick="state.filters.zone='mechanical';renderInventory()">Mechanical (Right)</button>
-        <button class="btn btn-ghost btn-sm ${state.filters.zone==='electrical'?'btn-primary':''}" onclick="state.filters.zone='electrical';renderInventory()">Electrical (Left)</button>
-        <button class="btn btn-ghost btn-sm ${state.filters.zone==='consumables'?'btn-primary':''}" onclick="state.filters.zone='consumables';renderInventory()">Consumables (Back)</button>
+        <button class="btn btn-ghost btn-sm ${state.filters.zone==='mechanical'?'btn-primary':''}" onclick="state.filters.zone='mechanical';renderInventory()">Mechanical</button>
+        <button class="btn btn-ghost btn-sm ${state.filters.zone==='electrical'?'btn-primary':''}" onclick="state.filters.zone='electrical';renderInventory()">Electrical</button>
+        <button class="btn btn-ghost btn-sm ${state.filters.zone==='consumables'?'btn-primary':''}" onclick="state.filters.zone='consumables';renderInventory()">Consumables</button>
       </div>
 
       <!-- Stock Availability Filter Pills -->
       <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
         <span style="font-size:0.75rem;font-weight:600;color:var(--text-tertiary);display:flex;align-items:center;margin-right:0.25rem">STOCK:</span>
         <button class="btn btn-ghost btn-sm ${(state.filters.stockAvailability||'all')==='all'?'btn-primary':''}" onclick="state.filters.stockAvailability='all';renderInventory()">All Stock</button>
-        <button class="btn btn-ghost btn-sm ${(state.filters.stockAvailability)==='instock'?'btn-primary':''}" onclick="state.filters.stockAvailability='instock';renderInventory()">In Stock (> 0)</button>
-        <button class="btn btn-ghost btn-sm ${(state.filters.stockAvailability)==='out'?'btn-primary':''}" onclick="state.filters.stockAvailability='out';renderInventory()">Out of Stock (= 0)</button>
+        <button class="btn btn-ghost btn-sm ${(state.filters.stockAvailability)==='instock'?'btn-primary':''}" onclick="state.filters.stockAvailability='instock';renderInventory()">In Stock</button>
+        <button class="btn btn-ghost btn-sm ${(state.filters.stockAvailability)==='out'?'btn-primary':''}" onclick="state.filters.stockAvailability='out';renderInventory()">Out of Stock</button>
         <button class="btn btn-ghost btn-sm ${(state.filters.stockAvailability)==='low'?'btn-primary':''}" onclick="state.filters.stockAvailability='low';renderInventory()">Stock Alerts</button>
       </div>
 
