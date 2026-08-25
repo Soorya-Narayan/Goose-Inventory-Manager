@@ -796,6 +796,8 @@ async function renderTransactions() {
   const container = document.getElementById('view-transactions');
   if (!container) return;
 
+  const isManager = state.user?.role === 'manager';
+
   container.innerHTML = `
     <div class="page-hdr">
       <div>
@@ -803,7 +805,7 @@ async function renderTransactions() {
         <div class="page-subtitle">Barcode-scanned inward receipts and outward allocations</div>
       </div>
       <div style="display:flex;gap:0.75rem">
-        <button class="btn btn-ghost" onclick="clearAllTransactions()" style="font-size:0.8rem;color:var(--danger)">Clear All</button>
+        ${isManager ? `<button class="btn btn-ghost" onclick="clearAllTransactions()" style="font-size:0.8rem;color:var(--danger)">Clear All</button>` : ''}
       </div>
     </div>
     <div class="card" style="overflow:hidden">
@@ -846,7 +848,7 @@ async function renderTransactions() {
           <th>PROJECT / DESTINATION</th>
           <th>QTY CHANGE</th>
           <th>STOCK LEVEL</th>
-          <th style="width:40px"></th>
+          ${isManager ? `<th style="width:40px"></th>` : ''}
         </tr>
       </thead>
       <tbody>
@@ -891,19 +893,65 @@ async function renderTransactions() {
                 ${isIn ? '+' : ''}${t.delta}
               </td>
               <td style="font-family:var(--font-mono);font-weight:600">${t.newQuantity ?? '-'}</td>
-              <td>
-                <button onclick="deleteTransaction('${t.id}')" title="Delete this log entry"
-                  style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:4px;border-radius:4px"
-                  onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-tertiary)'">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                </button>
-              </td>
+              ${isManager ? `
+                <td>
+                  <button onclick="deleteTransaction('${t.id}')" title="Delete this log entry"
+                    style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:4px;border-radius:4px"
+                    onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-tertiary)'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                  </button>
+                </td>
+              ` : ''}
             </tr>
           `;
         }).join('')}
       </tbody>
     </table>
   `;
+}
+
+async function deleteTransaction(id) {
+  if (state.user?.role !== 'manager') {
+    showToast('Access Denied: Deleting movement logs is restricted to Store Manager only', 'error');
+    return;
+  }
+
+  showConfirmModal({
+    title: 'Delete Log Entry',
+    message: 'Are you sure you want to delete this stock movement log entry?',
+    confirmLabel: 'Delete Entry',
+    onConfirm: async () => {
+      try {
+        await api.del(`/api/transactions/${id}`);
+        showToast('Movement entry deleted', 'success');
+        renderTransactions();
+      } catch (err) {
+        showToast('Failed to delete transaction log', 'error');
+      }
+    }
+  });
+}
+
+async function clearAllTransactions() {
+  if (state.user?.role !== 'manager') {
+    showToast('Access Denied: Clearing transaction logs is restricted to Store Manager only', 'error');
+    return;
+  }
+
+  showConfirmModal({
+    title: 'Clear Movement History',
+    message: 'Are you sure you want to delete ALL stock movement log entries? This action cannot be undone.',
+    confirmLabel: 'Clear History Log',
+    onConfirm: async () => {
+      try {
+        await api.del('/api/transactions');
+        showToast('Stock movement history cleared', 'success');
+        renderTransactions();
+      } catch (err) {
+        showToast('Failed to clear transaction log', 'error');
+      }
+    }
+  });
 }
 
 function renderLabelDesigner() {
@@ -1626,6 +1674,10 @@ function closeConfirmModal() {
 
 // ─── Delete Item ──────────────────────────────────────────────────────────────
 async function deleteItem(id, name) {
+  if (state.user?.role !== 'manager') {
+    showToast('Access Denied: Only Store Manager can delete inventory items', 'error');
+    return;
+  }
   const item = state.items.find(i => i.id === id);
   const itemName = item ? item.name : (name || 'this material');
   showConfirmModal({
