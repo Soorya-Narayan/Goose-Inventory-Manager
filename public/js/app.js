@@ -1144,15 +1144,27 @@ function renderOverviewStockChart(inStock, lowStock, outOfStock) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: isDark ? '#0f172a' : '#ffffff',
+          enabled: true,
+          backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
           titleColor: isDark ? '#f8fafc' : '#0f172a',
           bodyColor: isDark ? '#cbd5e1' : '#334155',
           borderColor: isDark ? '#334155' : '#e2e8f0',
           borderWidth: 1,
-          padding: 8,
-          boxPadding: 4,
+          padding: 10,
+          cornerRadius: 8,
+          boxPadding: 6,
+          usePointStyle: true,
+          titleFont: { size: 12, weight: 'bold' },
+          bodyFont: { size: 11 },
           callbacks: {
-            label: (context) => ` ${context.label}: ${context.raw} items (Click to filter Store Inventory)`
+            title: (items) => items[0]?.label || '',
+            label: (context) => {
+              const total = (inStock + lowStock + outOfStock) || 1;
+              const count = context.raw || 0;
+              const pct = ((count / total) * 100).toFixed(1);
+              return ` ${count} items (${pct}%)`;
+            },
+            afterLabel: () => ' ➔ Click to filter Store Inventory'
           }
         }
       }
