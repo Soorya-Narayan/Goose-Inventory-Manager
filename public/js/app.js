@@ -1106,7 +1106,7 @@ function renderOverviewStockChart(inStock, lowStock, outOfStock) {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const borderColor = isDark ? '#1e293b' : '#ffffff';
 
-  window._overviewChartInstance = new Chart(canvas, {
+  const chartObj = new Chart(canvas, {
     type: 'pie',
     data: {
       labels: ['In Stock', 'Low Stock', 'Out of Stock'],
@@ -1115,17 +1115,25 @@ function renderOverviewStockChart(inStock, lowStock, outOfStock) {
         backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
         borderWidth: 2,
         borderColor: borderColor,
-        hoverOffset: 8
+        hoverOffset: 10
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      onClick: (evt, activeElements) => {
-        if (activeElements && activeElements.length > 0) {
-          const clickedIndex = activeElements[0].index;
+      onClick: (evt, activeElements, chart) => {
+        const elems = (activeElements && activeElements.length > 0)
+          ? activeElements
+          : (chart && typeof chart.getElementsAtEventForMode === 'function'
+              ? chart.getElementsAtEventForMode(evt, 'nearest', { intersect: false }, true)
+              : []);
+        
+        if (elems && elems.length > 0) {
+          const idx = elems[0].index;
           const filterMap = ['instock', 'low', 'out'];
-          filterStockStatusFromChart(filterMap[clickedIndex] || 'all');
+          if (filterMap[idx]) {
+            filterStockStatusFromChart(filterMap[idx]);
+          }
         }
       },
       onHover: (event, chartElement) => {
@@ -1144,12 +1152,28 @@ function renderOverviewStockChart(inStock, lowStock, outOfStock) {
           padding: 8,
           boxPadding: 4,
           callbacks: {
-            label: (context) => ` ${context.label}: ${context.raw} items (Click to filter)`
+            label: (context) => ` ${context.label}: ${context.raw} items (Click to filter Store Inventory)`
           }
         }
       }
     }
   });
+
+  window._overviewChartInstance = chartObj;
+
+  // Direct canvas click handler for bulletproof response
+  canvas.onclick = (evt) => {
+    if (chartObj && typeof chartObj.getElementsAtEventForMode === 'function') {
+      const points = chartObj.getElementsAtEventForMode(evt, 'nearest', { intersect: false }, true);
+      if (points && points.length > 0) {
+        const idx = points[0].index;
+        const filterMap = ['instock', 'low', 'out'];
+        if (filterMap[idx]) {
+          filterStockStatusFromChart(filterMap[idx]);
+        }
+      }
+    }
+  };
 }
 
 function filterZone(zone) {
