@@ -1737,6 +1737,35 @@ td {
     display: none;
   }
 
+  /* Top Rail Header Responsiveness: Prevent User Chip from Overlapping Logo */
+  .top-rail {
+    padding: 0 0.75rem;
+  }
+
+  .top-rail-left {
+    display: none !important;
+  }
+
+  .top-rail-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .nav-center-logo {
+    height: 32px !important;
+    width: auto;
+  }
+
+  .user-chip-name {
+    display: none !important;
+  }
+
+  .nav-options-btn {
+    padding: 0.25rem 0.4rem !important;
+    gap: 0.35rem !important;
+  }
+
   /* Touch-Optimized Mobile Bottom Navigation Bar with iOS Safe Area */
   .bottom-nav {
     display: grid;
