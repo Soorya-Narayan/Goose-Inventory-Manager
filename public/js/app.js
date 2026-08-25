@@ -8,7 +8,7 @@ const state = {
   items: [],
   requests: [],
   stats: {},
-  filters: { zone: 'all', stockStatus: 'all', category: '' },
+  filters: { zone: 'all', stockAvailability: 'all', category: '' },
   searchQuery: '',
   editingItemId: null,
   requestingItemId: null,
@@ -1435,12 +1435,19 @@ function renderInventory() {
 
 function filterAndRenderInventoryRows() {
   let items = [...state.items];
-  if (state.filters.zone !== 'all') items = items.filter(i => i.zone === state.filters.zone);
+  if (state.filters.zone && state.filters.zone !== 'all') items = items.filter(i => i.zone === state.filters.zone);
   
   const avail = state.filters.stockAvailability || 'all';
-  if (avail === 'instock') items = items.filter(i => (i.quantity || 0) > 0);
-  if (avail === 'out') items = items.filter(i => (i.quantity || 0) === 0);
-  if (avail === 'low') items = items.filter(i => getStockStatus(i) !== 'ok');
+  if (avail === 'instock') {
+    // In Stock (Green): quantity > minStock
+    items = items.filter(i => (i.quantity || 0) > (i.minStock || 0));
+  } else if (avail === 'low') {
+    // Low Stock (Yellow): quantity > 0 AND quantity <= minStock
+    items = items.filter(i => (i.quantity || 0) > 0 && (i.quantity || 0) <= (i.minStock || 0));
+  } else if (avail === 'out') {
+    // Out of Stock (Red): quantity === 0
+    items = items.filter(i => (i.quantity || 0) === 0);
+  }
 
   if (state.searchQuery) {
     const q = state.searchQuery.toLowerCase();
@@ -1448,7 +1455,13 @@ function filterAndRenderInventoryRows() {
   }
 
   const subtitle = document.getElementById('inventory-subtitle-count');
-  if (subtitle) subtitle.textContent = `Showing ${items.length} of ${state.items.length} materials`;
+  const filterLabelMap = {
+    instock: 'In Stock',
+    low: 'Low Stock Alerts',
+    out: 'Out of Stock'
+  };
+  const activeLabel = filterLabelMap[avail] ? ` &middot; Filtered: ${filterLabelMap[avail]}` : '';
+  if (subtitle) subtitle.innerHTML = `Showing ${items.length} of ${state.items.length} materials${activeLabel}`;
 
   const tbody = document.getElementById('inventory-tbody-content');
   if (!tbody) return;
