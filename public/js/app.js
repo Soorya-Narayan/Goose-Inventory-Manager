@@ -1032,7 +1032,7 @@ function renderDashboard() {
           <div class="compact-panel-body" style="display:flex;flex-direction:row;align-items:center;justify-content:space-evenly;padding:1.25rem 1.125rem;gap:1.25rem">
             
             <!-- Doughnut Chart Canvas Container -->
-            <div style="position:relative;width:150px;height:150px;flex-shrink:0">
+            <div style="position:relative;width:150px;height:150px;flex-shrink:0;cursor:pointer" title="Click pie chart slice to filter Store Inventory">
               <canvas id="overview-stock-chart"></canvas>
             </div>
 
@@ -1040,38 +1040,38 @@ function renderDashboard() {
             <div style="display:flex;flex-direction:column;gap:0.6rem;font-size:0.8rem;flex-grow:1;max-width:250px">
               
               <!-- In Stock -->
-              <div style="display:flex;align-items:center;gap:0.6rem;background:var(--bg-elevated);padding:0.5rem 0.75rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle)">
+              <div onclick="filterStockStatusFromChart('instock')" style="cursor:pointer;display:flex;align-items:center;gap:0.6rem;background:var(--bg-elevated);padding:0.5rem 0.75rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle);transition:border-color 0.2s" onmouseover="this.style.borderColor='var(--ok)'" onmouseout="this.style.borderColor='var(--border-subtle)'" title="View In Stock items in Store Inventory">
                 <span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block;flex-shrink:0"></span>
                 <div style="flex-grow:1">
                   <div style="display:flex;justify-content:space-between;align-items:center">
                     <span style="font-weight:600;color:var(--text-primary)">In Stock</span>
                     <span style="font-weight:700;font-family:var(--font-mono);color:var(--ok)">${inStockCount}</span>
                   </div>
-                  <div style="font-size:0.68rem;color:var(--text-tertiary)">${inStockPct}% healthy stock</div>
+                  <div style="font-size:0.68rem;color:var(--text-tertiary)">${inStockPct}% healthy &middot; View &rarr;</div>
                 </div>
               </div>
 
               <!-- Low Stock -->
-              <div style="display:flex;align-items:center;gap:0.6rem;background:var(--bg-elevated);padding:0.5rem 0.75rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle)">
+              <div onclick="filterStockStatusFromChart('low')" style="cursor:pointer;display:flex;align-items:center;gap:0.6rem;background:var(--bg-elevated);padding:0.5rem 0.75rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle);transition:border-color 0.2s" onmouseover="this.style.borderColor='var(--warn)'" onmouseout="this.style.borderColor='var(--border-subtle)'" title="View Low Stock items in Store Inventory">
                 <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0"></span>
                 <div style="flex-grow:1">
                   <div style="display:flex;justify-content:space-between;align-items:center">
                     <span style="font-weight:600;color:var(--text-primary)">Low Stock</span>
                     <span style="font-weight:700;font-family:var(--font-mono);color:var(--warn)">${lowStockCount}</span>
                   </div>
-                  <div style="font-size:0.68rem;color:var(--text-tertiary)">${lowStockPct}% reorder alert</div>
+                  <div style="font-size:0.68rem;color:var(--text-tertiary)">${lowStockPct}% alerts &middot; View &rarr;</div>
                 </div>
               </div>
 
               <!-- Out of Stock -->
-              <div style="display:flex;align-items:center;gap:0.6rem;background:var(--bg-elevated);padding:0.5rem 0.75rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle)">
+              <div onclick="filterStockStatusFromChart('out')" style="cursor:pointer;display:flex;align-items:center;gap:0.6rem;background:var(--bg-elevated);padding:0.5rem 0.75rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle);transition:border-color 0.2s" onmouseover="this.style.borderColor='var(--danger)'" onmouseout="this.style.borderColor='var(--border-subtle)'" title="View Out of Stock items in Store Inventory">
                 <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;flex-shrink:0"></span>
                 <div style="flex-grow:1">
                   <div style="display:flex;justify-content:space-between;align-items:center">
                     <span style="font-weight:600;color:var(--text-primary)">Out of Stock</span>
                     <span style="font-weight:700;font-family:var(--font-mono);color:var(--danger)">${outStockCount}</span>
                   </div>
-                  <div style="font-size:0.68rem;color:var(--text-tertiary)">${outStockPct}% zero inventory</div>
+                  <div style="font-size:0.68rem;color:var(--text-tertiary)">${outStockPct}% zero stock &middot; View &rarr;</div>
                 </div>
               </div>
 
@@ -1088,6 +1088,11 @@ function renderDashboard() {
   setTimeout(() => {
     renderOverviewStockChart(inStockCount, lowStockCount, outStockCount);
   }, 50);
+}
+
+function filterStockStatusFromChart(filterType) {
+  state.filters.stockAvailability = filterType;
+  navigateTo('inventory');
 }
 
 function renderOverviewStockChart(inStock, lowStock, outOfStock) {
@@ -1110,12 +1115,24 @@ function renderOverviewStockChart(inStock, lowStock, outOfStock) {
         backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
         borderWidth: 2,
         borderColor: borderColor,
-        hoverOffset: 6
+        hoverOffset: 8
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      onClick: (evt, activeElements) => {
+        if (activeElements && activeElements.length > 0) {
+          const clickedIndex = activeElements[0].index;
+          const filterMap = ['instock', 'low', 'out'];
+          filterStockStatusFromChart(filterMap[clickedIndex] || 'all');
+        }
+      },
+      onHover: (event, chartElement) => {
+        if (event.native && event.native.target) {
+          event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+        }
+      },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -1125,7 +1142,10 @@ function renderOverviewStockChart(inStock, lowStock, outOfStock) {
           borderColor: isDark ? '#334155' : '#e2e8f0',
           borderWidth: 1,
           padding: 8,
-          boxPadding: 4
+          boxPadding: 4,
+          callbacks: {
+            label: (context) => ` ${context.label}: ${context.raw} items (Click to filter)`
+          }
         }
       }
     }
