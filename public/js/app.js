@@ -231,7 +231,29 @@ function _markPrinterManuallyConnected() {
 
 
 
-async function loadAll() {
+let _loadingTimer = null;
+
+function showLoadingScreen(message = 'Loading Inventory Database...') {
+  const overlay = document.getElementById('app-loading-screen');
+  const txt = document.getElementById('loading-status-text');
+  if (txt) txt.textContent = message;
+  if (overlay) overlay.classList.remove('hidden');
+}
+
+function hideLoadingScreen() {
+  const overlay = document.getElementById('app-loading-screen');
+  if (overlay) {
+    clearTimeout(_loadingTimer);
+    _loadingTimer = setTimeout(() => {
+      overlay.classList.add('hidden');
+    }, 450);
+  }
+}
+
+async function loadAll(showLoader = true, customMsg = 'Synchronizing Warehouse Database...') {
+  if (showLoader) {
+    showLoadingScreen(customMsg);
+  }
   try {
     const [items, requests] = await Promise.all([
       api.get('/api/items'),
@@ -242,6 +264,10 @@ async function loadAll() {
     computeStats();
   } catch (err) {
     showToast('Failed to load data from server', 'error');
+  } finally {
+    if (showLoader) {
+      hideLoadingScreen();
+    }
   }
 }
 
@@ -675,9 +701,9 @@ function handleLogin(e) {
 function setUser(user) {
   state.user = user;
   sessionStorage.setItem('ims_user', JSON.stringify(user));
-  document.getElementById('login-overlay').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-  
+
+  showLoadingScreen(`Welcome, ${user.name}! Authenticating & Initializing Inventory...`);
+
   if (document.getElementById('user-chip-name')) {
     document.getElementById('user-chip-name').textContent = user.name;
     document.getElementById('user-chip-avatar').textContent = user.name.charAt(0).toUpperCase();
@@ -688,10 +714,19 @@ function setUser(user) {
     document.getElementById('menu-avatar').textContent = user.name.charAt(0).toUpperCase();
   }
 
-  navigateTo('dashboard');
-  loadAll().then(() => renderView(state.currentView)).catch(err => {
-    console.error('Data load error after login:', err);
-  });
+  setTimeout(() => {
+    document.getElementById('login-overlay').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    navigateTo('dashboard');
+
+    loadAll(false).then(() => {
+      renderView(state.currentView);
+      hideLoadingScreen();
+    }).catch(err => {
+      console.error('Data load error after login:', err);
+      hideLoadingScreen();
+    });
+  }, 600);
 }
 
 function toggleOptionsMenu(e) {

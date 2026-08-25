@@ -33,6 +33,59 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
+       INDUSTRIAL LOGISTICS LOADING OVERLAY
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="app-loading-screen" class="loading-overlay hidden" aria-live="polite">
+    <div class="loading-container">
+      
+      <!-- Flying Goose Birds Sky Scene -->
+      <div class="sky-scene">
+        <svg class="flying-goose goose-1" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="1.8" stroke-linecap="round"><path d="M2 14c4-4 8-1 10-6 2 5 6 2 10 6M12 8v5"/></svg>
+        <svg class="flying-goose goose-2" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="1.8" stroke-linecap="round"><path d="M2 14c4-4 8-1 10-6 2 5 6 2 10 6M12 8v5"/></svg>
+        <svg class="flying-goose goose-3" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="1.8" stroke-linecap="round"><path d="M2 14c4-4 8-1 10-6 2 5 6 2 10 6M12 8v5"/></svg>
+      </div>
+
+      <!-- Central Industrial Warehouse Stage -->
+      <div class="warehouse-stage">
+        
+        <!-- Stacked Cargo Boxes Group -->
+        <div class="stacked-boxes">
+          <!-- Base Cargo Box Left -->
+          <svg class="cargo-box box-base-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 7v10"/><path d="M12 12v10"/><path d="M22 7v10"/><path d="M7 4.5l10 5"/></svg>
+          <!-- Base Cargo Box Right -->
+          <svg class="cargo-box box-base-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 7v10"/><path d="M12 12v10"/><path d="M22 7v10"/><path d="M7 4.5l10 5"/></svg>
+          <!-- Top Cargo Box (Dropping & Stacking) -->
+          <svg class="cargo-box box-top" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 7v10"/><path d="M12 12v10"/><path d="M22 7v10"/><path d="M7 4.5l10 5"/></svg>
+        </div>
+
+        <!-- Moving Forklift Truck -->
+        <div class="forklift-anim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 17h12v-5l-3-4H8v4H3v5z"/>
+            <path d="M8 8V4h6l2 4"/>
+            <line x1="17" y1="2" x2="17" y2="20"/>
+            <path d="M17 18h5v-3"/>
+            <path d="M17 14h4"/>
+            <circle cx="6" cy="18" r="2"/>
+            <circle cx="14" cy="18" r="2"/>
+          </svg>
+        </div>
+
+        <!-- Ground Platform Line -->
+        <div class="warehouse-ground"></div>
+      </div>
+
+      <!-- Status & Loading Label -->
+      <div class="loading-label-wrap">
+        <div class="loading-brand-title">GOOSE INDUSTRIAL SYSTEMS</div>
+        <div class="loading-status-text" id="loading-status-text">Synchronizing Warehouse Database...</div>
+        <div class="loading-progress-bar"><div class="loading-progress-fill"></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
        LOGIN OVERLAY
   ═══════════════════════════════════════════════════════════ -->
   <div id="login-overlay" class="login-overlay">

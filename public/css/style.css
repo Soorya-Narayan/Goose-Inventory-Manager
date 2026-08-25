@@ -172,6 +172,259 @@ textarea {
   font-size: inherit;
 }
 
+/* ─── Industrial Logistics Loading Overlay ──────────────────────────────── */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: var(--bg-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.loading-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 2rem;
+}
+
+/* 1. Flying Goose Birds Sky Scene */
+.sky-scene {
+  position: relative;
+  width: 100%;
+  height: 50px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.flying-goose {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  filter: drop-shadow(0 0 6px rgba(0, 198, 255, 0.4));
+  animation: flyAcross 3.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.goose-1 {
+  top: 8px;
+  left: -40px;
+  animation-delay: 0s;
+}
+
+.goose-2 {
+  top: 22px;
+  left: -40px;
+  width: 22px;
+  height: 22px;
+  animation-delay: 1.1s;
+}
+
+.goose-3 {
+  top: 4px;
+  left: -40px;
+  width: 26px;
+  height: 26px;
+  animation-delay: 2.1s;
+}
+
+@keyframes flyAcross {
+  0% {
+    transform: translateX(0) translateY(0) scale(0.9);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(200px) translateY(-10px) scale(1.05);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(440px) translateY(4px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* 2. Warehouse Stage */
+.warehouse-stage {
+  position: relative;
+  width: 260px;
+  height: 110px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* Stacked Cargo Boxes */
+.stacked-boxes {
+  position: absolute;
+  left: 25px;
+  bottom: 6px;
+  width: 85px;
+  height: 85px;
+}
+
+.cargo-box {
+  position: absolute;
+  color: var(--goose);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+}
+
+.box-base-left {
+  width: 40px;
+  height: 40px;
+  left: 0;
+  bottom: 0;
+  color: var(--text-secondary);
+}
+
+.box-base-right {
+  width: 40px;
+  height: 40px;
+  right: 0;
+  bottom: 0;
+  color: var(--text-tertiary);
+}
+
+.box-top {
+  width: 42px;
+  height: 42px;
+  left: 20px;
+  bottom: 34px;
+  color: var(--goose);
+  animation: boxStackDrop 2.2s ease-in-out infinite;
+}
+
+@keyframes boxStackDrop {
+  0%, 100% {
+    transform: translateY(-22px) rotate(-6deg);
+    opacity: 0.2;
+  }
+  35%, 75% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Forklift Drive Animation */
+.forklift-anim {
+  position: absolute;
+  bottom: 6px;
+  right: 15px;
+  width: 50px;
+  height: 50px;
+  animation: forkliftDrive 3.4s ease-in-out infinite;
+}
+
+.forklift-anim svg {
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes forkliftDrive {
+  0%, 100% {
+    transform: translateX(35px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-35px);
+  }
+  75% {
+    transform: translateX(10px);
+    opacity: 1;
+  }
+  90% {
+    opacity: 0;
+  }
+}
+
+/* Ground Line */
+.warehouse-ground {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--goose), transparent);
+  border-radius: 2px;
+  margin-bottom: 4px;
+  opacity: 0.6;
+}
+
+/* 3. Status Labels & Progress Line */
+.loading-label-wrap {
+  text-align: center;
+  margin-top: 1.25rem;
+  width: 100%;
+}
+
+.loading-brand-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--goose);
+  letter-spacing: 0.14em;
+  margin-bottom: 0.35rem;
+}
+
+.loading-status-text {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.loading-progress-bar {
+  width: 100%;
+  max-width: 260px;
+  height: 3px;
+  background: var(--bg-elevated);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 0 auto;
+  position: relative;
+}
+
+.loading-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  background: var(--goose-gradient);
+  border-radius: 3px;
+  animation: progressMove 1.6s ease-in-out infinite;
+}
+
+@keyframes progressMove {
+  0% {
+    left: -40%;
+    width: 30%;
+  }
+  50% {
+    width: 60%;
+  }
+  100% {
+    left: 100%;
+    width: 30%;
+  }
+}
+
 /* ─── Login Screen ───────────────────────────────────────────────────────── */
 .login-overlay {
   position: fixed;
