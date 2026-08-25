@@ -1158,13 +1158,7 @@ function renderOverviewStockChart(inStock, lowStock, outOfStock) {
           bodyFont: { size: 11 },
           callbacks: {
             title: (items) => items[0]?.label || '',
-            label: (context) => {
-              const total = (inStock + lowStock + outOfStock) || 1;
-              const count = context.raw || 0;
-              const pct = ((count / total) * 100).toFixed(1);
-              return ` ${count} items (${pct}%)`;
-            },
-            afterLabel: () => ' ➔ Click to filter Store Inventory'
+            label: (context) => ` ${context.raw}`
           }
         }
       }
