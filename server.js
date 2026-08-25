@@ -403,11 +403,28 @@ app.delete('/api/transactions', (req, res) => {
 
 
 // ─── Server Start ────────────────────────────────────────────────────────────
+const os = require('os');
+function getLocalIpAddress() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
 app.listen(PORT, '0.0.0.0', () => {
+  const localIp = getLocalIpAddress();
   console.log(`
   ═════════════════════════════════════════════════════════════════════
-   🏭 StoreIMS — Digital Inventory System
-   Running at http://localhost:${PORT}
+   🏭 Goose Store Inventory System — Online
+   
+   💻 Local Access (This PC):    http://localhost:${PORT}
+   📱 Office Wi-Fi (Employees):  http://${localIp}:${PORT}
+   
    Manager PIN: 1234
    Hardware Ready: Helett HT20 Scanner & Tej C15 Label Printer
   ═════════════════════════════════════════════════════════════════════
