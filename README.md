@@ -144,5 +144,5 @@ Quick options menu for updating manager credentials, toggling Dark/Light themes,
 
 ## 📄 License & Credits
 
-Developed for **Goose Industrial Systems**.  
+Developed for **Goose Industrial Solutions Pvt Ltd**.  
 Built with Node.js, Express, JavaScript, and Vanilla CSS.
