@@ -1955,21 +1955,53 @@ function toggleTheme() {
 
 // ─── Modal Openers for Requesting ───────────────────────────────────────────
 function openRequestModal(itemId) {
-  const item = state.items.find(i => i.id === itemId);
-  if (!item) return;
-  state.requestingItemId = itemId;
+  const items = state.items || [];
+  if (items.length === 0) {
+    showToast('No materials currently in inventory to request', 'warning');
+    return;
+  }
+
+  const selectedItem = itemId ? items.find(i => i.id === itemId) : items[0];
+  state.requestingItemId = selectedItem ? selectedItem.id : items[0].id;
+
+  const selectOptions = items.map(i => `
+    <option value="${i.id}" ${i.id === state.requestingItemId ? 'selected' : ''}>
+      ${escHtml(i.name)} (${escHtml(i.sku)}) — Stock: ${i.quantity} ${i.unit} [Shelf: ${escHtml(i.location || 'R-A1')}]
+    </option>
+  `).join('');
 
   document.getElementById('request-item-info').innerHTML = `
-    <strong>${escHtml(item.name)}</strong> (${escHtml(item.sku)})
-    <div style="font-size:0.75rem;color:var(--text-tertiary)">Stock: ${item.quantity} ${item.unit} | Location: ${item.location}</div>
+    <div class="field-group" style="margin-bottom:0.25rem">
+      <label class="field-label">SELECT MATERIAL TO REQUEST <span class="req">*</span></label>
+      <select id="req-item-select" class="field-input" onchange="onRequestItemSelectChange(this.value)" style="font-weight:600">
+        ${selectOptions}
+      </select>
+    </div>
+    <div id="request-item-stock-details" style="font-size:0.75rem;color:var(--text-tertiary);margin-top:0.35rem">
+      Available Stock: ${selectedItem?.quantity || 0} ${selectedItem?.unit || 'pcs'} | Location: ${selectedItem?.location || '-'}
+    </div>
   `;
-  document.getElementById('req-unit-label').textContent = item.unit;
+
+  document.getElementById('req-unit-label').textContent = selectedItem?.unit || 'pcs';
   document.getElementById('form-request').reset();
 
-  if (state.user?.role === 'engineer') {
-    document.getElementById('req-engineer').value = state.user.name;
+  if (state.user?.name) {
+    const engInput = document.getElementById('req-engineer');
+    if (engInput) engInput.value = state.user.name;
   }
+
   document.getElementById('modal-request-overlay').classList.remove('hidden');
+}
+
+function onRequestItemSelectChange(selectedId) {
+  const item = state.items.find(i => i.id === selectedId);
+  if (!item) return;
+  state.requestingItemId = selectedId;
+  document.getElementById('req-unit-label').textContent = item.unit || 'pcs';
+  const details = document.getElementById('request-item-stock-details');
+  if (details) {
+    details.textContent = `Available Stock: ${item.quantity} ${item.unit} | Location: ${item.location || '-'}`;
+  }
 }
 
 function closeRequestModal(e) {
@@ -1979,8 +2011,13 @@ function closeRequestModal(e) {
 
 async function handleRequestSubmit(e) {
   e.preventDefault();
-  const item = state.items.find(i => i.id === state.requestingItemId);
-  if (!item) return;
+  const select = document.getElementById('req-item-select');
+  const selectedId = select ? select.value : state.requestingItemId;
+  const item = state.items.find(i => i.id === selectedId);
+  if (!item) {
+    showToast('Please select a valid material to request', 'error');
+    return;
+  }
 
   const data = {
     itemId: item.id,
@@ -1989,14 +2026,18 @@ async function handleRequestSubmit(e) {
     zone: item.zone,
     quantityRequested: parseInt(document.getElementById('req-quantity').value) || 1,
     unit: item.unit,
-    engineerName: document.getElementById('req-engineer').value.trim(),
+    engineerName: document.getElementById('req-engineer').value.trim() || state.user?.name || 'Engineer',
     projectName: document.getElementById('req-project').value.trim(),
     purpose: document.getElementById('req-purpose').value.trim(),
   };
 
   try {
-    await api.post('/api/requests', data);
-    showToast('Material request submitted', 'success');
+    const res = await api.post('/api/requests', data);
+    if (res && res.error) {
+      showToast(res.error, 'error');
+      return;
+    }
+    showToast('Material request submitted successfully!', 'success');
     document.getElementById('modal-request-overlay').classList.add('hidden');
     await loadAll();
     renderView('requests');
