@@ -704,6 +704,8 @@ function setUser(user) {
 
   showLoadingScreen(`Welcome, ${user.name}! Authenticating & Initializing Inventory...`);
 
+  const isManager = user.role === 'manager';
+
   if (document.getElementById('user-chip-name')) {
     document.getElementById('user-chip-name').textContent = user.name;
     document.getElementById('user-chip-avatar').textContent = user.name.charAt(0).toUpperCase();
@@ -713,6 +715,12 @@ function setUser(user) {
     document.getElementById('menu-user-role').textContent = user.role.toUpperCase();
     document.getElementById('menu-avatar').textContent = user.name.charAt(0).toUpperCase();
   }
+
+  // Restrict Settings and Integration menu items to Store Manager only
+  const settingsBtn = document.getElementById('menu-item-settings');
+  const zohoBtn = document.getElementById('menu-item-zoho');
+  if (settingsBtn) settingsBtn.style.display = isManager ? 'flex' : 'none';
+  if (zohoBtn) zohoBtn.style.display = isManager ? 'flex' : 'none';
 
   setTimeout(() => {
     document.getElementById('login-overlay').classList.add('hidden');
@@ -1958,6 +1966,10 @@ function closeLightboxModal(e) {
 
 // ─── Zoho Books Integration Handlers ─────────────────────────────────────────
 function openZohoModal() {
+  if (state.user?.role !== 'manager') {
+    showToast('Access Denied: Integration settings are restricted to Store Manager only', 'error');
+    return;
+  }
   document.getElementById('options-menu')?.classList.add('hidden');
   document.getElementById('modal-zoho-overlay')?.classList.remove('hidden');
 }
@@ -2035,6 +2047,10 @@ async function handleZohoApiSync(e) {
 
 // ─── Settings Modal Handlers ─────────────────────────────────────────────────
 function openSettingsModal() {
+  if (state.user?.role !== 'manager') {
+    showToast('Access Denied: Settings & Manager PIN configuration are restricted to Store Manager only', 'error');
+    return;
+  }
   document.getElementById('options-menu')?.classList.add('hidden');
   document.getElementById('modal-settings-overlay')?.classList.remove('hidden');
 }
@@ -2046,6 +2062,10 @@ function closeSettingsModal(e) {
 
 function handleSaveSettings(e) {
   e.preventDefault();
+  if (state.user?.role !== 'manager') {
+    showToast('Access Denied: Only Store Manager can change PIN or settings', 'error');
+    return;
+  }
   const newPin = document.getElementById('settings-manager-pin').value.trim();
   if (newPin) {
     state.managerPin = newPin;
