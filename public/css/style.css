@@ -109,6 +109,74 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ─── Minimal Warehouse & Logistics Background Silhouettes ──────────────── */
+.bg-silhouettes-wrap {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bg-silhouette {
+  position: absolute;
+  color: var(--goose);
+  opacity: 0.038;
+  transition: opacity var(--fast);
+}
+
+[data-theme="light"] .bg-silhouette {
+  opacity: 0.055;
+  color: #0072ff;
+}
+
+.silhouette-forklift-1 {
+  top: 5%;
+  right: 6%;
+  width: 150px;
+  height: 150px;
+  transform: rotate(-6deg);
+}
+
+.silhouette-racks-1 {
+  top: 7%;
+  left: 5%;
+  width: 140px;
+  height: 140px;
+}
+
+.silhouette-box-1 {
+  bottom: 8%;
+  left: 6%;
+  width: 125px;
+  height: 125px;
+  transform: rotate(8deg);
+}
+
+.silhouette-pallet-1 {
+  bottom: 8%;
+  right: 5%;
+  width: 135px;
+  height: 135px;
+  transform: rotate(-6deg);
+}
+
+.silhouette-barcode-1 {
+  top: 44%;
+  left: 2%;
+  width: 100px;
+  height: 100px;
+  transform: rotate(-12deg);
+}
+
+.silhouette-container-1 {
+  top: 46%;
+  right: 2%;
+  width: 125px;
+  height: 125px;
+  transform: rotate(10deg);
+}
+
 a {
   color: inherit;
   text-decoration: none;
