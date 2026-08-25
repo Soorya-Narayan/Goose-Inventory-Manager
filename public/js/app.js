@@ -930,9 +930,9 @@ function renderDashboard() {
   const alertItems = items.filter(i => getStockStatus(i) !== 'ok');
 
   const totalCount = items.length || 1;
-  const outStockCount = items.filter(i => (i.quantity || 0) === 0).length;
-  const lowStockCount = items.filter(i => (i.quantity || 0) > 0 && (i.quantity || 0) <= (i.minStock || 0)).length;
-  const inStockCount = Math.max(0, items.length - outStockCount - lowStockCount);
+  const outStockCount = items.filter(i => getStockStatus(i) === 'out').length;
+  const lowStockCount = items.filter(i => getStockStatus(i) === 'low').length;
+  const inStockCount = items.filter(i => getStockStatus(i) === 'ok').length;
 
   const inStockPct = ((inStockCount / totalCount) * 100).toFixed(1);
   const lowStockPct = ((lowStockCount / totalCount) * 100).toFixed(1);
@@ -1841,8 +1841,11 @@ function stockTag(item) {
 }
 
 function getStockStatus(item) {
-  if (item.quantity === 0) return 'out';
-  if (item.minStock > 0 && item.quantity <= item.minStock) return 'low';
+  if (!item) return 'ok';
+  const qty = Number(item.quantity) || 0;
+  const min = Number(item.minStock) || 0;
+  if (qty <= 0) return 'out';
+  if (min > 0 && qty <= min) return 'low';
   return 'ok';
 }
 
