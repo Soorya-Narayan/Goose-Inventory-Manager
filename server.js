@@ -15,6 +15,44 @@ if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 app.use(cors());
+
+// ─── Security Headers Middleware (MDN HTTP Observatory A+ Compliance) ───────
+app.use((req, res, next) => {
+  // 1. Content Security Policy (CSP)
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src 'self' https://fonts.gstatic.com data:; " +
+    "img-src 'self' data: blob: https:; " +
+    "connect-src 'self' https://zohoapis.in https://zohoapis.com https://zohoapis.eu; " +
+    "frame-ancestors 'none'; " +
+    "object-src 'none'; " +
+    "base-uri 'self';"
+  );
+
+  // 2. Strict-Transport-Security (HSTS)
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+
+  // 3. Referrer Policy
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // 4. X-Content-Type-Options
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+
+  // 5. X-Frame-Options
+  res.setHeader('X-Frame-Options', 'DENY');
+
+  // 6. X-XSS-Protection
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+
+  // 7. Permissions Policy
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(), payment=()');
+
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
