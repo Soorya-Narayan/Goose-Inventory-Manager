@@ -1020,7 +1020,7 @@ function renderDashboard() {
     <div class="page-hdr">
       <div>
         <h1 class="page-title">Store Overview</h1>
-        <p class="page-subtitle">${new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' })} &middot; Goose Industrial Systems</p>
+        <p class="page-subtitle">${new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' })} &middot; Goose Industrial Solutions Pvt Ltd</p>
       </div>
       <div style="display:flex;gap:0.625rem;align-items:center">
         <button class="btn btn-ghost" onclick="loadAll().then(()=>renderView('dashboard'))" style="display:inline-flex;align-items:center;gap:0.4rem">
@@ -1377,7 +1377,7 @@ function exportInventoryPDF() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(255, 255, 255);
-    doc.text('GOOSE INDUSTRIAL SYSTEMS', 14, 11);
+    doc.text('GOOSE INDUSTRIAL SOLUTIONS PVT LTD', 14, 11);
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
