@@ -597,6 +597,18 @@
             <label class="field-label">COMPANY / ORGANIZATION NAME</label>
             <input type="text" id="settings-store-name" class="field-input" value="Goose Industrial Systems" required />
           </div>
+
+          <!-- Zoho Books Enable / Disable Setting -->
+          <div class="field-group" style="margin-bottom:1.25rem;background:var(--bg-elevated);padding:0.875rem 1rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:1rem">
+            <div>
+              <label class="field-label" style="margin-bottom:0.15rem">ZOHO BOOKS INTEGRATION</label>
+              <div style="font-size:0.75rem;color:var(--text-tertiary)">Enable or disable Zoho Books import and live API sync menu options</div>
+            </div>
+            <button type="button" id="btn-toggle-zoho-setting" class="btn btn-primary btn-sm" onclick="toggleZohoIntegrationSetting()" style="min-width:95px;justify-content:center;flex-shrink:0">
+              Enabled
+            </button>
+          </div>
+
           <div class="field-group" style="margin-bottom:0">
             <label class="field-label">DEFAULT REORDER THRESHOLD</label>
             <input type="number" id="settings-default-minstock" class="field-input mono" value="1" min="0" required />

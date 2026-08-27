@@ -14,6 +14,7 @@ const state = {
   requestingItemId: null,
   pendingDeleteId: null,
   printItemId: null,
+  zohoEnabled: localStorage.getItem('ims_zoho_enabled') !== 'false',
   // Bluetooth printer
   printerDevice: null,
   printerConnected: false,
@@ -698,6 +699,28 @@ function handleLogin(e) {
   }
 }
 
+function applyZohoVisibility() {
+  const isManager = state.user?.role === 'manager';
+  const zohoBtn = document.getElementById('menu-item-zoho');
+  if (zohoBtn) {
+    zohoBtn.style.display = (isManager && state.zohoEnabled) ? 'flex' : 'none';
+  }
+
+  const toggleBtn = document.getElementById('btn-toggle-zoho-setting');
+  if (toggleBtn) {
+    toggleBtn.textContent = state.zohoEnabled ? 'Enabled' : 'Disabled';
+    toggleBtn.className = state.zohoEnabled ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+    toggleBtn.style.color = state.zohoEnabled ? '' : 'var(--text-tertiary)';
+  }
+}
+
+function toggleZohoIntegrationSetting() {
+  state.zohoEnabled = !state.zohoEnabled;
+  localStorage.setItem('ims_zoho_enabled', state.zohoEnabled);
+  applyZohoVisibility();
+  showToast(`Zoho Books Integration ${state.zohoEnabled ? 'enabled' : 'disabled'}`, 'info');
+}
+
 function setUser(user) {
   state.user = user;
   sessionStorage.setItem('ims_user', JSON.stringify(user));
@@ -716,11 +739,10 @@ function setUser(user) {
     document.getElementById('menu-avatar').textContent = user.name.charAt(0).toUpperCase();
   }
 
-  // Restrict Settings and Integration menu items to Store Manager only
+  // Restrict Settings to Manager, and Zoho to Manager + Enabled state
   const settingsBtn = document.getElementById('menu-item-settings');
-  const zohoBtn = document.getElementById('menu-item-zoho');
   if (settingsBtn) settingsBtn.style.display = isManager ? 'flex' : 'none';
-  if (zohoBtn) zohoBtn.style.display = isManager ? 'flex' : 'none';
+  applyZohoVisibility();
 
   setTimeout(() => {
     document.getElementById('login-overlay').classList.add('hidden');
@@ -2111,6 +2133,10 @@ function closeLightboxModal(e) {
 
 // ─── Zoho Books Integration Handlers ─────────────────────────────────────────
 function openZohoModal() {
+  if (!state.zohoEnabled) {
+    showToast('Zoho Books Integration is disabled in System Settings', 'warning');
+    return;
+  }
   if (state.user?.role !== 'manager') {
     showToast('Access Denied: Integration settings are restricted to Store Manager only', 'error');
     return;
@@ -2196,6 +2222,7 @@ function openSettingsModal() {
     showToast('Access Denied: Settings & Manager PIN configuration are restricted to Store Manager only', 'error');
     return;
   }
+  applyZohoVisibility();
   document.getElementById('options-menu')?.classList.add('hidden');
   document.getElementById('modal-settings-overlay')?.classList.remove('hidden');
 }
