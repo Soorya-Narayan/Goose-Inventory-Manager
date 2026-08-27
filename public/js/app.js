@@ -1597,17 +1597,53 @@ function filterAndRenderInventoryRows() {
 // ═══════════════════════════════════════════════════════════════════════════════
 function renderRequests() {
   const isManager = state.user?.role === 'manager';
-  const reqs = state.requests;
+  const reqs = state.requests || [];
+  const isMobile = window.innerWidth <= 640;
 
-  document.getElementById('view-requests').innerHTML = `
-    <div class="page-hdr">
-      <div>
-        <h1 class="page-title">Material Requests</h1>
-        <p class="page-subtitle">${isManager ? 'Review & approve engineer requests' : 'Your submitted material requests'}</p>
+  let contentHtml = '';
+
+  if (reqs.length === 0) {
+    contentHtml = `
+      <div style="text-align:center;padding:3.5rem 1rem;color:var(--text-tertiary)">
+        <div style="font-weight:700;font-size:1.05rem;color:var(--text-primary);margin-bottom:0.35rem">No Material Requests Submitted</div>
+        <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1.25rem">Engineers can request items from the inventory at any time.</div>
+        <button class="btn btn-primary btn-sm" onclick="openRequestModal()" style="margin:0 auto">+ Request Material</button>
       </div>
-    </div>
-
-    <div class="card">
+    `;
+  } else if (isMobile) {
+    // Mobile Touch Cards
+    contentHtml = `
+      <div style="display:flex;flex-direction:column;gap:0.75rem;padding:0.75rem">
+        ${reqs.map(r => `
+          <div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.875rem;display:flex;flex-direction:column;gap:0.5rem">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
+              <div>
+                <strong style="font-size:0.95rem;color:var(--text-primary);display:block;margin-bottom:0.15rem">${escHtml(r.itemName)}</strong>
+                <span style="font-size:0.72rem;color:var(--text-tertiary)">Project: ${escHtml(r.projectName)}</span>
+              </div>
+              ${reqStatusTag(r.status)}
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;background:var(--bg-surface);padding:0.4rem 0.625rem;border-radius:var(--radius);border:1px solid var(--border-muted);margin:0.25rem 0">
+              <span style="color:var(--text-tertiary)">Requested Qty:</span>
+              <strong style="font-family:var(--font-mono);color:var(--goose);font-size:0.9rem">${r.quantityRequested} ${r.unit}</strong>
+            </div>
+            <div style="font-size:0.72rem;color:var(--text-tertiary);display:flex;justify-content:space-between;align-items:center">
+              <span>Eng: <strong>${escHtml(r.engineerName)}</strong></span>
+              <span>${new Date(r.requestedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
+            </div>
+            ${isManager && r.status === 'pending' ? `
+              <div style="display:flex;gap:0.5rem;margin-top:0.4rem">
+                <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'approved')">Approve</button>
+                <button class="btn btn-danger btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
+              </div>
+            ` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } else {
+    // Desktop Table
+    contentHtml = `
       <div class="table-wrap">
         <table>
           <thead>
@@ -1622,7 +1658,7 @@ function renderRequests() {
             </tr>
           </thead>
           <tbody>
-            ${reqs.length === 0 ? `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-tertiary)">No requests submitted yet</td></tr>` : reqs.map(r => `
+            ${reqs.map(r => `
               <tr>
                 <td style="font-size:0.75rem;color:var(--text-tertiary)">${new Date(r.requestedAt).toLocaleString('en-IN')}</td>
                 <td><strong>${escHtml(r.engineerName)}</strong></td>
@@ -1643,6 +1679,22 @@ function renderRequests() {
           </tbody>
         </table>
       </div>
+    `;
+  }
+
+  document.getElementById('view-requests').innerHTML = `
+    <div class="page-hdr">
+      <div>
+        <h1 class="page-title">Material Requests</h1>
+        <p class="page-subtitle">${isManager ? 'Review & approve engineer requests' : 'Your submitted material requests'}</p>
+      </div>
+      <div>
+        <button class="btn btn-primary" onclick="openRequestModal()">+ Request Material</button>
+      </div>
+    </div>
+
+    <div class="card">
+      ${contentHtml}
     </div>
   `;
 }

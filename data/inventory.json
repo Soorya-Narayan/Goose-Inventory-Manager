@@ -76018,25 +76018,6 @@
       "imageUrl": "/uploads/item_1787302448416_0a54e1c5.png",
       "addedAt": "2026-08-21T08:45:53.610Z",
       "updatedAt": "2026-08-21T08:54:10.136Z"
-    },
-    {
-      "id": "GIS-2608-5992",
-      "name": "Bag",
-      "sku": "GIS-2608-5992",
-      "zone": "consumables",
-      "category": "goods",
-      "quantity": 0,
-      "unit": "pcs",
-      "minStock": 0,
-      "location": "A1",
-      "barcode": "GIS-2608-5992",
-      "rate": 0,
-      "purchaseRate": 0,
-      "hsn": "",
-      "notes": "",
-      "imageUrl": "",
-      "addedAt": "2026-08-24T11:37:44.035Z",
-      "updatedAt": "2026-08-24T11:39:57.674Z"
     }
   ],
   "requests": [
