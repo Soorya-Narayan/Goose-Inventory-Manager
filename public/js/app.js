@@ -14,7 +14,7 @@ const state = {
   requestingItemId: null,
   pendingDeleteId: null,
   printItemId: null,
-  zohoEnabled: localStorage.getItem('ims_zoho_enabled') !== 'false',
+  zohoEnabled: localStorage.getItem('ims_zoho_enabled') === 'true',
   // Bluetooth printer
   printerDevice: null,
   printerConnected: false,
