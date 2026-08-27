@@ -22,10 +22,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ─── Data Helpers ───────────────────────────────────────────────────────────
 function readData() {
   try {
-    if (!fs.existsSync(DATA_FILE)) return { items: [], requests: [] };
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+    if (!fs.existsSync(DATA_FILE)) return { items: [], requests: [], transactions: [] };
+    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+    const data = JSON.parse(raw) || {};
+    if (!Array.isArray(data.items)) data.items = [];
+    if (!Array.isArray(data.requests)) data.requests = [];
+    if (!Array.isArray(data.transactions)) data.transactions = [];
+    return data;
   } catch (e) {
-    return { items: [], requests: [] };
+    return { items: [], requests: [], transactions: [] };
   }
 }
 

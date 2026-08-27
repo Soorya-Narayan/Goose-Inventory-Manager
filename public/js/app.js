@@ -687,7 +687,7 @@ function handleLogin(e) {
 
   if (isManager) {
     const pin = document.getElementById('manager-pin').value;
-    const requiredPin = state.managerPin || '1234';
+    const requiredPin = localStorage.getItem('ims_manager_pin') || state.managerPin || '1234';
     if (pin !== requiredPin) {
       errorEl.classList.remove('hidden');
       return;
@@ -1328,16 +1328,18 @@ function exportInventoryCSV() {
     ].join(',');
   });
 
-  const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows].join('\n');
-  const encodedUri = encodeURI(csvContent);
+  const csvString = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
 
   const link = document.createElement('a');
   const dateStr = new Date().toISOString().split('T')[0];
-  link.setAttribute('href', encodedUri);
-  link.setAttribute('download', `Goose_Store_Inventory_${dateStr}.csv`);
+  link.href = url;
+  link.download = `Goose_Store_Inventory_${dateStr}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 
   showToast(`Exported ${items.length} materials to CSV spreadsheet!`, 'success');
 }
@@ -2223,6 +2225,10 @@ function openSettingsModal() {
     return;
   }
   applyZohoVisibility();
+  const currentPin = localStorage.getItem('ims_manager_pin') || state.managerPin || '1234';
+  const pinInput = document.getElementById('settings-manager-pin');
+  if (pinInput) pinInput.value = currentPin;
+
   document.getElementById('options-menu')?.classList.add('hidden');
   document.getElementById('modal-settings-overlay')?.classList.remove('hidden');
 }
@@ -2241,6 +2247,7 @@ function handleSaveSettings(e) {
   const newPin = document.getElementById('settings-manager-pin').value.trim();
   if (newPin) {
     state.managerPin = newPin;
+    localStorage.setItem('ims_manager_pin', newPin);
   }
   showToast('Settings saved successfully', 'success');
   closeSettingsModal();
