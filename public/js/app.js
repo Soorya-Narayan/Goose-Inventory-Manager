@@ -2360,12 +2360,8 @@ function showToast(msg, type = 'info') {
   setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
-function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
-  const next = current === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  
-  const isLight = next === 'light';
+function applyThemeUI(theme) {
+  const isLight = theme === 'light';
   const moonIcon = document.getElementById('menu-icon-moon');
   const sunIcon = document.getElementById('menu-icon-sun');
   if (moonIcon) moonIcon.classList.toggle('hidden', isLight);
@@ -2373,6 +2369,24 @@ function toggleTheme() {
   
   const menuLabel = document.getElementById('menu-theme-label');
   if (menuLabel) menuLabel.textContent = isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode';
+
+  const metaTheme = document.getElementById('meta-theme-color');
+  if (metaTheme) metaTheme.setAttribute('content', isLight ? '#f8fafc' : '#090d16');
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('ims_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  applyThemeUI(savedTheme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('ims_theme', next);
+  applyThemeUI(next);
+  showToast(`Switched to ${next === 'light' ? 'Light' : 'Dark'} Mode`, 'info');
 }
 
 // ─── Material Row counter ─────────────────────────────────────────────────────
@@ -2772,8 +2786,10 @@ function handleSaveSettings(e) {
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   const saved = sessionStorage.getItem('ims_user');
   if (saved) {
     try { setUser(JSON.parse(saved)); return; } catch {}
   }
+  hideLoadingScreen();
 });
