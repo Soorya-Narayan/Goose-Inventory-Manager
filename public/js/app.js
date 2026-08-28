@@ -1748,14 +1748,18 @@ function renderRequests() {
                 ${isManager ? `
                   <td style="white-space:nowrap">
                     ${r.status === 'pending' ? `
-                      <button class="btn btn-primary btn-sm" onclick="processRequest('${r.id}', 'approved')">Approve</button>
-                      <button class="btn btn-danger btn-sm" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
+                      <div style="display:flex;gap:0.5rem;align-items:center">
+                        <button class="btn btn-primary btn-sm" onclick="processRequest('${r.id}', 'approved')">Approve</button>
+                        <button class="btn btn-danger btn-sm" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
+                      </div>
                     ` : r.status === 'approved' ? `
-                      <button class="btn btn-primary btn-sm" style="gap:0.3rem" onclick="openChecklistModal('${r.id}')" title="Open Issue Checklist">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-                        Issue
-                      </button>
-                      <button class="btn btn-ghost btn-sm" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>
+                      <div style="display:flex;gap:0.5rem;align-items:center">
+                        <button class="btn btn-primary btn-sm" style="gap:0.3rem" onclick="openChecklistModal('${r.id}')" title="Open Issue Checklist">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                          Issue
+                        </button>
+                        <button class="btn btn-ghost btn-sm" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>
+                      </div>
                     ` : r.status === 'issued' ? `
                       <button class="btn btn-ghost btn-sm" style="gap:0.3rem;opacity:0.6" onclick="openChecklistModal('${r.id}', true)" title="View Issue Record">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
@@ -1873,7 +1877,7 @@ function renderChecklistRows(readOnly = false) {
         <!-- Label -->
         <div style="flex:1;min-width:0">
           <div style="font-size:0.82rem;font-weight:600;color:${chk ? 'var(--text-secondary)' : 'var(--text-primary)'};
-                      ${chk ? 'text-decoration:line-through;' : ''}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                      overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
             ${escHtml(c.itemName)}
           </div>
           <div style="font-size:0.68rem;color:var(--text-tertiary);font-family:var(--font-mono)">${escHtml(c.itemSku)}</div>
