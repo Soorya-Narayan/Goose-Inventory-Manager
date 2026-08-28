@@ -2186,21 +2186,38 @@ function renderPickerGrid() {
   }
 
   grid.innerHTML = items.map(item => {
+    const inStock = (item.quantity || 0) > 0;
+
+    // Card border/background based on stock
+    const cardBorder  = inStock ? '1px solid rgba(34,197,94,0.35)'  : '1px solid rgba(239,68,68,0.35)';
+    const cardBg      = inStock ? 'rgba(34,197,94,0.06)'            : 'rgba(239,68,68,0.06)';
+    const hoverBorder = inStock ? 'rgba(34,197,94,0.7)'             : 'rgba(239,68,68,0.6)';
+    const hoverShadow = inStock ? '0 0 0 2px rgba(34,197,94,0.15)'  : '0 0 0 2px rgba(239,68,68,0.12)';
+
+    // Stock badge
+    const badge = inStock
+      ? `<span style="font-size:0.62rem;font-weight:700;color:#16a34a;background:rgba(34,197,94,0.14);border:1px solid rgba(34,197,94,0.3);border-radius:3px;padding:0.1rem 0.35rem;letter-spacing:0.03em">IN STOCK</span>`
+      : `<span style="font-size:0.62rem;font-weight:700;color:#dc2626;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:3px;padding:0.1rem 0.35rem;letter-spacing:0.03em">OUT OF STOCK</span>`;
+
     const imgHtml = item.imageUrl
-      ? `<img src="${escHtml(item.imageUrl)}" style="width:100%;height:80px;object-fit:cover;border-radius:var(--radius) var(--radius) 0 0" />`
-      : `<div style="width:100%;height:80px;background:var(--bg-raised);border-radius:var(--radius) var(--radius) 0 0;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">
+      ? `<img src="${escHtml(item.imageUrl)}" style="width:100%;height:80px;object-fit:cover;border-radius:var(--radius) var(--radius) 0 0;${!inStock ? 'opacity:0.5;' : ''}" />`
+      : `<div style="width:100%;height:80px;background:var(--bg-raised);border-radius:var(--radius) var(--radius) 0 0;display:flex;align-items:center;justify-content:center;color:var(--text-muted);${!inStock ? 'opacity:0.5;' : ''}">
            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
          </div>`;
+
     return `
       <div onclick="selectPickerItem('${escHtml(item.id)}')"
-        style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius);cursor:pointer;overflow:hidden;transition:border-color 0.15s,box-shadow 0.15s"
-        onmouseenter="this.style.borderColor='var(--goose)';this.style.boxShadow='0 0 0 2px rgba(139,92,246,0.15)'"
-        onmouseleave="this.style.borderColor='var(--border-subtle)';this.style.boxShadow='none'">
+        style="background:${cardBg};border:${cardBorder};border-radius:var(--radius);cursor:pointer;overflow:hidden;transition:border-color 0.15s,box-shadow 0.15s;${!inStock ? 'opacity:0.75;' : ''}"
+        onmouseenter="this.style.borderColor='${hoverBorder}';this.style.boxShadow='${hoverShadow}'"
+        onmouseleave="this.style.borderColor='${inStock ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.35)'}';this.style.boxShadow='none'">
         ${imgHtml}
         <div style="padding:0.45rem 0.5rem">
           <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(item.name)}">${escHtml(item.name)}</div>
           <div style="font-size:0.68rem;font-family:var(--font-mono);color:var(--text-tertiary);margin-top:0.1rem">${escHtml(item.sku)}</div>
-          <div style="font-size:0.68rem;color:var(--text-secondary);margin-top:0.2rem">${item.quantity} ${item.unit} · ${escHtml(item.location || '')}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.3rem;gap:0.3rem">
+            <span style="font-size:0.68rem;color:var(--text-secondary)">${item.quantity} ${item.unit} · ${escHtml(item.location || '')}</span>
+            ${badge}
+          </div>
         </div>
       </div>`;
   }).join('');
