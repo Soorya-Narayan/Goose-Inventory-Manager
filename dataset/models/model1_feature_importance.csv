@@ -1,0 +1,13 @@
+Feature,Importance
+Hour,0.22452746800733928
+Return Conduct (mS/m),0.21531358413220228
+Supply Temp (°C),0.1573980045614131
+Return Temp (°C),0.1244767662723935
+Flow                                                (Liter/Hr),0.09545346119050176
+DayOfWeek,0.0643083208483913
+Temp_Difference,0.040660432660621505
+Step Status_Encoded,0.032770805932803015
+Selected Recipe_Encoded,0.028225538153619677
+Remaining Time (sec),0.0067712335590154795
+Pump Selected_Encoded,0.0053811385425408306
+Return Valve Status_Encoded,0.004713246139158292

@@ -1,0 +1,10 @@
+# .dockerignore
+venv/
+__pycache__/
+instance/database.db
+*.pyc
+*.pyo
+*.pyd
+.env
+.git
+.vscode/

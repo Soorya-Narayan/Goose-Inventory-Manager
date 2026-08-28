@@ -1,0 +1,39 @@
+====================================================================================================
+DATASET OVERVIEW
+====================================================================================================
+
+Total Rows: 69808
+Total Columns: 16
+
+Column Names:
+1. Name
+2. CktA
+3. Current User Login
+4. Sachin
+5. Unnamed: 4
+6. Unnamed: 5
+7. Unnamed: 6
+8. Unnamed: 7
+9. Unnamed: 8
+10. Unnamed: 9
+11. Unnamed: 10
+12. Unnamed: 11
+13. Unnamed: 12
+14. Unnamed: 13
+15. Unnamed: 14
+16. Unnamed: 15
+
+====================================================================================================
+SAMPLE DATA (First 10 rows):
+====================================================================================================
+                         Name                        CktA Current User Login       Sachin            Unnamed: 4                                                      Unnamed: 5        Unnamed: 6        Unnamed: 7             Unnamed: 8           Unnamed: 9             Unnamed: 10               Unnamed: 11           Unnamed: 12          Unnamed: 13    Unnamed: 14 Unnamed: 15
+0                       Start         2025-12-27 16:03:48          Log Cycle      5 - Sec                   NaN                                                             NaN               NaN               NaN                    NaN                  NaN                     NaN                       NaN                   NaN                  NaN            NaN         NaN
+1                         End  2025-12-31 17:03:48.449000                NaN          NaN                   NaN                                                             NaN               NaN               NaN                    NaN                  NaN                     NaN                       NaN                   NaN                  NaN            NaN         NaN
+2                      Status         Report successfull.                NaN          NaN                   NaN                                                             NaN               NaN               NaN                    NaN                  NaN                     NaN                       NaN                   NaN                  NaN            NaN         NaN
+3                Audit status                         NaN                NaN          NaN                   NaN                                                             NaN               NaN               NaN                    NaN                  NaN                     NaN                       NaN                   NaN                  NaN            NaN         NaN
+4                         NaN                         NaN                NaN          NaN                   NaN                                                             NaN               NaN               NaN                    NaN                  NaN                     NaN                       NaN                   NaN                  NaN            NaN         NaN
+5                  Time stamp             Selected Recipe        Step Status  Step Reason  Remaining Time (sec)  Flow                                                (Liter/Hr)  Supply Temp (°C)  Return Temp (°C)  Return Conduct (mS/m)  Acid Tank Temp (°C)  Caustic Tank Temp (°C)  Hot Water Tank Temp (°C)  Recup Tank Temp (°C)  Return Valve Status  Pump Selected        User
+6  2025-12-27 16:03:52.737000                   20 KL PHE               Idle          NaN                     0                                                       -1.808449         55.371094         70.100906                0.78125            55.908203               83.062065                 85.259331             34.483509             Draining        No Pump      Sachin
+7  2025-12-27 16:03:57.736000                   20 KL PHE               Idle          NaN                     0                                                       -1.808449         55.289715         70.073784               0.759549            55.908203               83.056641                 85.253906             34.483509             Draining        No Pump      Sachin
+8  2025-12-27 16:04:02.736000                   20 KL PHE               Idle          NaN                     0                                                               0         55.202908         70.052086               0.759549            55.908203               83.056641                 85.248482             34.483509             Draining        No Pump      Sachin
+9  2025-12-27 16:04:07.737000                   20 KL PHE               Idle          NaN                     0                                                       -1.808449         55.121529          70.03038                0.78125            55.908203               83.051216                 85.248482             34.483509             Draining        No Pump      Sachin

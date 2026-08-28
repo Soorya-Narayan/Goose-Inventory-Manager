@@ -1,0 +1,23 @@
+{
+  "model_type": "Random Forest (Regularized)",
+  "accuracy": 0.9996418594656543,
+  "precision": 0.9545454545454546,
+  "recall": 0.9692307692307692,
+  "f1_score": 0.9618320610687023,
+  "auc_roc": 0.9999557149816217,
+  "train_accuracy": 0.9999910044438047,
+  "train_test_gap": 0.00034914497815041745,
+  "oob_score": 0.9999550222190238,
+  "cv_mean": 0.9998925517466606,
+  "cv_std": 6.700718695959841e-05,
+  "train_samples": 111166,
+  "test_samples": 13961,
+  "features_used": 12,
+  "regularization": {
+    "n_estimators": 200,
+    "max_depth": 8,
+    "min_samples_split": 20,
+    "min_samples_leaf": 10,
+    "max_features": "sqrt"
+  }
+}

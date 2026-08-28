@@ -1,0 +1,238 @@
+/* CycleHealthCard.module.css — GOOSE-BETA · Correct class names matching JSX */
+
+:root {
+  --j-font: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* card — root wrapper */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #e0f4ff;
+}
+
+.card h3 {
+  font-family: var(--j-font);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #e0f4ff;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card h3 i { color: #00d4ff; filter: drop-shadow(0 0 6px #00d4ff); }
+
+.noData {
+  font-family: var(--j-font);
+  font-size: 0.7rem;
+  color: #5ba8cc;
+  letter-spacing: 1px;
+}
+
+/* Grade section */
+.gradeSection {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: rgba(0, 212, 255, 0.04);
+  border: 1px solid rgba(0, 212, 255, 0.12);
+  border-radius: 6px;
+}
+
+.gradeBadge {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--j-font);
+  font-size: 1.5rem;
+  font-weight: 700;
+  border: 2px solid;
+  flex-shrink: 0;
+}
+
+.gradeBadge.excellent { color: #00e676; border-color: rgba(0,230,118,0.5); background: rgba(0,230,118,0.08); box-shadow: 0 0 12px rgba(0,230,118,0.2); }
+.gradeBadge.good      { color: #00d4ff; border-color: rgba(0,212,255,0.5); background: rgba(0,212,255,0.08); box-shadow: 0 0 12px rgba(0,212,255,0.2); }
+.gradeBadge.fair      { color: #ffaa00; border-color: rgba(255,170,0,0.5); background: rgba(255,170,0,0.08); box-shadow: 0 0 12px rgba(255,170,0,0.2); }
+.gradeBadge.poor      { color: #ff3b3b; border-color: rgba(255,59,59,0.5); background: rgba(255,59,59,0.08); box-shadow: 0 0 12px rgba(255,59,59,0.2); }
+
+.scoreInfo { flex: 1; }
+
+.scoreValue {
+  font-family: var(--j-font);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #e0f4ff;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.statusLabel {
+  font-family: var(--j-font);
+  font-size: 0.65rem;
+  color: #5ba8cc;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Circular progress */
+.progressCircle {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto;
+}
+
+.progressSvg { width: 100%; height: 100%; transform: rotate(-90deg); }
+
+.progressBackground {
+  fill: none;
+  stroke: rgba(0, 212, 255, 0.08);
+  stroke-width: 8;
+}
+
+.progressForeground {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dashoffset: 0;
+  transition: stroke-dasharray 0.8s ease;
+}
+
+.progressForeground.excellent { stroke: #00e676; filter: drop-shadow(0 0 4px #00e676); }
+.progressForeground.good      { stroke: #00d4ff; filter: drop-shadow(0 0 4px #00d4ff); }
+.progressForeground.fair      { stroke: #ffaa00; filter: drop-shadow(0 0 4px #ffaa00); }
+.progressForeground.poor      { stroke: #ff3b3b; filter: drop-shadow(0 0 4px #ff3b3b); }
+
+/* Deviations */
+.deviationsSection h4 {
+  font-family: var(--j-font);
+  font-size: 0.65rem;
+  color: #5ba8cc;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 8px 0;
+}
+
+.deviationsList { display: flex; flex-direction: column; gap: 6px; }
+
+.deviationItem {
+  padding: 8px 10px;
+  background: rgba(0, 20, 50, 0.5);
+  border-left: 2px solid #00d4ff;
+  border-radius: 0 4px 4px 0;
+}
+
+.paramHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.paramName {
+  font-family: var(--j-font);
+  font-size: 0.68rem;
+  color: #e0f4ff;
+}
+
+.statusBadge {
+  font-family: var(--j-font);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.statusBadge.normal  { color: #00e676; background: rgba(0,230,118,0.1); }
+.statusBadge.warning { color: #ffaa00; background: rgba(255,170,0,0.1); }
+.statusBadge.critical{ color: #ff3b3b; background: rgba(255,59,59,0.1); }
+
+.paramValues {
+  display: flex;
+  gap: 12px;
+  font-family: var(--j-font);
+  font-size: 0.65rem;
+  margin-bottom: 5px;
+}
+
+.currentValue { color: #e0f4ff; }
+.goldenValue  { color: #5ba8cc; }
+
+.deviationBar {
+  height: 3px;
+  background: rgba(0, 212, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.deviationFill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.8s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.deviationFill.normal  { background: linear-gradient(90deg, #00e676, rgba(0,230,118,0.5)); }
+.deviationFill.warning { background: linear-gradient(90deg, #ffaa00, rgba(255,170,0,0.5)); }
+.deviationFill.critical{ background: linear-gradient(90deg, #ff3b3b, rgba(255,59,59,0.5)); }
+
+.deviationPct {
+  font-family: var(--j-font);
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.6);
+  position: absolute;
+  right: 2px;
+}
+
+/* Recommendations */
+.recommendations h4 {
+  font-family: var(--j-font);
+  font-size: 0.65rem;
+  color: #5ba8cc;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 6px 0;
+}
+
+.recommendations ul {
+  margin: 0;
+  padding: 0 0 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recommendations li {
+  font-family: var(--j-font);
+  font-size: 0.68rem;
+  color: #e0f4ff;
+  line-height: 1.4;
+}
+
+/* Light mode */
+:global(body:not(.dark-theme)) .card h3 { color: #0f172a; }
+:global(body:not(.dark-theme)) .card h3 i { color: #0284c7; filter: none; }
+:global(body:not(.dark-theme)) .noData { color: #64748b; }
+:global(body:not(.dark-theme)) .gradeSection { background: #f8fafc; border-color: #e2e8f0; }
+:global(body:not(.dark-theme)) .scoreValue { color: #0f172a; }
+:global(body:not(.dark-theme)) .statusLabel { color: #64748b; }
+:global(body:not(.dark-theme)) .deviationItem { background: #f8fafc; }
+:global(body:not(.dark-theme)) .paramName { color: #1e293b; }
+:global(body:not(.dark-theme)) .currentValue { color: #1e293b; }
+:global(body:not(.dark-theme)) .goldenValue { color: #64748b; }
+:global(body:not(.dark-theme)) .recommendations li { color: #1e293b; }
+:global(body:not(.dark-theme)) .deviationsSection h4,
+:global(body:not(.dark-theme)) .recommendations h4 { color: #64748b; }

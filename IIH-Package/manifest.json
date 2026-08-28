@@ -1,0 +1,30 @@
+{
+  "name": "cip-dashboard",
+  "version": "1.0.0",
+  "versionDescription": "Initial release — live OEE dashboard connected to IIH Essentials DataService",
+  "title": "CIP OEE Dashboard",
+  "description": "Real-time OEE, MTTR, MTBF and defect monitoring for Sandwiching, Packing and Secondary Packing production lines. Reads live data from IIH Essentials DataService (S7-1200 PLC via S7 Connector).",
+  "publisher": "Local",
+  "license": "Private",
+  "minIemVersion": "1.5",
+  "icon": "public/favicon.ico",
+  "requiredResources": {
+    "cpu": 0.5,
+    "memory": 256
+  },
+  "services": [
+    {
+      "name": "cip-dashboard",
+      "image": "cip-dashboard:1.0.0",
+      "startupType": "automatic",
+      "networks": ["proxy-redirect"]
+    }
+  ],
+  "links": [
+    {
+      "name": "CIP OEE Dashboard",
+      "description": "Open the live OEE monitoring dashboard",
+      "url": "http://<device-ip>:8888"
+    }
+  ]
+}

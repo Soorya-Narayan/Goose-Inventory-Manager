@@ -1,0 +1,41 @@
+/* TableSkeleton.module.css */
+.tableSkeleton {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-theme .tableSkeleton {
+    background: var(--card-bg-dark, #1e293b);
+    border-color: var(--border-color-dark, #334155);
+}
+
+.tableHeader {
+    display: flex;
+    justify-content: space-around;
+    padding: 16px 20px;
+    background: rgba(59, 130, 246, 0.05);
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+body.dark-theme .tableHeader {
+    background: rgba(59, 130, 246, 0.1);
+    border-bottom-color: var(--border-color-dark, #334155);
+}
+
+.tableBody {
+    padding: 12px 0;
+}
+
+.tableRow {
+    display: flex;
+    justify-content: space-around;
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.tableRow:last-child {
+    border-bottom: none;
+}

@@ -1,0 +1,26 @@
+version: '2.4'
+
+services:
+  cip-dashboard:
+    image: cip-dashboard:1.0.0
+    container_name: cip-dashboard
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    environment:
+      - API_BASE_URL=/api
+      - IIH_BASE_URL=/iih
+    networks:
+      - proxy-redirect
+    mem_limit: 3000m
+    mem_reservation: 512m
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8888/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  proxy-redirect:
+    external: true

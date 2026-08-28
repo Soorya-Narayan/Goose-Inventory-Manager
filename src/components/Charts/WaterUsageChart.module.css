@@ -1,0 +1,330 @@
+/* src/components/Charts/WaterUsageChart.module.css */
+
+.container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: 8px;
+}
+
+/* View Toggle */
+.viewToggle {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    color: var(--text-secondary, #6b7280);
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.viewToggle:hover {
+    background: var(--primary-blue, #3b82f6);
+    color: #fff;
+    border-color: var(--primary-blue, #3b82f6);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.25);
+}
+
+/* === TANK VIEW === */
+.tankSection {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 20px 10px;
+}
+
+.statsHeader {
+    text-align: center;
+}
+
+.mainStat {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary-blue, #3b82f6);
+    font-variant-numeric: tabular-nums;
+}
+
+.unit {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-secondary, #6b7280);
+}
+
+.label {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #9ca3af);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Tank Container */
+.tankContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+}
+
+.tank {
+    position: relative;
+    width: 180px;
+    height: 280px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(230, 240, 255, 0.4));
+    border: 3px solid #3b82f6;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow:
+        inset 0 2px 8px rgba(59, 130, 246, 0.15),
+        0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Water Level with Animation */
+.waterLevel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(180deg, rgba(59, 130, 246, 0.7), rgba(37, 99, 235, 0.9));
+    transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+/* Animated Wave Effect */
+.wave {
+    position: absolute;
+    top: -20px;
+    left: -50%;
+    width: 200%;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 40%;
+    animation: wave 4s linear infinite;
+}
+
+@keyframes wave {
+    0% {
+        transform: translateX(0) translateY(0);
+    }
+
+    50% {
+        transform: translateX(-25%) translateY(-5px);
+    }
+
+    100% {
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Percentage Overlay */
+.tankOverlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.percentageDisplay {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(59, 130, 246, 0.5);
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.percentSymbol {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* Tank Markings */
+.tankMarkings {
+    position: absolute;
+    top: 0;
+    right: -50px;
+    bottom: 0;
+    width: 40px;
+    pointer-events: none;
+}
+
+.marking {
+    position: absolute;
+    right: 0;
+    width: 100%;
+    border-top: 1px dashed rgba(107, 114, 128, 0.3);
+}
+
+.marking::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: -1px;
+    width: 8px;
+    height: 2px;
+    background: rgba(107, 114, 128, 0.4);
+}
+
+.markLabel {
+    position: absolute;
+    right: 0;
+    top: -10px;
+    font-size: 0.7rem;
+    color: var(--text-secondary, #9ca3af);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Tank Base */
+.tankBase {
+    position: relative;
+    width: 180px;
+    height: 20px;
+    background: linear-gradient(180deg, #1e40af, #1e3a8a);
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+}
+
+.pipeLeft,
+.pipeRight {
+    width: 12px;
+    height: 30px;
+    background: linear-gradient(90deg, #64748b, #475569);
+    border-radius: 0 0 4px 4px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Capacity Info */
+.capacityInfo {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+.capacityStat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #6b7280);
+    font-weight: 500;
+    padding: 6px 12px;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 8px;
+}
+
+/* === GRAPH VIEW === */
+.graphSection {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 12px 8px;
+}
+
+.graphHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.graphHeader h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary, #1f2937);
+}
+
+.currentValue {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 197, 253, 0.1));
+    border-radius: 20px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary-blue, #3b82f6);
+}
+
+.currentValue i {
+    font-size: 0.8rem;
+}
+
+.chartWrapper {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+}
+
+.noData {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-secondary, #9ca3af);
+}
+
+.noData i {
+    font-size: 2.5rem;
+    opacity: 0.3;
+}
+
+.noData p {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .tank {
+        width: 150px;
+        height: 240px;
+    }
+
+    .tankBase {
+        width: 150px;
+    }
+
+    .value {
+        font-size: 2rem;
+    }
+
+    .percentageDisplay {
+        font-size: 2rem;
+    }
+}

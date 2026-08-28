@@ -1,0 +1,525 @@
+/* Equipment Details Tab - Modern 3D Layout */
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: clamp(16px, 2vw, 32px);
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.header h2 {
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin: 0 0 12px 0;
+}
+
+.header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* Sections */
+.section {
+    margin-bottom: 64px;
+}
+
+.sectionTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 32px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sectionTitle i {
+    color: #3b82f6;
+    font-size: 1.3rem;
+}
+
+/* Material Cards Grid */
+.cardGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+}
+
+.materialCard {
+    position: relative;
+    padding: 28px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.card3d {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+}
+
+.materialCard:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    border-color: #3b82f6;
+}
+
+.materialCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.materialCard:hover::before {
+    opacity: 1;
+}
+
+.cardIcon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+    color: #3b82f6;
+    transition: all 0.3s ease;
+}
+
+.materialCard:hover .cardIcon {
+    transform: scale(1.1) rotateY(360deg);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+}
+
+.materialCard h4 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+}
+
+.materialBadge {
+    display: inline-block;
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.materialCard p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0 0 20px 0;
+}
+
+.specs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.specs span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.specs span i {
+    color: #3b82f6;
+    font-size: 0.75rem;
+}
+
+/* Tank Cards */
+.tankGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+}
+
+.tankCard {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 28px;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 20px;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.tankCard:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+
+/* Tank Visual - 3D Effect */
+.tankVisual {
+    position: relative;
+    width: 120px;
+    height: 180px;
+    perspective: 800px;
+    flex-shrink: 0;
+}
+
+.tank3d {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.6s ease;
+}
+
+.tankCard:hover .tank3d {
+    transform: rotateY(15deg);
+}
+
+.tankTop,
+.tankBody,
+.tankBottom {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.tankTop {
+    top: 0;
+    width: 80px;
+    height: 20px;
+    background: linear-gradient(180deg, #cbd5e1, #94a3b8);
+    border-radius: 40px 40px 0 0;
+    border: 2px solid var(--border-color);
+    border-bottom: none;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tankBody {
+    top: 18px;
+    width: 100px;
+    height: 140px;
+    background: linear-gradient(90deg, #e2e8f0, #f8fafc, #e2e8f0);
+    border: 2px solid var(--border-color);
+    border-top: none;
+    border-bottom: none;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+.tankBottom {
+    bottom: 0;
+    width: 80px;
+    height: 20px;
+    background: linear-gradient(180deg, #94a3b8, #64748b);
+    border-radius: 0 0 40px 40px;
+    border: 2px solid var(--border-color);
+    border-top: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.liquidLevel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transition: height 0.6s ease;
+    animation: liquidFlow 3s ease-in-out infinite;
+}
+
+@keyframes liquidFlow {
+
+    0%,
+    100% {
+        opacity: 0.9;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Tank-specific colors */
+.causticTank .liquidLevel {
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.4), rgba(245, 158, 11, 0.7));
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+}
+
+.causticTank:hover {
+    border-color: rgba(245, 158, 11, 0.5);
+}
+
+.acidTank .liquidLevel {
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.4), rgba(239, 68, 68, 0.7));
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.acidTank:hover {
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.recoveryTank .liquidLevel {
+    background: linear-gradient(180deg, rgba(34, 197, 94, 0.4), rgba(34, 197, 94, 0.7));
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+.recoveryTank:hover {
+    border-color: rgba(34, 197, 94, 0.5);
+}
+
+.freshTank .liquidLevel {
+    background: linear-gradient(180deg, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0.7));
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.freshTank:hover {
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
+.tankInfo {
+    flex: 1;
+}
+
+.tankInfo h4 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.capacity {
+    font-size: 2rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 16px;
+}
+
+.tankInfo ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tankInfo li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tankInfo li:last-child {
+    border-bottom: none;
+}
+
+.tankInfo li i {
+    color: #3b82f6;
+    font-size: 0.85rem;
+}
+
+/* Component Cards */
+.componentGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+}
+
+.componentCard {
+    padding: 28px;
+    background: linear-gradient(135deg, var(--card-bg) 0%, var(--card-bg) 100%);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.componentCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(139, 92, 246, 0.05));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+}
+
+.componentCard:hover::before {
+    opacity: 1;
+}
+
+.componentCard:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
+    border-color: #3b82f6;
+}
+
+.componentIcon {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+    transition: all 0.4s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.componentCard:hover .componentIcon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 12px 28px rgba(59, 130, 246, 0.4);
+}
+
+.componentCard h4 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+    position: relative;
+    z-index: 1;
+}
+
+.model {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0 0 20px 0;
+    font-weight: 500;
+    position: relative;
+    z-index: 1;
+}
+
+.componentSpecs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+.specItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.1);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.specItem:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: translateX(4px);
+}
+
+.specLabel {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.specValue {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+/* Dark Mode Overrides */
+:global(body.dark-theme) .tank3d .tankTop {
+    background: linear-gradient(180deg, #475569, #334155);
+}
+
+:global(body.dark-theme) .tank3d .tankBody {
+    background: linear-gradient(90deg, #1e293b, #0f172a, #1e293b);
+}
+
+:global(body.dark-theme) .tank3d .tankBottom {
+    background: linear-gradient(180deg, #334155, #1e293b);
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+
+    .cardGrid,
+    .tankGrid,
+    .componentGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+
+    .cardGrid,
+    .tankGrid,
+    .componentGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .tankCard {
+        flex-direction: column;
+        text-align: center;
+    }
+}

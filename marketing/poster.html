@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CIP Dashboard — Poster</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@500;600;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:210mm; background:#0a0e1a; }
+
+    /* ═══ A4 SHEET ═══════════════════════════════ */
+    .sheet {
+      width: 210mm;
+      height: 297mm;
+      background: #08101f;
+      font-family: 'Inter', sans-serif;
+      color: #e2e8f0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 7mm 9mm 6mm;
+    }
+
+    /* ── bg decorations ── */
+    .bg-grid {
+      position:absolute; inset:0; pointer-events:none;
+      background-image:
+        linear-gradient(rgba(14,165,233,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14,165,233,0.04) 1px, transparent 1px);
+      background-size: 9mm 9mm;
+    }
+    .bg-tr { /* top-right glow */
+      position:absolute; top:-20mm; right:-10mm;
+      width:80mm; height:70mm; border-radius:50%;
+      background:radial-gradient(circle, rgba(14,165,233,0.09) 0%, transparent 70%);
+      pointer-events:none;
+    }
+    .bg-bl { /* bottom-left glow */
+      position:absolute; bottom:-20mm; left:-10mm;
+      width:70mm; height:65mm; border-radius:50%;
+      background:radial-gradient(circle, rgba(99,102,241,0.09) 0%, transparent 70%);
+      pointer-events:none;
+    }
+    /* diagonal hatch top-right */
+    .bg-hatch-tr {
+      position:absolute; top:0; right:0;
+      width:55mm; height:55mm; pointer-events:none;
+      opacity:0.055;
+      background: repeating-linear-gradient(-45deg,
+        transparent, transparent 3mm,
+        rgba(14,165,233,1) 3mm, rgba(14,165,233,1) 3.4mm);
+    }
+    /* diagonal hatch bottom-left */
+    .bg-hatch-bl {
+      position:absolute; bottom:0; left:0;
+      width:40mm; height:40mm; pointer-events:none;
+      opacity:0.05;
+      background: repeating-linear-gradient(45deg,
+        transparent, transparent 3mm,
+        rgba(99,102,241,1) 3mm, rgba(99,102,241,1) 3.4mm);
+    }
+    .topbar {
+      position:absolute; top:0; left:0; right:0; height:1.2mm;
+      background:linear-gradient(90deg,#0ea5e9,#6366f1,#10b981,#0ea5e9);
+    }
+
+    /* all real content above bg */
+    .c { position:relative; z-index:2; display:flex; flex-direction:column; height:100%; }
+
+    /* ═══ HEADER ════════════════════════════════ */
+    .hdr {
+      display:flex; align-items:center;
+      justify-content:space-between; margin-bottom:5mm;
+    }
+    .brand { display:flex; align-items:center; gap:2.5mm; }
+    .brand-logo {
+      font-family:'Orbitron',sans-serif;
+      font-size:7mm; font-weight:900; color:#fff;
+      letter-spacing:0.5mm; line-height:1;
+    }
+    .brand-logo span { color:#0ea5e9; }
+    /* goose bird SVG-like character */
+    .brand-bird {
+      font-size:6mm; margin-left:-1mm; opacity:0.85;
+    }
+    .brand-sub {
+      font-size:2.3mm; color:#475569;
+      letter-spacing:0.3mm; margin-top:1mm;
+    }
+    .hdr-right { display:flex; flex-direction:column; align-items:flex-end; gap:1.5mm; }
+    .pill {
+      display:inline-flex; align-items:center; gap:1.5mm;
+      padding:1.2mm 3mm; border-radius:10mm;
+      font-size:2mm; font-weight:700; letter-spacing:0.3mm; text-transform:uppercase;
+    }
+    .p-green { background:rgba(16,185,129,0.14); border:0.3mm solid rgba(16,185,129,0.45); color:#34d399; }
+    .p-cyan  { background:rgba(14,165,233,0.12); border:0.3mm solid rgba(14,165,233,0.45); color:#38bdf8; }
+    .ldot { width:1.8mm; height:1.8mm; border-radius:50%; background:#10b981; box-shadow:0 0 2mm rgba(16,185,129,0.9); }
+    /* Siemens text */
+    .siemens-txt {
+      font-size:3mm; font-weight:800; color:#00a8d4;
+      letter-spacing:0.5mm; font-family:'Orbitron',sans-serif;
+    }
+    .hdr-badge-row { display:flex; align-items:center; gap:2.5mm; }
+
+    /* ═══ HERO ══════════════════════════════════ */
+    .hero {
+      text-align:center; padding-bottom:4.5mm;
+      border-bottom:0.3mm solid rgba(14,165,233,0.13);
+      margin-bottom:4.5mm;
+    }
+    .hero-eyebrow {
+      font-size:2.4mm; font-weight:700; letter-spacing:2mm;
+      color:#38bdf8; text-transform:uppercase; margin-bottom:2mm;
+    }
+    .hero-title {
+      font-family:'Orbitron',sans-serif;
+      font-size:17mm; font-weight:900; color:#fff;
+      line-height:0.95; letter-spacing:0.5mm;
+      text-shadow:0 0 18mm rgba(14,165,233,0.22);
+    }
+    .hero-title .hl {
+      background:linear-gradient(95deg, #38bdf8 0%, #818cf8 60%, #34d399 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .hero-sub {
+      font-size:2.8mm; color:#64748b; letter-spacing:1.5mm;
+      text-transform:uppercase; margin-top:2mm;
+    }
+    .hero-desc {
+      margin-top:2.5mm; font-size:3.3mm; color:#94a3b8;
+      line-height:1.65; max-width:150mm; margin-left:auto; margin-right:auto;
+    }
+    .hero-desc strong { color:#e2e8f0; font-weight:700; }
+
+    /* ═══ GLANCE CARDS ══════════════════════════ */
+    .glance {
+      display:grid; grid-template-columns:1fr 1fr 1fr;
+      gap:3mm; margin-bottom:4.5mm;
+    }
+    .gc {
+      border-radius:3mm; padding:3mm 3mm; text-align:left;
+      position:relative; overflow:hidden;
+    }
+    .gc::before {
+      content:''; position:absolute; inset:0;
+      background:rgba(255,255,255,0.012); pointer-events:none;
+    }
+    .gc-a { background:rgba(14,165,233,0.07); border:0.3mm solid rgba(14,165,233,0.25); border-top:1mm solid #0ea5e9; }
+    .gc-b { background:rgba(99,102,241,0.07); border:0.3mm solid rgba(99,102,241,0.25); border-top:1mm solid #6366f1; }
+    .gc-c { background:rgba(16,185,129,0.07); border:0.3mm solid rgba(16,185,129,0.25); border-top:1mm solid #10b981; }
+    .gc-ico { font-size:5mm; margin-bottom:1.8mm; display:block; }
+    .gc-ttl { font-size:2.9mm; font-weight:800; color:#f1f5f9; margin-bottom:1.5mm; }
+    .gc-bod { font-size:2.35mm; color:#64748b; line-height:1.55; }
+
+    /* ═══ ARCHITECTURE — HORIZONTAL ════════════ */
+    .arch-sec { margin-bottom:4mm; }
+    .sec-lbl {
+      font-size:2.3mm; font-weight:800; letter-spacing:1.8mm;
+      color:#38bdf8; text-transform:uppercase; margin-bottom:3mm;
+      display:flex; align-items:center; gap:2mm;
+    }
+    .sec-lbl::after {
+      content:''; flex:1; height:0.3mm;
+      background:linear-gradient(to right, rgba(14,165,233,0.4), transparent);
+    }
+
+    /* horizontal flow */
+    .hflow {
+      display:grid;
+      grid-template-columns: auto auto auto auto auto auto auto;
+      align-items: center;
+      gap:0;
+    }
+
+    /* layer block */
+    .lblock { display:flex; flex-direction:column; align-items:center; gap:0; }
+    .lblock-title {
+      font-size:2mm; font-weight:800; letter-spacing:1mm;
+      color:#334155; text-transform:uppercase; margin-bottom:2mm;
+      text-align:center;
+    }
+    .lblock-nodes { display:flex; flex-direction:column; gap:2mm; }
+
+    /* node box */
+    .nd {
+      border-radius:2mm; padding:2.2mm 3mm;
+      font-size:2.4mm; font-weight:600;
+      text-align:center; border:0.3mm solid;
+      line-height:1.3; min-width:28mm;
+    }
+    .nd-sub { font-size:1.7mm; opacity:0.65; font-weight:400; display:block; margin-top:0.4mm; }
+
+    .nd-plc  { background:rgba(245,158,11,0.10); border-color:rgba(245,158,11,0.42); color:#fbbf24; }
+    .nd-sen  { background:rgba(234,179,8,0.08);  border-color:rgba(234,179,8,0.34);  color:#fde047; }
+    .nd-iih  { background:rgba(14,165,233,0.10); border-color:rgba(14,165,233,0.42); color:#38bdf8; }
+    .nd-inf  { background:rgba(168,85,247,0.10); border-color:rgba(168,85,247,0.42); color:#c084fc; }
+    .nd-fl   { background:rgba(16,185,129,0.10); border-color:rgba(16,185,129,0.42); color:#34d399; }
+    .nd-ml   { background:rgba(239,68,68,0.10);  border-color:rgba(239,68,68,0.42);  color:#f87171; }
+    .nd-rc   { background:rgba(99,102,241,0.10); border-color:rgba(99,102,241,0.42); color:#818cf8; }
+
+    /* arrow + protocol between blocks */
+    .ablock {
+      display:flex; flex-direction:column; align-items:center;
+      gap:1mm; padding:0 1.5mm;
+    }
+    .ablock-proto {
+      font-size:1.6mm; color:#1e293b; letter-spacing:0.2mm;
+      text-align:center; writing-mode:horizontal-tb;
+    }
+    .arr {
+      font-size:3mm; color:#1e2d3d; font-weight:300;
+      line-height:1;
+    }
+
+    /* ═══ AI STRIP ══════════════════════════════ */
+    .ai-strip {
+      background:linear-gradient(140deg, rgba(8,10,36,0.98) 0%, rgba(5,9,30,0.98) 100%);
+      border:0.4mm solid rgba(99,102,241,0.32);
+      border-radius:3mm; padding:3.2mm 3.5mm;
+      position:relative; overflow:hidden; margin-bottom:4mm;
+    }
+    .ai-strip::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:0.8mm;
+      border-radius:3mm 3mm 0 0;
+      background:linear-gradient(90deg, #6366f1 0%, #8b5cf6 35%, #0ea5e9 65%, #6366f1 100%);
+    }
+    .ai-strip::after {
+      content:''; position:absolute; top:-15mm; right:-15mm;
+      width:50mm; height:50mm; border-radius:50%;
+      background:radial-gradient(circle, rgba(99,102,241,0.12), transparent 70%);
+      pointer-events:none;
+    }
+    .ai-head {
+      display:flex; align-items:center; gap:2.5mm; margin-bottom:3mm;
+    }
+    .ai-logo-box {
+      width:8mm; height:8mm; border-radius:2mm;
+      background:linear-gradient(135deg, #6366f1, #8b5cf6);
+      display:flex; align-items:center; justify-content:center;
+      font-size:4.5mm; flex-shrink:0;
+      box-shadow:0 0 5mm rgba(99,102,241,0.5);
+    }
+    .ai-head-text .ai-sup {
+      font-size:2mm; font-weight:700; letter-spacing:0.8mm;
+      color:#818cf8; text-transform:uppercase;
+    }
+    .ai-head-text .ai-title {
+      font-family:'Orbitron',sans-serif;
+      font-size:4.8mm; font-weight:700; color:#fff;
+    }
+    .ai-badge {
+      margin-left:auto;
+      padding:1.5mm 3.5mm; border-radius:10mm;
+      background:rgba(16,185,129,0.12);
+      border:0.3mm solid rgba(16,185,129,0.4);
+      font-size:2.3mm; font-weight:800; color:#34d399;
+      white-space:nowrap;
+    }
+    /* goose bird on right */
+    .ai-bird {
+      margin-left:3mm; font-size:6mm; opacity:0.4;
+    }
+
+    /* model chips */
+    .models {
+      display:grid; grid-template-columns:repeat(7,1fr); gap:2mm;
+    }
+    .mchip {
+      background:rgba(99,102,241,0.07);
+      border:0.3mm solid rgba(99,102,241,0.22);
+      border-radius:2mm; padding:2.2mm 1mm 2mm;
+      text-align:center; position:relative; overflow:hidden;
+    }
+    .mchip::before {
+      content:''; position:absolute; top:0; left:20%; right:20%; height:0.4mm;
+      background:rgba(129,140,248,0.5);
+    }
+    .mc-em { font-size:4mm; display:block; margin-bottom:1.5mm; }
+    .mc-nm { font-size:2.1mm; font-weight:800; color:#e2e8f0; margin-bottom:0.7mm; line-height:1.3; }
+    .mc-ds { font-size:1.7mm; color:#475569; line-height:1.3; }
+
+    /* ═══ FOOTER ════════════════════════════════ */
+    .footer {
+      margin-top:auto;
+      border-top:0.3mm solid rgba(255,255,255,0.06);
+      padding-top:2.5mm;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .f-brand {
+      font-family:'Orbitron',sans-serif;
+      font-size:2.4mm; font-weight:700; color:#38bdf8; letter-spacing:0.6mm;
+    }
+    .f-stack { font-size:1.9mm; color:#1e293b; text-align:center; letter-spacing:0.15mm; }
+    .f-contact { font-size:2.1mm; color:#334155; text-align:right; line-height:1.7; }
+    .f-contact strong { color:#64748b; }
+
+    @media print {
+      html,body { background:#08101f; }
+    }
+  </style>
+</head>
+<body>
+<div class="sheet">
+  <div class="bg-grid"></div>
+  <div class="bg-tr"></div>
+  <div class="bg-bl"></div>
+  <div class="bg-hatch-tr"></div>
+  <div class="bg-hatch-bl"></div>
+  <div class="topbar"></div>
+
+  <div class="c">
+
+    <!-- ── HEADER ──────────────────────────────── -->
+    <div class="hdr">
+      <div class="brand">
+        <div>
+          <div style="display:flex;align-items:baseline;gap:2mm;">
+            <div class="brand-logo">G<span>o</span>ose <span style="font-size:5.5mm;">&#128378;</span></div>
+          </div>
+          <div class="brand-sub">Industrial Intelligence Solutions</div>
+        </div>
+      </div>
+      <div class="hdr-right">
+        <div class="hdr-badge-row">
+          <span class="pill p-green"><span class="ldot"></span> Live PLC System</span>
+          <span class="pill p-cyan">Siemens IIH Compatible</span>
+          <span class="siemens-txt">SIEMENS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HERO ───────────────────────────────── -->
+    <div class="hero">
+      <div class="hero-eyebrow">Industrial Process Intelligence Platform</div>
+      <div class="hero-title">CIP <span class="hl">Dashboard</span></div>
+      <div class="hero-sub">Clean-In-Place &nbsp;·&nbsp; Real-Time &nbsp;·&nbsp; AI-Powered</div>
+      <p class="hero-desc">
+        A <strong>modern web platform</strong> that connects to factory PLCs, visualizes
+        <strong>Clean-In-Place</strong> process data in real-time, and uses
+        <strong>AI diagnostics</strong> to predict failures before they occur.
+      </p>
+    </div>
+
+    <!-- ── AT A GLANCE ─────────────────────────── -->
+    <div class="glance">
+      <div class="gc gc-a">
+        <span class="gc-ico">&#127981;</span>
+        <div class="gc-ttl">What is CIP?</div>
+        <div class="gc-bod">Automated in-place cleaning of food, pharma &amp; dairy equipment — without disassembly. Requires precise control of temperature, flow, chemicals &amp; pressure.</div>
+      </div>
+      <div class="gc gc-b">
+        <span class="gc-ico">&#128202;</span>
+        <div class="gc-ttl">What does it do?</div>
+        <div class="gc-bod">Reads PLC tags in real-time, displays live KPIs, tracks each CIP cycle step-by-step, manages alarms, and generates compliance reports automatically.</div>
+      </div>
+      <div class="gc gc-c">
+        <span class="gc-ico">&#129504;</span>
+        <div class="gc-ttl">What makes it different?</div>
+        <div class="gc-bod">7 purpose-built AI models run continuously on live sensor data — predicting failures, detecting drift &amp; optimizing recipes. No SCADA system can match this.</div>
+      </div>
+    </div>
+
+    <!-- ── ARCHITECTURE — HORIZONTAL ──────────── -->
+    <div class="arch-sec">
+      <div class="sec-lbl">&#9776; System Architecture — Data Flow</div>
+
+      <div class="hflow">
+
+        <!-- FIELD -->
+        <div class="lblock">
+          <div class="lblock-title">Field</div>
+          <div class="lblock-nodes">
+            <div class="nd nd-plc">&#127981; PLC/SCADA<span class="nd-sub">S7-1200/S7-1500</span></div>
+            <div class="nd nd-sen">&#128225; Process Sensors<span class="nd-sub">Temp · Flow · pH · Cond.</span></div>
+          </div>
+        </div>
+
+        <!-- arrow 1 -->
+        <div class="ablock">
+          <div class="ablock-proto">OPC UA</div>
+          <div class="arr">&#10230;</div>
+          <div class="ablock-proto">MQTT</div>
+        </div>
+
+        <!-- EDGE -->
+        <div class="lblock">
+          <div class="lblock-title">Edge</div>
+          <div class="lblock-nodes">
+            <div class="nd nd-iih">&#128279; IIH Essentials<span class="nd-sub">Siemens Industrial Edge</span></div>
+            <div class="nd nd-inf">&#128450; InfluxDB<span class="nd-sub">Time-series store</span></div>
+          </div>
+        </div>
+
+        <!-- arrow 2 -->
+        <div class="ablock">
+          <div class="ablock-proto">REST API</div>
+          <div class="arr">&#10230;</div>
+          <div class="ablock-proto">MQTT</div>
+        </div>
+
+        <!-- APP -->
+        <div class="lblock">
+          <div class="lblock-title">App</div>
+          <div class="lblock-nodes">
+            <div class="nd nd-fl">&#9879; Flask REST API<span class="nd-sub">Python · Gunicorn</span></div>
+            <div class="nd nd-ml">&#129504; ML Microservice<span class="nd-sub">scikit-learn · 7 AI models</span></div>
+          </div>
+        </div>
+
+        <!-- arrow 3 -->
+        <div class="ablock">
+          <div class="ablock-proto">Nginx</div>
+          <div class="arr">&#10230;</div>
+          <div class="ablock-proto">HTTPS</div>
+        </div>
+
+        <!-- UI -->
+        <div class="lblock">
+          <div class="lblock-title">UI</div>
+          <div class="lblock-nodes" style="height:100%;justify-content:center;">
+            <div class="nd nd-rc" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3mm 3mm;">
+              &#9883; React 18<span class="nd-sub">Dashboard</span>
+              <span class="nd-sub" style="margin-top:1mm;">Chart.js · Vite</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── AI ENGINE ──────────────────────────── -->
+    <div class="ai-strip">
+      <div class="ai-head">
+        <div class="ai-logo-box">&#129504;</div>
+        <div class="ai-head-text">
+          <div class="ai-sup">&#9733; Key Differentiator</div>
+          <div class="ai-title">GOOSE AI Diagnostics Engine</div>
+        </div>
+        <div class="ai-badge">&#10024; High-Accuracy AI System</div>
+        <div class="ai-bird">&#128378;</div>
+      </div>
+
+      <div class="models">
+
+        <div class="mchip">
+          <span class="mc-em">&#128737;</span>
+          <div class="mc-nm">Failure Prediction</div>
+          <div class="mc-ds">Predicts system failures &amp; risk score in real-time</div>
+        </div>
+
+        <div class="mchip">
+          <span class="mc-em">&#128147;</span>
+          <div class="mc-nm">Cycle Health Monitor</div>
+          <div class="mc-ds">Grades CIP cycle quality A–F from sensor data</div>
+        </div>
+
+        <div class="mchip">
+          <span class="mc-em">&#127807;</span>
+          <div class="mc-nm">Resource Optimizer</div>
+          <div class="mc-ds">Tracks water, energy &amp; chemical savings</div>
+        </div>
+
+        <div class="mchip">
+          <span class="mc-em">&#9881;</span>
+          <div class="mc-nm">Hardware Maintenance</div>
+          <div class="mc-ds">Monitors pump, valve &amp; heater wear levels</div>
+        </div>
+
+        <div class="mchip">
+          <span class="mc-em">&#129514;</span>
+          <div class="mc-nm">Recipe Intelligence</div>
+          <div class="mc-ds">Suggests optimal CIP recipe parameters</div>
+        </div>
+
+        <div class="mchip">
+          <span class="mc-em">&#9879;</span>
+          <div class="mc-nm">Chemical Concentration</div>
+          <div class="mc-ds">Monitors caustic &amp; acid levels vs. targets</div>
+        </div>
+
+        <div class="mchip">
+          <span class="mc-em">&#127754;</span>
+          <div class="mc-nm">Sensor Drift Detector</div>
+          <div class="mc-ds">Flags sensor calibration needs automatically</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── FOOTER ─────────────────────────────── -->
+    <div class="footer">
+      <div class="f-brand">GOOSE &nbsp;·&nbsp; AI &nbsp;·&nbsp; INDUSTRIAL</div>
+      <div class="f-stack">
+        Software Stack: &nbsp; OPC UA, Process Sensors, InfluxDB,<br/>
+        Flask REST API, ML Microservice, React 18 Dashboard
+      </div>
+      <div class="f-contact">
+        <strong>sales@goosedigital.com</strong><br/>
+        Goose Digital · v2.1.0 · 2026
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

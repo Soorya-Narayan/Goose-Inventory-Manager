@@ -1,0 +1,92 @@
+/* ========== Layout Container ========== */
+.appContainer {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  background: var(--app-bg, #f8fafc);
+}
+
+.darkModeApp {
+  background: var(--app-bg-dark, #0f172a);
+}
+
+/* Main content (adjusts based on sidebar state) */
+.mainContent {
+  flex: 1;
+  padding: 24px;
+  margin-left: 270px;
+  /* Expanded sidebar width */
+  transition: margin-left 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100vh;
+}
+
+/* Collapsed sidebar - reduce margin */
+.appContainer.sidebarCollapsed .mainContent {
+  margin-left: 70px;
+}
+
+/* Mobile backdrop */
+.mobileBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* ========== Responsive ========== */
+
+/* Tablet: Auto-collapse sidebar */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .mainContent {
+    margin-left: 70px;
+  }
+
+  nav {
+    width: 70px !important;
+  }
+}
+
+/* Mobile: Overlay mode */
+@media (max-width: 768px) {
+  .mainContent {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 270px !important;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .appContainer.mobileMenuOpen nav {
+    transform: translateX(0);
+  }
+}
+
+/* Dark mode tweaks */
+.darkModeApp .mobileBackdrop {
+  background: rgba(0, 0, 0, 0.7);
+}

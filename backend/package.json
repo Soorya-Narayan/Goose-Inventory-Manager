@@ -1,0 +1,15 @@
+{
+  "name": "cip-backend",
+  "version": "1.0.0",
+  "description": "CIP Dashboard API backend — simulation mode now, IIH proxy later",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev":   "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors":    "^2.8.5",
+    "mqtt":    "^5.3.4"
+  }
+}

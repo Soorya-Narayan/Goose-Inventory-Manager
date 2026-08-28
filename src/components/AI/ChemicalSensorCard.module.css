@@ -1,0 +1,164 @@
+/* ChemicalSensorCard.module.css — GOOSE-ZETA · Correct class names matching JSX */
+
+:root {
+  --j-font: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Root (.sensorCard) */
+.sensorCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #e0f4ff;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h3 {
+  font-family: var(--j-font);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #e0f4ff;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header h3 i { color: #38bdf8; filter: drop-shadow(0 0 6px #38bdf8); }
+
+/* Status badge */
+.badge {
+  font-family: var(--j-font);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.badge[data-status="optimal"]  { color: #00e676; border-color: rgba(0,230,118,0.4);  background: rgba(0,230,118,0.08);  }
+.badge[data-status="warning"]  { color: #ffaa00; border-color: rgba(255,170,0,0.4);  background: rgba(255,170,0,0.08);  }
+.badge[data-status="critical"] { color: #ff3b3b; border-color: rgba(255,59,59,0.4);  background: rgba(255,59,59,0.08);  }
+.badge[data-status="neutral"]  { color: #38bdf8; border-color: rgba(56,189,248,0.4); background: rgba(56,189,248,0.08); }
+
+/* Liquid container — animated chemical visualisation */
+.liquidContainer {
+  position: relative;
+  height: 100px;
+  border: 1px solid rgba(56,189,248,0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 20, 50, 0.4);
+}
+
+.liquid {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  transition: height 1s ease;
+  border-radius: 0 0 7px 7px;
+}
+
+/* NaOH — blue; HNO3 — orange */
+.liquid[data-chem*="NaOH"] {
+  background: linear-gradient(180deg, rgba(56,189,248,0.3) 0%, rgba(56,189,248,0.6) 100%);
+  box-shadow: 0 -2px 8px rgba(56,189,248,0.3);
+}
+
+.liquid[data-chem*="HNO3"] {
+  background: linear-gradient(180deg, rgba(251,146,60,0.3) 0%, rgba(251,146,60,0.6) 100%);
+  box-shadow: 0 -2px 8px rgba(251,146,60,0.3);
+}
+
+/* Value overlay on top of liquid */
+.valueOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.paramValue {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.percentage {
+  font-family: var(--j-font);
+  font-size: 2rem;
+  font-weight: 700;
+  color: #e0f4ff;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+}
+
+.unit {
+  font-family: var(--j-font);
+  font-size: 0.75rem;
+  color: rgba(224,244,255,0.7);
+}
+
+.chemType {
+  font-family: var(--j-font);
+  font-size: 0.65rem;
+  color: rgba(224,244,255,0.8);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Footer stats */
+.footer {
+  display: flex;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(14,63,110,0.6);
+  flex-wrap: wrap;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.statItem > span:first-child {
+  font-family: var(--j-font);
+  font-size: 0.6rem;
+  color: #5ba8cc;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.statVal {
+  font-family: var(--j-font);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+/* Light mode */
+:global(body:not(.dark-theme)) .sensorCard { color: #0f172a; }
+:global(body:not(.dark-theme)) .header h3 { color: #0f172a; }
+:global(body:not(.dark-theme)) .header h3 i { filter: none; }
+:global(body:not(.dark-theme)) .liquidContainer { background: #f0f9ff; border-color: rgba(14,165,233,0.2); }
+:global(body:not(.dark-theme)) .percentage { color: #0f172a; filter: none; }
+:global(body:not(.dark-theme)) .unit { color: rgba(15,23,42,0.6); }
+:global(body:not(.dark-theme)) .chemType { color: rgba(15,23,42,0.7); }
+:global(body:not(.dark-theme)) .footer { border-top-color: #e2e8f0; }
+:global(body:not(.dark-theme)) .statItem > span:first-child { color: #64748b; }

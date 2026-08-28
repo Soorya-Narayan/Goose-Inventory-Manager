@@ -1,0 +1,25 @@
+{
+  "model_name": "Random Forest",
+  "accuracy": 0.9997851156793925,
+  "precision": 0.984375,
+  "recall": 0.9692307692307692,
+  "f1_score": 0.9767441860465116,
+  "auc_roc": 0.9999667862362163,
+  "train_samples": 111166,
+  "test_samples": 13961,
+  "features_used": 12,
+  "feature_names": [
+    "Supply Temp (\u00b0C)",
+    "Return Temp (\u00b0C)",
+    "Temp_Difference",
+    "Flow                                                (Liter/Hr)",
+    "Return Conduct (mS/m)",
+    "Remaining Time (sec)",
+    "Step Status_Encoded",
+    "Selected Recipe_Encoded",
+    "Return Valve Status_Encoded",
+    "Pump Selected_Encoded",
+    "Hour",
+    "DayOfWeek"
+  ]
+}

@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # -------------------------
+  # Backend - Flask API
+  # -------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cip-backend
+    restart: unless-stopped
+    environment:
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-default-secret-key-change-me}
+      - FLASK_ENV=production
+
+      - EMAIL_USER=${EMAIL_USER:-}
+      - EMAIL_PASS=${EMAIL_PASS:-}
+
+      - INFLUX_URL=${INFLUX_URL:-}
+      - INFLUX_TOKEN=${INFLUX_TOKEN:-}
+      - INFLUX_ORG=${INFLUX_ORG:-}
+      - INFLUX_BUCKET=${INFLUX_BUCKET:-}
+      - PORT=3000
+    ports:
+      - "5001:3000"
+    volumes:
+      - ./backend:/app
+      - backend-modules:/app/node_modules
+    networks:
+      - cip-network
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # -------------------------
+  # ML API - Model 1 Failure Prediction
+  # -------------------------
+  ml-api:
+    build:
+      context: ./dataset/models
+      dockerfile: Dockerfile
+    container_name: cip-ml-api
+    restart: unless-stopped
+    ports:
+      - "5002:5001"
+    networks:
+      - cip-network
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health')" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # -------------------------
+  # Frontend - React + Nginx
+  # -------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: cip-frontend
+    restart: unless-stopped
+    ports:
+      - "5005:5173"
+    environment:
+      - API_BASE_URL=/api
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - cip-network
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5173/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  backend-data:
+  backend-modules:
+
+
+networks:
+  cip-network:
+    driver: bridge

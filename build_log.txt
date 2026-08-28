@@ -1,0 +1,15 @@
+
+> cip-dashboard-react@0.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 28 modules transformed.
+x Build failed in 1.77s
+error during build:
+Could not resolve "./styles/global.css" from "src/App.jsx"
+file: /app/src/App.jsx
+    at getRollupError (file:///app/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
+    at error (file:///app/node_modules/rollup/dist/es/shared/parseAst.js:397:42)
+    at ModuleLoader.handleInvalidResolvedId (file:///app/node_modules/rollup/dist/es/shared/node-entry.js:21565:24)
+    at file:///app/node_modules/rollup/dist/es/shared/node-entry.js:21525:26

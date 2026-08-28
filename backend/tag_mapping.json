@@ -1,0 +1,10 @@
+{
+    "temperature": "DB1.Temperature_01",
+    "pressure": "DB1.Pressure_01",
+    "flow_rate": "DB1.FlowRate_01",
+    "conductivity": "DB1.Conductivity_01",
+    "tank_caustic_level": "DB2.Tank_Caustic_Level",
+    "tank_acid_level": "DB2.Tank_Acid_Level",
+    "cycle_status": "DB3.Cycle_Status",
+    "current_step": "DB3.Current_Step"
+}

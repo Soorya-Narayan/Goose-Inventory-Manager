@@ -1,0 +1,137 @@
+/* ContributingFactors.module.css — GOOSE-ALPHA · Correct class names matching JSX */
+
+:root {
+  --j-font: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.contributingFactors {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.contributingFactors h3 {
+  font-family: var(--j-font);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #5ba8cc;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contributingFactors h3 i { color: #00d4ff; }
+
+.subtitle {
+  font-family: var(--j-font);
+  font-size: 0.62rem;
+  color: #5ba8cc;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.noData {
+  font-family: var(--j-font);
+  font-size: 0.7rem;
+  color: #5ba8cc;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.factorsList { display: flex; flex-direction: column; gap: 8px; }
+
+.factorItem { display: flex; flex-direction: column; gap: 4px; }
+
+/* Header row per factor */
+.factorHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.factorRank {
+  font-family: var(--j-font);
+  font-size: 0.6rem;
+  color: #00d4ff;
+  font-weight: 700;
+  min-width: 22px;
+}
+
+.factorName {
+  font-family: var(--j-font);
+  font-size: 0.7rem;
+  color: #e0f4ff;
+  flex: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.factorValue {
+  font-family: var(--j-font);
+  font-size: 0.65rem;
+  color: #5ba8cc;
+}
+
+/* Bar */
+.factorBar {
+  height: 4px;
+  background: rgba(0, 212, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.factorBarFill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #00d4ff, rgba(0,212,255,0.5));
+  box-shadow: 0 0 8px rgba(0,212,255,0.3);
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+/* Scan shimmer */
+.factorBarFill::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: barScan 2s ease-in-out infinite;
+}
+
+@keyframes barScan {
+  0%   { left: -40%; }
+  100% { left: 140%; }
+}
+
+/* Rank-based colours on fill */
+.factorBarFill[data-rank="top"] {
+  background: linear-gradient(90deg, #ff3b3b, rgba(255,59,59,0.5));
+  box-shadow: 0 0 8px rgba(255,59,59,0.4);
+}
+
+.importance {
+  font-family: var(--j-font);
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.7);
+  position: absolute;
+  right: 3px;
+  z-index: 1;
+}
+
+/* Light mode */
+:global(body:not(.dark-theme)) .contributingFactors h3 { color: #64748b; }
+:global(body:not(.dark-theme)) .contributingFactors h3 i { color: #0284c7; }
+:global(body:not(.dark-theme)) .subtitle { color: #94a3b8; }
+:global(body:not(.dark-theme)) .factorName { color: #1e293b; }
+:global(body:not(.dark-theme)) .factorRank { color: #0284c7; }
+:global(body:not(.dark-theme)) .factorValue { color: #64748b; }
+:global(body:not(.dark-theme)) .factorBar { background: rgba(2,132,199,0.08); }

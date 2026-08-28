@@ -1,0 +1,13 @@
+
+> cip-dashboard-react@0.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 93 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.76 kB │ gzip:   0.50 kB
+dist/assets/index-CXdHirdU.css  104.48 kB │ gzip:  19.52 kB
+dist/assets/index-Bw1uGfv2.js   495.25 kB │ gzip: 159.70 kB │ map: 1,955.89 kB
+✓ built in 9.92s

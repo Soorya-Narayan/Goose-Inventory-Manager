@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CIP Dashboard — Presentation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --primary: #0ea5e9;
+      --accent: #6366f1;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --bg: #030d1c;
+      --card: rgba(8,22,48,0.9);
+      --border: rgba(14,165,233,0.2);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --white: #fff;
+    }
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    body{
+      font-family:'Inter',sans-serif; background:var(--bg);
+      color:var(--text); overflow:hidden; height:100vh; user-select:none;
+    }
+
+    /* Background */
+    .bg{
+      position:fixed; inset:0; z-index:0;
+      background:
+        radial-gradient(ellipse 70% 50% at 15% 25%, rgba(14,165,233,0.09) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 85% 75%, rgba(99,102,241,0.09) 0%, transparent 70%);
+    }
+    .grid{
+      position:fixed; inset:0; z-index:0;
+      background-image: linear-gradient(rgba(14,165,233,0.04) 1px,transparent 1px), linear-gradient(90deg,rgba(14,165,233,0.04) 1px,transparent 1px);
+      background-size:50px 50px;
+    }
+
+    /* Slide container */
+    .slides{ position:relative; z-index:1; height:100vh; }
+    .slide{
+      position:absolute; inset:0; opacity:0; pointer-events:none;
+      transition:opacity 0.6s ease, transform 0.6s ease;
+      transform:translateX(40px);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:60px 80px;
+    }
+    .slide.active{
+      opacity:1; pointer-events:all; transform:translateX(0);
+    }
+    .slide.prev{ transform:translateX(-40px); }
+
+    /* Slide number indicator */
+    .slide-num{
+      position:fixed; bottom:32px; left:50%; transform:translateX(-50%);
+      display:flex; gap:8px; z-index:100;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:50%;
+      background:rgba(255,255,255,0.2); cursor:pointer;
+      transition:all 0.3s ease;
+    }
+    .dot.active{ background:var(--primary); box-shadow:0 0 8px var(--primary); width:24px; border-radius:4px; }
+
+    /* Nav buttons */
+    .nav-btn{
+      position:fixed; top:50%; transform:translateY(-50%);
+      z-index:100; background:rgba(14,165,233,0.15);
+      border:1px solid rgba(14,165,233,0.3); border-radius:50%;
+      width:48px; height:48px; display:flex; align-items:center; justify-content:center;
+      cursor:pointer; font-size:1.2rem; color:var(--primary);
+      transition:all 0.3s ease; backdrop-filter:blur(8px);
+    }
+    .nav-btn:hover{ background:rgba(14,165,233,0.3); box-shadow:0 0 20px rgba(14,165,233,0.3); }
+    #prev{ left:24px; }
+    #next{ right:24px; }
+    #prev:disabled, #next:disabled{ opacity:0.3; cursor:default; }
+
+    /* Slide number */
+    .slide-counter{
+      position:fixed; top:24px; right:32px; z-index:100;
+      font-family:'Orbitron',sans-serif; font-size:0.7rem;
+      color:var(--primary); letter-spacing:2px; opacity:0.7;
+    }
+
+    /* Logo top-left */
+    .slide-logo{
+      position:fixed; top:24px; left:32px; z-index:100;
+      font-family:'Orbitron',sans-serif; font-size:0.72rem;
+      font-weight:600; color:var(--primary); letter-spacing:2px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .logo-dot{ width:28px; height:28px; border-radius:7px; background:linear-gradient(135deg,var(--primary),var(--accent)); display:flex; align-items:center; justify-content:center; font-size:0.9rem; }
+
+    /* ── Slide specific styles ── */
+
+    /* SLIDE 1 — Title */
+    .s1-title{
+      font-family:'Orbitron',sans-serif; font-size:clamp(2.5rem,5vw,4.5rem);
+      font-weight:900; text-align:center; line-height:1.1;
+      color:var(--white); margin-bottom:16px;
+      text-shadow:0 0 60px rgba(14,165,233,0.4);
+    }
+    .s1-title .hl{
+      background:linear-gradient(90deg,var(--primary),var(--accent));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .s1-sub{
+      font-size:1.1rem; color:var(--muted); max-width:600px; text-align:center;
+      line-height:1.7; margin-bottom:36px;
+    }
+    .s1-sub strong{ color:var(--text); }
+    .s1-tags{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+    .tag{
+      padding:8px 18px; border-radius:20px; font-size:0.78rem; font-weight:700;
+      letter-spacing:1px; text-transform:uppercase; border:1px solid;
+    }
+    .tag-blue{ background:rgba(14,165,233,0.15); border-color:rgba(14,165,233,0.4); color:var(--primary); }
+    .tag-purple{ background:rgba(99,102,241,0.15); border-color:rgba(99,102,241,0.4); color:#818cf8; }
+    .tag-green{ background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.4); color:var(--emerald); }
+    .tag-amber{ background:rgba(245,158,11,0.15); border-color:rgba(245,158,11,0.4); color:var(--amber); }
+
+    /* SLIDE headings */
+    .slide-heading{
+      font-family:'Orbitron',sans-serif; font-size:clamp(1.4rem,3vw,2.2rem);
+      font-weight:700; color:var(--white); margin-bottom:8px; text-align:center;
+    }
+    .slide-subheading{
+      font-size:0.9rem; color:var(--muted); text-align:center; margin-bottom:36px; line-height:1.5;
+    }
+    .eyebrow{
+      font-size:0.68rem; font-weight:700; letter-spacing:3px; color:var(--primary);
+      text-transform:uppercase; margin-bottom:12px; text-align:center;
+      display:flex; align-items:center; justify-content:center; gap:10px;
+    }
+    .eyebrow::before,.eyebrow::after{
+      content:''; width:50px; height:1px; background:linear-gradient(to right,transparent,var(--primary));
+    }
+    .eyebrow::after{ background:linear-gradient(to left,transparent,var(--primary)); }
+
+    /* Cards */
+    .card{
+      background:var(--card); border:1px solid var(--border);
+      border-radius:16px; padding:20px; backdrop-filter:blur(12px);
+      position:relative; overflow:hidden;
+    }
+    .card::before{ content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+    .ca-blue::before{ background:linear-gradient(90deg,var(--primary),var(--accent)); }
+    .ca-green::before{ background:linear-gradient(90deg,var(--emerald),var(--primary)); }
+    .ca-purple::before{ background:linear-gradient(90deg,var(--accent),#a855f7); }
+    .ca-amber::before{ background:linear-gradient(90deg,var(--amber),var(--red)); }
+
+    .card-icon{ font-size:2rem; margin-bottom:12px; }
+    .card-title{ font-size:1rem; font-weight:700; color:var(--text); margin-bottom:8px; }
+    .card-body{ font-size:0.82rem; color:var(--muted); line-height:1.6; }
+
+    /* GRID layouts */
+    .g2{ display:grid; grid-template-columns:1fr 1fr; gap:20px; width:100%; }
+    .g3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; width:100%; }
+    .g4{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px; width:100%; }
+
+    /* KPI strip */
+    .kpi{
+      text-align:center; background:var(--card); border:1px solid var(--border);
+      border-radius:14px; padding:20px 14px; backdrop-filter:blur(12px); position:relative; overflow:hidden;
+    }
+    .kpi::before{ content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--primary),var(--accent)); }
+    .kpi-num{ font-family:'Orbitron',sans-serif; font-size:2rem; font-weight:700; color:var(--primary); line-height:1; margin-bottom:4px; }
+    .kpi-label{ font-size:0.72rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+
+    /* Architecture nodes */
+    .arch{ display:flex; flex-direction:column; gap:8px; width:100%; }
+    .arch-level{
+      display:grid; gap:10px; align-items:center;
+    }
+    .arch-node{
+      border-radius:10px; padding:10px 16px; font-size:0.78rem; font-weight:600;
+      text-align:center; border:1px solid;
+    }
+    .an-plc{ background:rgba(245,158,11,0.12); border-color:rgba(245,158,11,0.4); color:#fbbf24; }
+    .an-iih{ background:rgba(14,165,233,0.12); border-color:rgba(14,165,233,0.4); color:#38bdf8; }
+    .an-db{ background:rgba(168,85,247,0.12); border-color:rgba(168,85,247,0.4); color:#c084fc; }
+    .an-flask{ background:rgba(16,185,129,0.12); border-color:rgba(16,185,129,0.4); color:#34d399; }
+    .an-ml{ background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.4); color:#f87171; }
+    .an-react{ background:rgba(99,102,241,0.12); border-color:rgba(99,102,241,0.4); color:#818cf8; }
+    .arch-arrow{ text-align:center; color:var(--muted); font-size:0.7rem; letter-spacing:2px; padding:2px 0; opacity:0.7; }
+
+    /* Feature rows */
+    .frow{
+      display:flex; align-items:flex-start; gap:14px; padding:12px 16px;
+      background:rgba(14,165,233,0.05); border:1px solid rgba(14,165,233,0.1);
+      border-radius:10px; margin-bottom:10px;
+    }
+    .frow-icon{
+      width:36px; height:36px; border-radius:8px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:1rem;
+    }
+    .fi-b{ background:rgba(14,165,233,0.2); }
+    .fi-g{ background:rgba(16,185,129,0.2); }
+    .fi-p{ background:rgba(99,102,241,0.2); }
+    .fi-a{ background:rgba(245,158,11,0.2); }
+    .frow-title{ font-size:0.88rem; font-weight:700; color:var(--text); margin-bottom:3px; }
+    .frow-body{ font-size:0.75rem; color:var(--muted); line-height:1.5; }
+
+    /* AI model cards */
+    .ai-model{
+      background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25);
+      border-radius:12px; padding:16px 12px; text-align:center;
+      transition:all 0.3s ease; cursor:default;
+    }
+    .ai-model:hover{
+      background:rgba(99,102,241,0.18); border-color:rgba(99,102,241,0.5);
+      transform:translateY(-4px); box-shadow:0 10px 24px rgba(99,102,241,0.25);
+    }
+    .ai-model-icon{ font-size:1.8rem; margin-bottom:8px; display:block; }
+    .ai-model-code{
+      font-family:'Orbitron',sans-serif; font-size:0.55rem;
+      font-weight:700; color:#818cf8; letter-spacing:1.5px; margin-bottom:6px;
+    }
+    .ai-model-name{ font-size:0.78rem; font-weight:700; color:var(--text); margin-bottom:4px; }
+    .ai-model-desc{ font-size:0.68rem; color:var(--muted); line-height:1.4; }
+
+    /* AI hero section */
+    .ai-hero{
+      background:linear-gradient(135deg,rgba(10,12,40,0.98),rgba(6,16,48,0.98));
+      border:1px solid rgba(99,102,241,0.4); border-radius:20px; padding:28px 32px;
+      width:100%; position:relative; overflow:hidden;
+    }
+    .ai-hero::before{
+      content:''; position:absolute; top:-40px; right:-40px; width:200px; height:200px;
+      background:radial-gradient(circle,rgba(99,102,241,0.2) 0%,transparent 70%);
+    }
+    .ai-hero::after{
+      content:''; position:absolute; top:0; left:0; right:0; height:3px;
+      background:linear-gradient(90deg,#6366f1,#8b5cf6,#0ea5e9,#6366f1);
+      background-size:200% 100%; animation:gradient-shift 3s linear infinite;
+    }
+
+    /* Check list */
+    .check-list{ display:flex; flex-direction:column; gap:10px; }
+    .check-row{ display:flex; align-items:center; gap:10px; font-size:0.82rem; color:var(--text); }
+    .check-row .ck{ color:var(--emerald); font-size:0.9rem; flex-shrink:0; font-weight:700; }
+
+    /* Tech pills */
+    .tech-pills{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+    .tech-pill{
+      padding:7px 14px; border-radius:8px; font-size:0.72rem; font-weight:600; border:1px solid;
+    }
+
+    /* Comparison table */
+    .comp-table{ width:100%; border-collapse:collapse; }
+    .comp-table th, .comp-table td{
+      padding:12px 16px; text-align:left; font-size:0.8rem;
+      border-bottom:1px solid rgba(255,255,255,0.05);
+    }
+    .comp-table th{
+      font-weight:700; letter-spacing:1px; text-transform:uppercase;
+      font-size:0.68rem; color:var(--muted);
+    }
+    .comp-table .col-yes{ color:var(--emerald); font-weight:700; }
+    .comp-table .col-no{ color:var(--red); }
+    .comp-table .col-hl{ color:var(--primary); font-weight:700; }
+    .comp-table tr:hover td{ background:rgba(255,255,255,0.02); }
+    .comp-table thead tr th:first-child{ border-radius:8px 0 0 0; }
+
+    /* Live dot */
+    .live-dot{
+      width:8px; height:8px; border-radius:50%; background:var(--emerald);
+      animation:glow-pulse 2s infinite; display:inline-block;
+    }
+    @keyframes glow-pulse{
+      0%{ box-shadow:0 0 0 0 rgba(16,185,129,0.7); }
+      70%{ box-shadow:0 0 0 8px rgba(16,185,129,0); }
+      100%{ box-shadow:0 0 0 0 rgba(16,185,129,0); }
+    }
+    @keyframes gradient-shift{
+      0%{ background-position:0% 50%; }
+      50%{ background-position:100% 50%; }
+      100%{ background-position:0% 50%; }
+    }
+
+    /* Wide slide layout */
+    .wide{ max-width:1000px; width:100%; }
+    .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start; width:100%; max-width:1000px; }
+
+    /* Progress steps */
+    .progress-steps{
+      display:flex; flex-direction:column; gap:14px; width:100%;
+    }
+    .step{
+      display:flex; align-items:center; gap:16px; padding:14px 18px;
+      background:var(--card); border:1px solid var(--border); border-radius:12px;
+    }
+    .step-num{
+      width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--accent));
+      display:flex; align-items:center; justify-content:center; font-weight:700;
+      font-size:0.9rem; color:#fff; flex-shrink:0;
+    }
+    .step-text strong{ font-size:0.9rem; color:var(--text); display:block; margin-bottom:3px; }
+    .step-text span{ font-size:0.75rem; color:var(--muted); }
+
+    /* Vertical separator */
+    .vsep{
+      width:1px; height:14px; background:rgba(14,165,233,0.3); margin:0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="grid"></div>
+
+  <!-- Fixed UI -->
+  <div class="slide-logo"><div class="logo-dot">&#128106;</div> GOOSE AI</div>
+  <div class="slide-counter" id="counter">01 / 10</div>
+  <button class="nav-btn" id="prev" onclick="changeSlide(-1)">&#8592;</button>
+  <button class="nav-btn" id="next" onclick="changeSlide(1)">&#8594;</button>
+  <div class="slide-num" id="dots"></div>
+
+  <!-- ═══════════════════════════════════════ SLIDES ═══════════════════════════════════════ -->
+  <div class="slides" id="slides">
+
+    <!-- SLIDE 1: Title -->
+    <div class="slide active" data-slide="0">
+      <div class="eyebrow">Industrial Process Intelligence</div>
+      <div class="s1-title">CIP <span class="hl">Dashboard</span></div>
+      <p class="s1-sub">
+        A <strong>next-generation web platform</strong> for real-time Clean-In-Place process monitoring,
+        powered by AI diagnostics and built on industrial-grade technology.
+      </p>
+      <div class="s1-tags">
+        <span class="tag tag-blue"><span class="live-dot"></span>&nbsp; Real-Time PLC Data</span>
+        <span class="tag tag-purple">&#129504; AI Diagnostics</span>
+        <span class="tag tag-green">&#127981; Industrial Edge</span>
+        <span class="tag tag-amber">&#128202; Analytics</span>
+      </div>
+      <div style="margin-top:40px;font-size:0.75rem;color:var(--muted);text-align:center;letter-spacing:1px;">
+        Goose Digital · Industrial Intelligence Solutions · v2.1.0
+      </div>
+    </div>
+
+    <!-- SLIDE 2: What is CIP? -->
+    <div class="slide" data-slide="1">
+      <div class="eyebrow">The Problem We Solve</div>
+      <div class="slide-heading">What is Clean-In-Place (CIP)?</div>
+      <div class="slide-subheading">An automated cleaning process used in food, beverage &amp; pharma industries — without disassembling equipment.</div>
+      <div class="g3 wide">
+        <div class="card ca-blue">
+          <div class="card-icon">&#127981;</div>
+          <div class="card-title">Industrial Challenge</div>
+          <div class="card-body">CIP cycles involve precisely controlled temperature, flow, chemical concentration, and pressure. Even small deviations cause quality failures or compliance breaches.</div>
+        </div>
+        <div class="card ca-amber">
+          <div class="card-icon">&#128721;</div>
+          <div class="card-title">Old Way — Manual / SCADA</div>
+          <div class="card-body">Traditional HMI systems only display raw values. No intelligence, no predictions, no root-cause analysis. Operators react to failures after they occur.</div>
+        </div>
+        <div class="card ca-green">
+          <div class="card-icon">&#9889;</div>
+          <div class="card-title">Our Solution</div>
+          <div class="card-body">CIP Dashboard connects directly to PLCs via IIH/OPC UA, visualizes live data beautifully, and uses AI models to <em>predict failures before they happen.</em></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: System Architecture -->
+    <div class="slide" data-slide="2">
+      <div class="eyebrow">Technical Foundation</div>
+      <div class="slide-heading">System Architecture — Data Flow</div>
+      <div class="slide-subheading">PLC data flows through a layered, containerized pipeline from field level to browser UI.</div>
+      <div class="two-col">
+        <div class="arch">
+          <div class="arch-level" style="grid-template-columns:1fr 1fr;">
+            <div class="arch-node an-plc">&#127981; PLC / SCADA<br/><span style="font-size:0.65rem;opacity:0.8;">S7-1200 / S7-1500</span></div>
+            <div class="arch-node an-plc">&#128225; Sensors<br/><span style="font-size:0.65rem;opacity:0.8;">Temp · Flow · pH · Cond.</span></div>
+          </div>
+          <div class="arch-arrow">&#8595; OPC UA / MQTT / IIH Essentials &#8595;</div>
+          <div class="arch-level" style="grid-template-columns:1fr 1fr;">
+            <div class="arch-node an-iih">&#128279; IIH Essentials<br/><span style="font-size:0.65rem;opacity:0.8;">Siemens Edge</span></div>
+            <div class="arch-node an-db">&#128450; InfluxDB<br/><span style="font-size:0.65rem;opacity:0.8;">Time-Series Store</span></div>
+          </div>
+          <div class="arch-arrow">&#8595; REST API / Docker Network &#8595;</div>
+          <div class="arch-level" style="grid-template-columns:1fr 1fr;">
+            <div class="arch-node an-flask">&#9879; Flask API<br/><span style="font-size:0.65rem;opacity:0.8;">Python · Gunicorn</span></div>
+            <div class="arch-node an-ml">&#129504; ML Service<br/><span style="font-size:0.65rem;opacity:0.8;">scikit-learn</span></div>
+          </div>
+          <div class="arch-arrow">&#8595; Nginx Reverse Proxy &#8595;</div>
+          <div class="arch-level" style="grid-template-columns:1fr;">
+            <div class="arch-node an-react">&#9883; React 18 Dashboard · Chart.js · Vite</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="card ca-blue">
+            <div class="card-title">&#127981; Field Layer</div>
+            <div class="card-body">Siemens PLCs (S7-1200/1500) collect raw sensor data — temperature, flow, conductivity, pressure, pH — via physical instrumentation.</div>
+          </div>
+          <div class="card ca-green">
+            <div class="card-title">&#128279; Edge Layer</div>
+            <div class="card-body">IIH Essentials on Siemens Industrial Edge aggregates PLC tags. InfluxDB stores all time-series data at sub-second resolution.</div>
+          </div>
+          <div class="card ca-purple">
+            <div class="card-title">&#129504; App Layer</div>
+            <div class="card-body">Flask REST API serves data. A separate ML microservice (port 5002) runs 7 AI models in parallel, polled every 3 seconds.</div>
+          </div>
+          <div class="card ca-amber">
+            <div class="card-title">&#9883; UI Layer</div>
+            <div class="card-body">React 18 + Vite frontend delivers a premium, responsive dashboard. Served via Nginx with HTTPS. Works on any browser or tablet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: Dashboard Features -->
+    <div class="slide" data-slide="3">
+      <div class="eyebrow">Platform Features</div>
+      <div class="slide-heading">Dashboard Modules</div>
+      <div class="slide-subheading">Every module works together to give operators complete process visibility.</div>
+      <div class="two-col">
+        <div>
+          <div class="frow">
+            <div class="frow-icon fi-b">&#128202;</div>
+            <div>
+              <div class="frow-title">Live KPI Monitoring</div>
+              <div class="frow-body">Temperature · Pressure · Flow Rate · Conductivity · pH cards refresh every 3 seconds direct from PLC data via IIH Essentials. Color-coded status, trend arrows.</div>
+            </div>
+          </div>
+          <div class="frow">
+            <div class="frow-icon fi-g">&#128260;</div>
+            <div>
+              <div class="frow-title">CIP Cycle Tracking</div>
+              <div class="frow-body">Visual step-by-step cycle progress timeline. Tracks Pre-rinse, Caustic wash, Intermediate rinse, Acid wash, Final rinse stages. Instant deviation alerts.</div>
+            </div>
+          </div>
+          <div class="frow">
+            <div class="frow-icon fi-p">&#128200;</div>
+            <div>
+              <div class="frow-title">Trend Charts &amp; Monitoring</div>
+              <div class="frow-body">Interactive multi-parameter charts (conductivity, flow, temperature). Live and historical modes. Export to CSV for compliance.</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="frow">
+            <div class="frow-icon fi-a">&#128276;</div>
+            <div>
+              <div class="frow-title">Alarm Management</div>
+              <div class="frow-body">Priority-based alerting (Critical / Warning / Info). Acknowledgment workflow, email/SMS routing, full audit trail with timestamps.</div>
+            </div>
+          </div>
+          <div class="frow">
+            <div class="frow-icon fi-g">&#128202;</div>
+            <div>
+              <div class="frow-title">Performance Analytics</div>
+              <div class="frow-body">OEE efficiency tracking, water &amp; energy consumption, chemical cost analysis, cycle time comparison. Period selectors (7-day / 30-day / YTD).</div>
+            </div>
+          </div>
+          <div class="frow">
+            <div class="frow-icon fi-b">&#128196;</div>
+            <div>
+              <div class="frow-title">Reports &amp; Compliance</div>
+              <div class="frow-body">Automated cycle reports, FDA 21 CFR Part 11 compliant data logging. One-click export. Role-based access (Admin / Operator / QA Supervisor).</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: AI Diagnostics Overview -->
+    <div class="slide" data-slide="4">
+      <div class="eyebrow">&#9733; The Key Differentiator</div>
+      <div class="slide-heading">GOOSE AI Diagnostics Engine</div>
+      <div class="slide-subheading">7 specialized ML models running <em>simultaneously</em> on live PLC data — this is what no conventional SCADA system can offer.</div>
+
+      <div class="ai-hero wide" style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+          <div style="width:50px;height:50px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 0 20px rgba(99,102,241,0.4);flex-shrink:0;">&#129504;</div>
+          <div>
+            <div style="font-size:0.65rem;font-weight:700;letter-spacing:3px;color:#818cf8;text-transform:uppercase;margin-bottom:2px;">Real-Time ML Inference · Failure Prediction · Neural Analytics</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:1.2rem;font-weight:700;color:#fff;">CIP Neural Command Centre · v2.1.0</div>
+          </div>
+          <div style="margin-left:auto;text-align:right;">
+            <div style="font-size:0.7rem;color:var(--muted);letter-spacing:1px;">MODEL ACCURACY</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weight:700;color:var(--primary);">99.96%</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;position:relative;z-index:1;">
+          <div class="ai-model">
+            <span class="ai-model-icon">&#128737;</span>
+            <div class="ai-model-code">GOOSE-ALPHA</div>
+            <div class="ai-model-name">Failure Prediction</div>
+            <div class="ai-model-desc">Real-time failure risk score</div>
+          </div>
+          <div class="ai-model">
+            <span class="ai-model-icon">&#128147;</span>
+            <div class="ai-model-code">GOOSE-BETA</div>
+            <div class="ai-model-name">Cycle Health</div>
+            <div class="ai-model-desc">Grade A–F health scoring</div>
+          </div>
+          <div class="ai-model">
+            <span class="ai-model-icon">&#127807;</span>
+            <div class="ai-model-code">GOOSE-GAMMA</div>
+            <div class="ai-model-name">Resource Optimizer</div>
+            <div class="ai-model-desc">Water &amp; energy savings</div>
+          </div>
+          <div class="ai-model">
+            <span class="ai-model-icon">&#9881;</span>
+            <div class="ai-model-code">GOOSE-DELTA</div>
+            <div class="ai-model-name">Hardware Health</div>
+            <div class="ai-model-desc">Pump, valve, heater wear</div>
+          </div>
+          <div class="ai-model">
+            <span class="ai-model-icon">&#129514;</span>
+            <div class="ai-model-code">GOOSE-EPSILON</div>
+            <div class="ai-model-name">Recipe Intelligence</div>
+            <div class="ai-model-desc">Optimizes CIP recipes</div>
+          </div>
+          <div class="ai-model">
+            <span class="ai-model-icon">&#9879;</span>
+            <div class="ai-model-code">GOOSE-ZETA</div>
+            <div class="ai-model-name">Chemical Conc.</div>
+            <div class="ai-model-desc">Caustic &amp; acid monitoring</div>
+          </div>
+          <div class="ai-model">
+            <span class="ai-model-icon">&#127754;</span>
+            <div class="ai-model-code">GOOSE-ETA</div>
+            <div class="ai-model-name">Sensor Drift</div>
+            <div class="ai-model-desc">Auto calibration alerts</div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:0.8rem;color:var(--muted);text-align:center;">
+        Model: <strong style="color:var(--text);">Random Forest (Regularized)</strong> &nbsp;·&nbsp; 
+        Features: <strong style="color:var(--text);">11 input vectors</strong> &nbsp;·&nbsp; 
+        Poll interval: <strong style="color:var(--text);">3 seconds</strong> &nbsp;·&nbsp;
+        Training data: <strong style="color:var(--text);">Full-day PLC CSV datasets</strong>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: AI Deep-Dive -->
+    <div class="slide" data-slide="5">
+      <div class="eyebrow">AI Engine — Deep Dive</div>
+      <div class="slide-heading">How Each AI Model Works</div>
+      <div class="slide-subheading">Each GOOSE model is purpose-built for one diagnostic task, making predictions continuously.</div>
+      <div class="g3 wide">
+        <div class="card ca-purple">
+          <div style="font-family:'Orbitron',sans-serif;font-size:0.58rem;font-weight:700;color:#818cf8;letter-spacing:2px;margin-bottom:8px;">GOOSE-ALPHA · BETA</div>
+          <div class="card-title">&#128737; Failure Prediction &amp; Cycle Health</div>
+          <div class="card-body">
+            <strong style="color:var(--text);">ALPHA:</strong> Calculates failure probability % in real-time. Low / Medium / High risk with recommendations.<br/><br/>
+            <strong style="color:var(--text);">BETA:</strong> Scores entire CIP cycle health A-F. Highlights deviations in temperature, flow vs. golden-mean setpoints.
+          </div>
+        </div>
+        <div class="card ca-green">
+          <div style="font-family:'Orbitron',sans-serif;font-size:0.58rem;font-weight:700;color:#6ee7b7;letter-spacing:2px;margin-bottom:8px;">GOOSE-GAMMA · DELTA</div>
+          <div class="card-title">&#127807; Resource &amp; Hardware Optimization</div>
+          <div class="card-body">
+            <strong style="color:var(--text);">GAMMA:</strong> Tracks water saved (L), energy saved (kWh), CO2 reduction, chemical savings. Efficiency score 0–100%.<br/><br/>
+            <strong style="color:var(--text);">DELTA:</strong> Monitors pump wear %, valve health, heater efficiency. Predicts next maintenance date.
+          </div>
+        </div>
+        <div class="card ca-amber">
+          <div style="font-family:'Orbitron',sans-serif;font-size:0.58rem;font-weight:700;color:#fbbf24;letter-spacing:2px;margin-bottom:8px;">EPSILON · ZETA · ETA</div>
+          <div class="card-title">&#9879; Recipe, Chemical &amp; Sensor Intelligence</div>
+          <div class="card-body">
+            <strong style="color:var(--text);">EPSILON:</strong> Suggests optimal temperature, time, with % savings projection.<br/><br/>
+            <strong style="color:var(--text);">ZETA:</strong> Real-time caustic &amp; acid concentration monitoring vs. targets.<br/><br/>
+            <strong style="color:var(--text);">ETA:</strong> Detects sensor drift and flags calibration needs before data becomes unreliable.
+          </div>
+        </div>
+      </div>
+      <div class="g4 wide" style="margin-top:16px;">
+        <div class="kpi"><div class="kpi-num">99.96%</div><div class="kpi-label">Model Accuracy</div></div>
+        <div class="kpi"><div class="kpi-num">11</div><div class="kpi-label">Input Vectors</div></div>
+        <div class="kpi"><div class="kpi-num">3s</div><div class="kpi-label">Inference Rate</div></div>
+        <div class="kpi"><div class="kpi-num">7</div><div class="kpi-label">Active Models</div></div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: Tech Stack -->
+    <div class="slide" data-slide="6">
+      <div class="eyebrow">Under the Hood</div>
+      <div class="slide-heading">Technology Stack</div>
+      <div class="slide-subheading">Enterprise-grade tools chosen for reliability, scalability, and performance.</div>
+      <div class="g3 wide">
+        <div class="card ca-blue">
+          <div class="card-icon">&#9883;</div>
+          <div class="card-title">Frontend</div>
+          <div class="card-body">
+            <div class="tech-pills" style="justify-content:flex-start;">
+              <span class="tech-pill" style="background:rgba(99,102,241,0.1);border-color:rgba(99,102,241,0.4);color:#818cf8;">React 18</span>
+              <span class="tech-pill" style="background:rgba(14,165,233,0.1);border-color:rgba(14,165,233,0.3);color:#38bdf8;">Vite</span>
+              <span class="tech-pill" style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:#34d399;">Chart.js</span>
+              <span class="tech-pill" style="background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.3);color:#fbbf24;">React Router 6</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:12px;line-height:1.6;">
+              Single-page application. Sub-second UI updates. Glassmorphic design. Dark &amp; Light modes. Mobile responsive. Works on any browser or industrial tablet.
+            </div>
+          </div>
+        </div>
+        <div class="card ca-green">
+          <div class="card-icon">&#9879;</div>
+          <div class="card-title">Backend &amp; Data</div>
+          <div class="card-body">
+            <div class="tech-pills" style="justify-content:flex-start;">
+              <span class="tech-pill" style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:#34d399;">Flask / Python</span>
+              <span class="tech-pill" style="background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.4);color:#c084fc;">InfluxDB</span>
+              <span class="tech-pill" style="background:rgba(14,165,233,0.1);border-color:rgba(14,165,233,0.3);color:#38bdf8;">Redis</span>
+              <span class="tech-pill" style="background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.3);color:#fbbf24;">Gunicorn</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:12px;line-height:1.6;">
+              Flask REST API with session management. InfluxDB for time-series PLC data at millisecond resolution. Redis for caching &amp; performance.
+            </div>
+          </div>
+        </div>
+        <div class="card ca-purple">
+          <div class="card-icon">&#129504;</div>
+          <div class="card-title">AI &amp; Infrastructure</div>
+          <div class="card-body">
+            <div class="tech-pills" style="justify-content:flex-start;">
+              <span class="tech-pill" style="background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.3);color:#fbbf24;">scikit-learn</span>
+              <span class="tech-pill" style="background:rgba(14,165,233,0.1);border-color:rgba(14,165,233,0.3);color:#38bdf8;">Docker</span>
+              <span class="tech-pill" style="background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#f87171;">Nginx</span>
+              <span class="tech-pill" style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.25);color:#6ee7b7;">MQTT</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:12px;line-height:1.6;">
+              ML microservice runs independently (port 5002). Containerized with Docker Compose. Nginx as reverse proxy. OPC UA + MQTT for PLC connectivity.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:20px;padding:16px 24px;background:var(--card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:1000px;">
+        <div style="font-size:0.7rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">Data Flow Summary</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:0.78rem;color:var(--text);">
+          <span style="background:rgba(245,158,11,0.15);border-radius:6px;padding:4px 10px;border:1px solid rgba(245,158,11,0.3);color:#fbbf24;">PLC Tags</span>
+          <span style="color:var(--muted);">&#8594;</span>
+          <span style="background:rgba(14,165,233,0.1);border-radius:6px;padding:4px 10px;border:1px solid rgba(14,165,233,0.25);color:#38bdf8;">IIH Essentials (OPC UA)</span>
+          <span style="color:var(--muted);">&#8594;</span>
+          <span style="background:rgba(168,85,247,0.1);border-radius:6px;padding:4px 10px;border:1px solid rgba(168,85,247,0.3);color:#c084fc;">InfluxDB</span>
+          <span style="color:var(--muted);">&#8594;</span>
+          <span style="background:rgba(16,185,129,0.1);border-radius:6px;padding:4px 10px;border:1px solid rgba(16,185,129,0.3);color:#34d399;">Flask API</span>
+          <span style="color:var(--muted);">+</span>
+          <span style="background:rgba(239,68,68,0.1);border-radius:6px;padding:4px 10px;border:1px solid rgba(239,68,68,0.3);color:#f87171;">ML Service</span>
+          <span style="color:var(--muted);">&#8594;</span>
+          <span style="background:rgba(14,165,233,0.1);border-radius:6px;padding:4px 10px;border:1px solid rgba(14,165,233,0.25);color:#38bdf8;">Nginx</span>
+          <span style="color:var(--muted);">&#8594;</span>
+          <span style="background:rgba(99,102,241,0.1);border-radius:6px;padding:4px 10px;border:1px solid rgba(99,102,241,0.3);color:#818cf8;">React Dashboard</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: Comparison -->
+    <div class="slide" data-slide="7">
+      <div class="eyebrow">Why Choose CIP Dashboard</div>
+      <div class="slide-heading">CIP Dashboard vs. Traditional Systems</div>
+      <div class="slide-subheading">See exactly what sets us apart from conventional SCADA HMI solutions.</div>
+      <div class="wide">
+        <table class="comp-table" style="background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--border);">
+          <thead>
+            <tr style="background:rgba(14,165,233,0.06);">
+              <th style="color:var(--text);">Feature / Capability</th>
+              <th style="color:var(--emerald);">&#9989; CIP Dashboard</th>
+              <th style="color:var(--muted);">Traditional SCADA / HMI</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Real-time data refresh</td>
+              <td class="col-yes">Every 3 seconds</td>
+              <td class="col-no">Slow scan cycles (10–30s)</td>
+            </tr>
+            <tr>
+              <td>AI-powered failure prediction</td>
+              <td class="col-yes">7 ML models · 99.96% accuracy</td>
+              <td class="col-no">Not available</td>
+            </tr>
+            <tr>
+              <td>Modern web UI</td>
+              <td class="col-yes">React 18 · Any device / browser</td>
+              <td class="col-no">Legacy, fixed-screen HMIs</td>
+            </tr>
+            <tr>
+              <td>Analytics &amp; reporting</td>
+              <td class="col-yes">OEE, cost, water/energy analysis</td>
+              <td class="col-no">Basic or none</td>
+            </tr>
+            <tr>
+              <td>Deployment</td>
+              <td class="col-yes">Docker — hours, not weeks</td>
+              <td class="col-no">Weeks of on-site configuration</td>
+            </tr>
+            <tr>
+              <td>Integration</td>
+              <td class="col-yes">OPC UA · MQTT · IIH · REST API</td>
+              <td class="col-no">Vendor lock-in proprietary</td>
+            </tr>
+            <tr>
+              <td>Sensor drift detection</td>
+              <td class="col-yes">GOOSE-ETA automatic alerts</td>
+              <td class="col-no">Manual calibration checks</td>
+            </tr>
+            <tr>
+              <td>Chemical concentration AI</td>
+              <td class="col-yes">GOOSE-ZETA real-time monitoring</td>
+              <td class="col-no">Not available</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: Target Users & Use Cases -->
+    <div class="slide" data-slide="8">
+      <div class="eyebrow">Who Benefits</div>
+      <div class="slide-heading">Target Users &amp; Industries</div>
+      <div class="slide-subheading">Designed for every stakeholder in the industrial cleaning process.</div>
+      <div class="g4 wide" style="margin-bottom:20px;">
+        <div class="card ca-blue">
+          <div class="card-icon">&#128104;</div>
+          <div class="card-title">Plant Manager</div>
+          <div class="card-body">Full operational visibility. KPI dashboards, OEE tracking, water/energy cost reduction, multi-circuit monitoring.</div>
+        </div>
+        <div class="card ca-green">
+          <div class="card-icon">&#128203;</div>
+          <div class="card-title">QA / Compliance</div>
+          <div class="card-body">FDA 21 CFR Part 11 logging. Automated cycle reports. Audit-ready documentation. User activity trail.</div>
+        </div>
+        <div class="card ca-amber">
+          <div class="card-icon">&#128295;</div>
+          <div class="card-title">Maintenance Team</div>
+          <div class="card-body">AI hardware health scores. Pump wear alerts. Sensor drift detection. Predictive maintenance scheduling.</div>
+        </div>
+        <div class="card ca-purple">
+          <div class="card-icon">&#128269;</div>
+          <div class="card-title">Operations Director</div>
+          <div class="card-body">ROI metrics, cycle optimization, cost savings tracking, multi-site overview, resource sustainability scores.</div>
+        </div>
+      </div>
+      <div class="g3 wide">
+        <div style="padding:14px 18px;background:var(--card);border:1px solid var(--border);border-radius:12px;">
+          <div style="font-size:0.7rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Industries</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span class="tag tag-blue" style="font-size:0.65rem;padding:5px 10px;">Food &amp; Beverage</span>
+            <span class="tag tag-blue" style="font-size:0.65rem;padding:5px 10px;">Pharma / Biotech</span>
+            <span class="tag tag-blue" style="font-size:0.65rem;padding:5px 10px;">Dairy &amp; Brewing</span>
+            <span class="tag tag-blue" style="font-size:0.65rem;padding:5px 10px;">Chemical Processing</span>
+          </div>
+        </div>
+        <div style="padding:14px 18px;background:var(--card);border:1px solid var(--border);border-radius:12px;">
+          <div style="font-size:0.7rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Key Benefits</div>
+          <div class="check-list">
+            <div class="check-row"><span class="ck">✔</span> Up to 30% water &amp; chemical savings</div>
+            <div class="check-row"><span class="ck">✔</span> Shift from reactive to predictive maintenance</div>
+            <div class="check-row"><span class="ck">✔</span> ROI in 6–12 months</div>
+          </div>
+        </div>
+        <div style="padding:14px 18px;background:var(--card);border:1px solid var(--border);border-radius:12px;">
+          <div style="font-size:0.7rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Deployment</div>
+          <div class="check-list">
+            <div class="check-row"><span class="ck">✔</span> Siemens Industrial Edge</div>
+            <div class="check-row"><span class="ck">✔</span> Docker — any Linux server</div>
+            <div class="check-row"><span class="ck">✔</span> Cloud (Azure / AWS)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 10: Summary / Call to Action -->
+    <div class="slide" data-slide="9">
+      <div class="eyebrow">Summary</div>
+      <div class="slide-heading">CIP Dashboard — Complete Solution</div>
+      <div class="slide-subheading">One platform. Real data. Real intelligence. Real results.</div>
+      <div class="g3 wide" style="margin-bottom:24px;">
+        <div class="card ca-blue" style="text-align:center;">
+          <div class="card-icon">&#128202;</div>
+          <div class="card-title" style="justify-content:center;">Real-Time Visibility</div>
+          <div class="card-body">Live PLC data from every sensor, every second. Beautiful, intuitive KPI dashboard designed for operators.</div>
+        </div>
+        <div class="card" style="border-color:rgba(99,102,241,0.5);background:linear-gradient(135deg,rgba(10,12,40,0.98),rgba(6,16,48,0.98));text-align:center;">
+          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#6366f1,#8b5cf6,#0ea5e9);"></div>
+          <div class="card-icon">&#129504;</div>
+          <div class="card-title" style="justify-content:center;color:#818cf8;">AI Diagnostics Engine</div>
+          <div class="card-body">7 ML models predict failures, optimize resources, monitor sensors — 24/7. <strong style="color:var(--text);">99.96% accuracy.</strong></div>
+        </div>
+        <div class="card ca-green" style="text-align:center;">
+          <div class="card-icon">&#128640;</div>
+          <div class="card-title" style="justify-content:center;">Fast Deployment</div>
+          <div class="card-body">Docker containerized. Plug-and-play with Siemens Industrial Edge. Setup in hours. Scales to unlimited sites.</div>
+        </div>
+      </div>
+      <div style="padding:24px 32px;background:linear-gradient(135deg,rgba(14,165,233,0.08),rgba(99,102,241,0.06));border:1px solid rgba(14,165,233,0.25);border-radius:16px;width:100%;max-width:800px;text-align:center;">
+        <div style="font-family:'Orbitron',sans-serif;font-size:0.7rem;letter-spacing:3px;color:var(--primary);margin-bottom:12px;text-transform:uppercase;">Get in Touch</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:6px;">Goose Digital — Industrial Intelligence Solutions</div>
+        <div style="font-size:0.85rem;color:var(--muted);">
+          <span style="color:var(--primary);font-weight:600;">sales@goosedigital.com</span> &nbsp;·&nbsp;
+          support@goosedigital.com &nbsp;·&nbsp;
+          <span style="color:var(--primary);font-weight:600;">Live Demo Available</span>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+          <span class="tag tag-blue">Docker Ready</span>
+          <span class="tag tag-green">IIH Certified</span>
+          <span class="tag tag-purple">AI-Powered</span>
+          <span class="tag tag-amber">FDA Compliant</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /slides -->
+
+  <script>
+    const TOTAL = 10;
+    let current = 0;
+    const slidesEl = document.querySelectorAll('.slide');
+    const dotsEl = document.getElementById('dots');
+    const counterEl = document.getElementById('counter');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+
+    // Build dots
+    for(let i=0; i<TOTAL; i++){
+      const d = document.createElement('div');
+      d.className = 'dot' + (i===0?' active':'');
+      d.onclick = () => goTo(i);
+      dotsEl.appendChild(d);
+    }
+
+    function goTo(n){
+      slidesEl[current].classList.remove('active');
+      slidesEl[current].classList.add('prev');
+      setTimeout(() => slidesEl[current].classList.remove('prev'), 600);
+      current = n;
+      slidesEl[current].classList.add('active');
+      document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===current));
+      counterEl.textContent = String(current+1).padStart(2,'0') + ' / ' + String(TOTAL).padStart(2,'0');
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current === TOTAL-1;
+    }
+
+    function changeSlide(dir){
+      const n = current + dir;
+      if(n < 0 || n >= TOTAL) return;
+      goTo(n);
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', e => {
+      if(e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+      if(e.key === 'ArrowLeft' || e.key === 'ArrowUp') changeSlide(-1);
+      if(e.key === 'Home') goTo(0);
+      if(e.key === 'End') goTo(TOTAL-1);
+    });
+
+    prevBtn.disabled = true;
+    goTo(0);
+  </script>
+</body>
+</html>

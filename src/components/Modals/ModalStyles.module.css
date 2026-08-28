@@ -1,0 +1,188 @@
+/* src/components/Modals/ModalStyles.module.css */
+
+/* --- General Modal Overlay --- */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7); /* Dark semi-transparent background */
+  z-index: 2000; /* Ensure it's above other content */
+  display: flex;
+  align-items: center; /* Center content vertically */
+  justify-content: center; /* Center content horizontally */
+  padding: 20px; /* Add padding for smaller screens */
+  box-sizing: border-box;
+  animation: fadeInOverlay 0.3s ease-out;
+}
+
+@keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+
+/* --- General Modal Content Box --- */
+.modalContent {
+  background: var(--card-bg); /* Use card background color */
+  padding: 30px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px; /* Limit max width */
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  border: 1px solid var(--border-color);
+  max-height: 90vh; /* Prevent modal from being too tall */
+  overflow-y: auto; /* Allow scrolling if content overflows */
+  /* Add subtle scale-up animation */
+  animation: scaleInModal 0.3s ease-out;
+}
+
+@keyframes scaleInModal {
+    from { transform: scale(0.95); opacity: 0.8; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+
+/* --- Modal Header --- */
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 15px;
+  margin-bottom: 25px; /* More space below header */
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  font-weight: 600; /* Bolder title */
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  font-size: 1.8rem; /* Larger close icon */
+  cursor: pointer;
+  color: var(--text-secondary);
+  line-height: 1; /* Adjust vertical alignment */
+  padding: 0 5px; /* Clickable area */
+}
+.modalClose:hover {
+    color: var(--text-primary);
+}
+
+/* --- Form Styles within Modal --- */
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.formGroup input[type="text"],
+.formGroup input[type="password"],
+.formGroup input[type="email"],
+.formGroup select {
+  width: 100%;
+  padding: 12px; /* Increased padding */
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  background-color: var(--light-bg); /* Input background */
+  color: var(--text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+:global(body.dark-theme) .formGroup input,
+:global(body.dark-theme) .formGroup select {
+    background-color: var(--sidebar-hover-bg); /* Darker input */
+}
+
+
+.formGroup input:focus,
+.formGroup select:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Specific style for password placeholder */
+.formGroup input::placeholder {
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+
+/* --- Form Action Buttons --- */
+.formActions {
+  display: flex;
+  justify-content: flex-end; /* Align buttons right */
+  gap: 12px; /* Space between buttons */
+  margin-top: 30px; /* Space above buttons */
+  padding-top: 20px; /* Padding above */
+  border-top: 1px solid var(--border-color); /* Separator line */
+}
+
+.formBtn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-weight: 500;
+  transition: background-color 0.2s, border-color 0.2s, opacity 0.2s;
+}
+
+.formBtn.cancel {
+  background: var(--light-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+.formBtn.cancel:hover {
+  background-color: var(--border-color);
+}
+
+.formBtn.save {
+  background: var(--primary-blue);
+  color: #fff;
+  border-color: var(--primary-blue);
+}
+.formBtn.save:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+/* Styles specifically for PIN modal if needed */
+/* (Copied from PinModal.module.css if making shared file) */
+.pinModalContent { /* Inherits .modalContent, adds specific overrides */
+  max-width: 420px;
+  border-radius: 12px; /* Regular radius if centered */
+  /* Remove bottom margin if centered */
+  margin: 0 auto;
+}
+.pinModalHeader { text-align: center; }
+.pinInputContainer { display: flex; justify-content: center; gap: 15px; margin-bottom: 1rem; }
+.pinDigit { width: 50px; height: 60px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center; font-size: 2rem; font-weight: bold; background-color: var(--light-bg); color: var(--text-primary); caret-color: var(--primary-blue); }
+:global(body.dark-theme) .pinDigit { background-color: var(--sidebar-hover-bg); }
+.pinDigit:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); }
+.pinErrorMessage { text-align: center; color: var(--primary-red); font-weight: 500; min-height: 20px; margin-bottom: 1.5rem; font-size: 0.9rem; }
+.pinModalActions { display: flex; gap: 1rem; }
+.pinModalActions .formBtn { flex-grow: 1; }
+
+/* Add to ModalStyles.module.css */
+.modalText {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 20px; /* Space below text */
+}
