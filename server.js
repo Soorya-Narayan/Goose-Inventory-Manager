@@ -61,26 +61,18 @@ function readData() {
   try {
     if (!fs.existsSync(DATA_FILE)) return { items: [], requests: [], transactions: [] };
     const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    if (!raw || !raw.trim()) return { items: [], requests: [], transactions: [] };
     const data = JSON.parse(raw) || {};
-    return {
-      items: Array.isArray(data.items) ? data.items : [],
-      requests: Array.isArray(data.requests) ? data.requests : [],
-      transactions: Array.isArray(data.transactions) ? data.transactions : []
-    };
+    if (!Array.isArray(data.items)) data.items = [];
+    if (!Array.isArray(data.requests)) data.requests = [];
+    if (!Array.isArray(data.transactions)) data.transactions = [];
+    return data;
   } catch (e) {
     return { items: [], requests: [], transactions: [] };
   }
 }
 
 function writeData(data) {
-  try {
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error writing data file:', err);
-  }
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 // ─── Items API ───────────────────────────────────────────────────────────────
@@ -107,6 +99,7 @@ app.post('/api/items', (req, res) => {
     hsn: req.body.hsn || '',
     notes: req.body.notes || '',
     imageUrl: req.body.imageUrl || '',
+    zohoCode: req.body.zohoCode || '',
     addedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -205,25 +198,87 @@ app.put('/api/requests/:id', (req, res) => {
   const idx = data.requests.findIndex(r => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Request not found' });
 
-  const { status, processedBy, managerNotes } = req.body;
+  const { status, processedBy, managerNotes, checklist, processedAt } = req.body;
   const oldStatus = data.requests[idx].status;
 
+  // Build the updated request — allow any status transition (including revert to pending)
   data.requests[idx] = {
     ...data.requests[idx],
     status,
-    processedBy: processedBy || null,
-    managerNotes: managerNotes || '',
-    processedAt: new Date().toISOString()
+    processedBy: processedBy !== undefined ? processedBy : data.requests[idx].processedBy,
+    managerNotes: managerNotes !== undefined ? managerNotes : data.requests[idx].managerNotes,
+    checklist: Array.isArray(checklist) ? checklist : data.requests[idx].checklist || [],
+    processedAt: processedAt !== undefined
+      ? processedAt  // explicit null allowed (for revert)
+      : new Date().toISOString()
   };
 
-  // Deduct stock if approved and wasn't already approved
-  if (status === 'approved' && oldStatus !== 'approved') {
-    const itemIdx = data.items.findIndex(i => i.id === data.requests[idx].itemId);
-    if (itemIdx !== -1) {
-      data.items[itemIdx].quantity = Math.max(0, data.items[itemIdx].quantity - data.requests[idx].quantityRequested);
-      data.items[itemIdx].updatedAt = new Date().toISOString();
+  // ── Stock deduction: only when transitioning TO 'issued' ──────────────────
+  if (status === 'issued' && oldStatus !== 'issued') {
+    const request = data.requests[idx];
+    if (!data.transactions) data.transactions = [];
+
+    const recipientName = request.name || request.engineerName || processedBy || 'Engineer';
+    const projectName = request.projectName || 'General Issue';
+
+    if (Array.isArray(request.materials) && request.materials.length > 0) {
+      // Multi-material format: deduct each material & create Stock Movement transaction log
+      request.materials.forEach(mat => {
+        const itemIdx = data.items.findIndex(i => i.id === mat.itemId);
+        if (itemIdx !== -1) {
+          const item = data.items[itemIdx];
+          const qtyOut = Math.abs(mat.quantity || 0);
+          const newQty = Math.max(0, item.quantity - qtyOut);
+
+          item.quantity = newQty;
+          item.updatedAt = new Date().toISOString();
+
+          // Log Stock Out Movement
+          data.transactions.unshift({
+            id: uuidv4(),
+            itemId: item.id,
+            itemName: item.name,
+            sku: item.sku || item.barcode || item.id,
+            type: 'outward',
+            allocationType: 'project',
+            recipientName: recipientName,
+            projectName: projectName,
+            delta: -qtyOut,
+            newQuantity: newQty,
+            notes: managerNotes ? `Issued: ${managerNotes}` : `Issued for project: ${projectName}`,
+            timestamp: new Date().toISOString()
+          });
+        }
+      });
+    } else if (request.itemId) {
+      // Legacy single-item fallback
+      const itemIdx = data.items.findIndex(i => i.id === request.itemId);
+      if (itemIdx !== -1) {
+        const item = data.items[itemIdx];
+        const qtyOut = Math.abs(request.quantityRequested || 0);
+        const newQty = Math.max(0, item.quantity - qtyOut);
+
+        item.quantity = newQty;
+        item.updatedAt = new Date().toISOString();
+
+        data.transactions.unshift({
+          id: uuidv4(),
+          itemId: item.id,
+          itemName: item.name,
+          sku: item.sku || item.barcode || item.id,
+          type: 'outward',
+          allocationType: 'project',
+          recipientName: recipientName,
+          projectName: projectName,
+          delta: -qtyOut,
+          newQuantity: newQty,
+          notes: managerNotes ? `Issued: ${managerNotes}` : `Issued for project: ${projectName}`,
+          timestamp: new Date().toISOString()
+        });
+      }
     }
   }
+  // NOTE: 'approved' does NOT deduct stock — that only happens at 'issued'.
 
   writeData(data);
   res.json(data.requests[idx]);

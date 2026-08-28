@@ -14,55 +14,22 @@ const state = {
   requestingItemId: null,
   pendingDeleteId: null,
   printItemId: null,
-  zohoEnabled: localStorage.getItem('ims_zoho_enabled') === 'true',
+  zohoEnabled: localStorage.getItem('ims_zoho_enabled') !== 'false',
   // Bluetooth printer
   printerDevice: null,
   printerConnected: false,
+  // Issue checklist
+  activeChecklistRequestId: null,
+  activeChecklist: [],
 };
 
 // ─── API Helpers ─────────────────────────────────────────────────────────────
 const api = {
-  get: async (url) => {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
-    }
-  },
-  post: async (url, data) => {
-    try {
-      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      return await res.json();
-    } catch {
-      return { success: false, error: 'Network request failed' };
-    }
-  },
-  put: async (url, data) => {
-    try {
-      const res = await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      return await res.json();
-    } catch {
-      return { success: false, error: 'Network request failed' };
-    }
-  },
-  del: async (url) => {
-    try {
-      const res = await fetch(url, { method: 'DELETE' });
-      return await res.json();
-    } catch {
-      return { success: false, error: 'Network request failed' };
-    }
-  },
-  delete: async (url) => {
-    try {
-      const res = await fetch(url, { method: 'DELETE' });
-      return await res.json();
-    } catch {
-      return { success: false, error: 'Network request failed' };
-    }
-  }
+  get:    async (url) => (await fetch(url)).json(),
+  post:   async (url, data) => (await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })).json(),
+  put:    async (url, data) => (await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })).json(),
+  del:    async (url) => (await fetch(url, { method: 'DELETE' })).json(),
+  delete: async (url) => (await fetch(url, { method: 'DELETE' })).json(),
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -275,19 +242,15 @@ function showLoadingScreen(message = 'Loading Inventory Database...') {
   const txt = document.getElementById('loading-status-text');
   if (txt) txt.textContent = message;
   if (overlay) overlay.classList.remove('hidden');
-
-  // Auto safety fallback timeout: force hide after 2 seconds to prevent lockups
-  clearTimeout(_loadingTimer);
-  _loadingTimer = setTimeout(() => {
-    if (overlay) overlay.classList.add('hidden');
-  }, 2000);
 }
 
 function hideLoadingScreen() {
   const overlay = document.getElementById('app-loading-screen');
   if (overlay) {
     clearTimeout(_loadingTimer);
-    overlay.classList.add('hidden');
+    _loadingTimer = setTimeout(() => {
+      overlay.classList.add('hidden');
+    }, 450);
   }
 }
 
@@ -296,18 +259,15 @@ async function loadAll(showLoader = true, customMsg = 'Synchronizing Warehouse D
     showLoadingScreen(customMsg);
   }
   try {
-    const [itemsRes, requestsRes] = await Promise.all([
+    const [items, requests] = await Promise.all([
       api.get('/api/items'),
       api.get('/api/requests')
     ]);
-    state.items = Array.isArray(itemsRes) ? itemsRes : [];
-    state.requests = Array.isArray(requestsRes) ? requestsRes : [];
+    state.items = items || [];
+    state.requests = requests || [];
     computeStats();
   } catch (err) {
-    console.error('loadAll error:', err);
-    state.items = Array.isArray(state.items) ? state.items : [];
-    state.requests = Array.isArray(state.requests) ? state.requests : [];
-    computeStats();
+    showToast('Failed to load data from server', 'error');
   } finally {
     if (showLoader) {
       hideLoadingScreen();
@@ -379,11 +339,34 @@ window.addEventListener('keydown', (e) => {
 let currentScannedItem = null;
 
 function handleBarcodeScanned(barcode) {
-  const matchedItem = state.items.find(i => 
-    (i.barcode && i.barcode.toLowerCase() === barcode.toLowerCase()) || 
-    (i.sku && i.sku.toLowerCase() === barcode.toLowerCase())
+  const matchedItem = state.items.find(i =>
+    (i.barcode && i.barcode.toLowerCase() === barcode.toLowerCase()) ||
+    (i.sku    && i.sku.toLowerCase()    === barcode.toLowerCase())
   );
 
+  // ── Checklist mode: intercept scan while Issue Checklist modal is open ──────
+  if (state.activeChecklistRequestId) {
+    if (!matchedItem) {
+      showToast(`Unknown barcode "${barcode}" — not in inventory`, 'warning');
+      return;
+    }
+    // Check if this item is part of the active checklist
+    const clEntry = state.activeChecklist.find(c => c.itemId === matchedItem.id);
+    if (!clEntry) {
+      showToast(`"${matchedItem.name}" is not part of this Supplier Offer`, 'warning');
+      return;
+    }
+    if (clEntry.checked) {
+      showToast(`${matchedItem.name} is already checked off`, 'info');
+      return;
+    }
+    clEntry.checked = true;
+    renderChecklistRows();
+    showToast(`Checked: ${matchedItem.name}`, 'success');
+    return;
+  }
+
+  // ── Normal mode ─────────────────────────────────────────────────────────────
   if (matchedItem) {
     openScanActionModal(matchedItem);
   } else {
@@ -669,36 +652,39 @@ function copyBarcodeToClipboard(val) {
 }
 
 function testPrintSticker() {
-  // Remove any old test item first
-  state.items = state.items.filter(i => i.id !== 'demo-test');
-  const dummyItem = {
-    id: 'demo-test',
-    name: 'Test Material',
-    sku: 'TEST-001',
-    barcode: 'TEST-001',
-    location: 'A1',
-    zone: 'mechanical'
-  };
-  state.items.push(dummyItem);
-  openPrintModal('demo-test');
+  // Print a placeholder label directly — no fake record is injected into state
+  showToast('Sending test label to printer...', 'info');
+  api.post('/api/print-tspl', {
+    name: 'PRINT TEST',
+    sku: 'TEST',
+    location: '—',
+    zone: '—',
+    copies: 1
+  }).then(res => {
+    if (res.success) {
+      showToast('Test sticker printed successfully!', 'success');
+    } else {
+      showToast(res.error || 'Printer not connected', 'warning');
+    }
+  }).catch(() => showToast('Failed to connect to printer server', 'error'));
 }
 
 async function triggerTejC15Print() {
-  const item = state.items.find(i => i.id === state.printItemId) || {
-    name: 'MATERIAL ITEM',
-    sku: 'ELEC0001',
-    location: 'A1',
-    zone: 'MECH'
-  };
+  const item = state.items.find(i => i.id === state.printItemId);
+
+  if (!item) {
+    showToast('No item selected to print', 'error');
+    return;
+  }
 
   showToast('Sending direct barcode print to Tej C15...', 'info');
 
   try {
     const res = await api.post('/api/print-tspl', {
       name: item.name,
-      sku: item.sku || item.barcode || 'ELEC0001',
-      location: item.location || 'A1',
-      zone: item.zone || 'MECH',
+      sku: item.sku || item.barcode || '',
+      location: item.location || '',
+      zone: item.zone || '',
       copies: 1
     });
 
@@ -717,42 +703,27 @@ async function triggerTejC15Print() {
 //  AUTH & USER ROLE MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════════════
 function selectRole(role) {
-  state.selectedRole = role;
-  const isManager = role === 'manager';
-  document.getElementById('role-btn-manager')?.classList.toggle('selected', isManager);
-  document.getElementById('role-btn-engineer')?.classList.toggle('selected', !isManager);
-  document.getElementById('manager-pin-group')?.classList.toggle('hidden', !isManager);
-  document.getElementById('engineer-name-group')?.classList.toggle('hidden', isManager);
-
-  const errorEl = document.getElementById('login-error');
-  if (errorEl) errorEl.classList.add('hidden');
+  document.getElementById('role-btn-manager').classList.toggle('selected', role === 'manager');
+  document.getElementById('role-btn-engineer').classList.toggle('selected', role === 'engineer');
+  document.getElementById('manager-pin-group').classList.toggle('hidden', role !== 'manager');
+  document.getElementById('engineer-name-group').classList.toggle('hidden', role !== 'engineer');
 }
 
 function handleLogin(e) {
-  if (e) e.preventDefault();
+  e.preventDefault();
+  const isManager = document.getElementById('role-btn-manager').classList.contains('selected');
   const errorEl = document.getElementById('login-error');
-  if (errorEl) errorEl.classList.add('hidden');
-
-  const managerBtn = document.getElementById('role-btn-manager');
-  const isManager = state.selectedRole ? (state.selectedRole === 'manager') : (managerBtn ? managerBtn.classList.contains('selected') : true);
 
   if (isManager) {
-    const pinEl = document.getElementById('manager-pin');
-    const pin = (pinEl ? pinEl.value : '').trim();
-    const storedPin = (localStorage.getItem('ims_manager_pin') || state.managerPin || '1234').trim();
-
-    // Default PIN '1234' ALWAYS works for Store Manager!
-    if (pin !== '1234' && pin !== storedPin) {
-      if (errorEl) {
-        errorEl.textContent = 'Invalid Manager PIN. Default PIN is 1234';
-        errorEl.classList.remove('hidden');
-      }
+    const pin = document.getElementById('manager-pin').value;
+    const requiredPin = localStorage.getItem('ims_manager_pin') || state.managerPin || '1234';
+    if (pin !== requiredPin) {
+      errorEl.classList.remove('hidden');
       return;
     }
     setUser({ role: 'manager', name: 'Store Manager' });
   } else {
-    const nameEl = document.getElementById('engineer-name');
-    const name = (nameEl ? nameEl.value : '').trim() || 'Engineer';
+    const name = document.getElementById('engineer-name').value.trim() || 'Engineer';
     setUser({ role: 'engineer', name });
   }
 }
@@ -783,6 +754,8 @@ function setUser(user) {
   state.user = user;
   sessionStorage.setItem('ims_user', JSON.stringify(user));
 
+  showLoadingScreen(`Welcome, ${user.name}! Authenticating & Initializing Inventory...`);
+
   const isManager = user.role === 'manager';
 
   if (document.getElementById('user-chip-name')) {
@@ -800,20 +773,19 @@ function setUser(user) {
   if (settingsBtn) settingsBtn.style.display = isManager ? 'flex' : 'none';
   applyZohoVisibility();
 
-  // Hide login overlay immediately & show app view
-  document.getElementById('login-overlay')?.classList.add('hidden');
-  document.getElementById('app')?.classList.remove('hidden');
+  setTimeout(() => {
+    document.getElementById('login-overlay').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    navigateTo('dashboard');
 
-  showLoadingScreen(`Welcome, ${user.name}! Authenticating & Initializing Inventory...`);
-  navigateTo('dashboard');
-
-  loadAll(false).then(() => {
-    renderView(state.currentView);
-    hideLoadingScreen();
-  }).catch(err => {
-    console.error('Data load error after login:', err);
-    hideLoadingScreen();
-  });
+    loadAll(false).then(() => {
+      renderView(state.currentView);
+      hideLoadingScreen();
+    }).catch(err => {
+      console.error('Data load error after login:', err);
+      hideLoadingScreen();
+    });
+  }, 600);
 }
 
 function toggleOptionsMenu(e) {
@@ -1607,7 +1579,13 @@ function filterAndRenderInventoryRows() {
 
   if (state.searchQuery) {
     const q = state.searchQuery.toLowerCase();
-    items = items.filter(i => i.name.toLowerCase().includes(q) || i.sku.toLowerCase().includes(q) || (i.location && i.location.toLowerCase().includes(q)));
+    items = items.filter(i => 
+      (i.name || '').toLowerCase().includes(q) || 
+      (i.sku || '').toLowerCase().includes(q) || 
+      (i.barcode || '').toLowerCase().includes(q) || 
+      (i.location || '').toLowerCase().includes(q) ||
+      (i.category || '').toLowerCase().includes(q)
+    );
   }
 
   const subtitle = document.getElementById('inventory-subtitle-count');
@@ -1675,7 +1653,7 @@ function renderRequests() {
   if (reqs.length === 0) {
     contentHtml = `
       <div style="text-align:center;padding:3.5rem 1rem;color:var(--text-tertiary)">
-        <div style="font-weight:700;font-size:1.05rem;color:var(--text-primary);margin-bottom:0.35rem">No Material Requests Submitted</div>
+        <div style="font-weight:700;font-size:1.05rem;color:var(--text-primary);margin-bottom:0.35rem">No Supplier Offers Submitted</div>
         <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1.25rem">Engineers can request items from the inventory at any time.</div>
         <button class="btn btn-primary btn-sm" onclick="openRequestModal()" style="margin:0 auto">+ Request Material</button>
       </div>
@@ -1684,31 +1662,57 @@ function renderRequests() {
     // Mobile Touch Cards
     contentHtml = `
       <div style="display:flex;flex-direction:column;gap:0.75rem;padding:0.75rem">
-        ${reqs.map(r => `
+        ${reqs.map(r => {
+          const mats = Array.isArray(r.materials) ? r.materials : (
+            r.itemName ? [{ itemName: r.itemName, itemSku: r.itemSku || r.itemId, quantity: r.quantityRequested, unit: r.unit }] : []
+          );
+          const matsHtml = mats.map(m =>
+            `<div style="display:flex;justify-content:space-between;font-size:0.78rem;padding:0.25rem 0;border-bottom:1px solid var(--border-muted)">
+              <span style="color:var(--text-primary);font-weight:600">${escHtml(m.itemName)}</span>
+              <span style="font-family:var(--font-mono);color:var(--goose);font-weight:700">${m.quantity} ${m.unit || 'pcs'}</span>
+            </div>`
+          ).join('');
+          return `
           <div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.875rem;display:flex;flex-direction:column;gap:0.5rem">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
               <div>
-                <strong style="font-size:0.95rem;color:var(--text-primary);display:block;margin-bottom:0.15rem">${escHtml(r.itemName)}</strong>
-                <span style="font-size:0.72rem;color:var(--text-tertiary)">Project: ${escHtml(r.projectName)}</span>
+                <strong style="font-size:0.95rem;color:var(--text-primary);display:block;margin-bottom:0.15rem">${escHtml(r.name || r.engineerName)}</strong>
+                <span style="font-size:0.72rem;color:var(--text-tertiary)">EID: ${escHtml(r.employeeId || '—')} &nbsp;|&nbsp; Project: ${escHtml(r.projectName)}</span>
               </div>
               ${reqStatusTag(r.status)}
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;background:var(--bg-surface);padding:0.4rem 0.625rem;border-radius:var(--radius);border:1px solid var(--border-muted);margin:0.25rem 0">
-              <span style="color:var(--text-tertiary)">Requested Qty:</span>
-              <strong style="font-family:var(--font-mono);color:var(--goose);font-size:0.9rem">${r.quantityRequested} ${r.unit}</strong>
+            <div style="background:var(--bg-surface);padding:0.4rem 0.625rem;border-radius:var(--radius);border:1px solid var(--border-muted);display:flex;flex-direction:column;gap:0.15rem">
+              ${matsHtml}
             </div>
             <div style="font-size:0.72rem;color:var(--text-tertiary);display:flex;justify-content:space-between;align-items:center">
-              <span>Eng: <strong>${escHtml(r.engineerName)}</strong></span>
+              <span>${escHtml(r.purpose || '')}</span>
               <span>${new Date(r.requestedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
             </div>
-            ${isManager && r.status === 'pending' ? `
-              <div style="display:flex;gap:0.5rem;margin-top:0.4rem">
-                <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'approved')">Approve</button>
-                <button class="btn btn-danger btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
-              </div>
-            ` : ''}
-          </div>
-        `).join('')}
+            ${isManager ? (() => {
+              if (r.status === 'pending') return `
+                <div style="display:flex;gap:0.5rem;margin-top:0.4rem">
+                  <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'approved')">Approve</button>
+                  <button class="btn btn-danger btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
+                </div>`;
+              if (r.status === 'approved') return `
+                <div style="display:flex;gap:0.4rem;margin-top:0.4rem">
+                  <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center;gap:0.3rem" onclick="openChecklistModal('${r.id}')" title="Open Issue Checklist">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                    Issue
+                  </button>
+                  <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>
+                </div>`;
+              if (r.status === 'issued') return `
+                <div style="margin-top:0.4rem">
+                  <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;gap:0.3rem;opacity:0.6" onclick="openChecklistModal('${r.id}', true)" title="View Issue Record">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                    View Record
+                  </button>
+                </div>`;
+              return '';
+            })() : ''}
+          </div>`;
+        }).join('')}
       </div>
     `;
   } else {
@@ -1718,34 +1722,60 @@ function renderRequests() {
         <table>
           <thead>
             <tr>
-              <th>Requested At</th>
-              <th>Engineer</th>
-              <th>Material</th>
+              <th>Submitted At</th>
+              <th>Name / EID</th>
+              <th>Materials</th>
               <th>Project</th>
-              <th>Quantity</th>
               <th>Status</th>
-              ${isManager ? '<th>Manager Action</th>' : ''}
+              ${isManager ? '<th>Action</th>' : ''}
             </tr>
           </thead>
           <tbody>
-            ${reqs.map(r => `
+            ${reqs.map(r => {
+              const mats = Array.isArray(r.materials) ? r.materials : (
+                r.itemName ? [{ itemName: r.itemName, itemSku: r.itemSku || r.itemId, quantity: r.quantityRequested, unit: r.unit }] : []
+              );
+              const matsHtml = mats.map(m =>
+                `<div style="font-size:0.78rem;display:flex;gap:0.4rem;align-items:baseline">
+                  <span style="font-weight:600;color:var(--text-primary)">${escHtml(m.itemName)}</span>
+                  <span style="font-family:var(--font-mono);color:var(--goose);font-size:0.72rem">${m.quantity} ${m.unit || 'pcs'}</span>
+                </div>`
+              ).join('');
+              return `
               <tr>
                 <td style="font-size:0.75rem;color:var(--text-tertiary)">${new Date(r.requestedAt).toLocaleString('en-IN')}</td>
-                <td><strong>${escHtml(r.engineerName)}</strong></td>
-                <td>${escHtml(r.itemName)}</td>
+                <td>
+                  <strong>${escHtml(r.name || r.engineerName)}</strong>
+                  ${r.employeeId ? `<div style="font-size:0.72rem;color:var(--text-tertiary)">${escHtml(r.employeeId)}</div>` : ''}
+                </td>
+                <td style="max-width:240px">${matsHtml}</td>
                 <td>${escHtml(r.projectName)}</td>
-                <td style="font-family:var(--font-mono);font-weight:600">${r.quantityRequested} ${r.unit}</td>
                 <td>${reqStatusTag(r.status)}</td>
                 ${isManager ? `
-                  <td>
+                  <td style="white-space:nowrap">
                     ${r.status === 'pending' ? `
-                      <button class="btn btn-primary btn-sm" onclick="processRequest('${r.id}', 'approved')">Approve</button>
-                      <button class="btn btn-danger btn-sm" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
-                    ` : `<span style="font-size:0.75rem;color:var(--text-tertiary)">Processed</span>`}
+                      <div style="display:flex;gap:0.5rem;align-items:center">
+                        <button class="btn btn-primary btn-sm" onclick="processRequest('${r.id}', 'approved')">Approve</button>
+                        <button class="btn btn-danger btn-sm" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
+                      </div>
+                    ` : r.status === 'approved' ? `
+                      <div style="display:flex;gap:0.5rem;align-items:center">
+                        <button class="btn btn-primary btn-sm" style="gap:0.3rem" onclick="openChecklistModal('${r.id}')" title="Open Issue Checklist">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                          Issue
+                        </button>
+                        <button class="btn btn-ghost btn-sm" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>
+                      </div>
+                    ` : r.status === 'issued' ? `
+                      <button class="btn btn-ghost btn-sm" style="gap:0.3rem;opacity:0.6" onclick="openChecklistModal('${r.id}', true)" title="View Issue Record">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                        View Record
+                      </button>
+                    ` : `<span style="font-size:0.75rem;color:var(--text-tertiary)">—</span>`}
                   </td>
                 ` : ''}
-              </tr>
-            `).join('')}
+              </tr>`;
+            }).join('')}
           </tbody>
         </table>
       </div>
@@ -1755,8 +1785,8 @@ function renderRequests() {
   document.getElementById('view-requests').innerHTML = `
     <div class="page-hdr">
       <div>
-        <h1 class="page-title">Material Requests</h1>
-        <p class="page-subtitle">${isManager ? 'Review & approve engineer requests' : 'Your submitted material requests'}</p>
+        <h1 class="page-title">Supplier Offers</h1>
+        <p class="page-subtitle">${isManager ? 'Review &amp; approve supplier offers' : 'Your submitted supplier offers'}</p>
       </div>
       <div>
         <button class="btn btn-primary" onclick="openRequestModal()">+ Request Material</button>
@@ -1772,12 +1802,255 @@ function renderRequests() {
 async function processRequest(reqId, status) {
   try {
     await api.put(`/api/requests/${reqId}`, { status, processedBy: state.user?.name });
-    showToast(`Request ${status}`, 'success');
+    const labels = { approved: 'Offer approved', rejected: 'Offer rejected', pending: 'Reverted to pending' };
+    showToast(labels[status] || `Status: ${status}`, 'success');
     await loadAll();
     renderView('requests');
   } catch (err) {
     showToast('Failed to process request', 'error');
   }
+}
+
+// ─── Issue Checklist & Barcode Verification Modal ────────────────────────────
+function openChecklistModal(reqId, readOnly = false) {
+  const req = state.requests.find(r => r.id === reqId);
+  if (!req) return;
+
+  state.activeChecklistRequestId = reqId;
+  const savedChecklist = Array.isArray(req.checklist) && req.checklist.length ? req.checklist : null;
+
+  // Build checklist from request's materials
+  state.activeChecklist = (req.materials || []).map(m => {
+    const invItem = state.items.find(i => i.id === m.itemId || i.sku === m.itemSku || i.barcode === m.itemSku);
+    const saved = savedChecklist?.find(c => c.itemId === m.itemId);
+    return {
+      itemId:       m.itemId,
+      itemName:     m.itemName,
+      itemSku:      m.itemSku || m.itemId,
+      barcode:      invItem?.barcode || m.itemSku || m.itemId,
+      location:     invItem?.location || 'Rack',
+      quantity:     m.quantity,
+      unit:         m.unit || 'pcs',
+      checked:      readOnly ? (saved?.checked ?? false) : false
+    };
+  });
+
+  // Header
+  document.getElementById('checklist-modal-title').textContent =
+    `Issue Materials — ${req.projectName || req.name || 'Order'}`;
+
+  // Info block
+  const info = document.getElementById('checklist-info-block');
+  const row = (label, val) =>
+    `<div><span style="font-size:0.7rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">${label}</span><div style="font-weight:600;color:var(--text-primary);margin-top:0.1rem">${escHtml(val || '—')}</div></div>`;
+  info.innerHTML =
+    row('Engineer Name', req.name || req.engineerName) +
+    row('Employee ID', req.employeeId) +
+    row('Target Project', req.projectName) +
+    row('Purpose', req.purpose);
+
+  // Scan container visibility
+  const scanContainer = document.getElementById('checklist-scan-container');
+  if (scanContainer) scanContainer.style.display = readOnly ? 'none' : 'block';
+
+  // Barcode input auto-focus
+  const barcodeInput = document.getElementById('checklist-barcode-input');
+  if (barcodeInput) {
+    barcodeInput.value = '';
+    if (!readOnly) {
+      setTimeout(() => barcodeInput.focus(), 150);
+    }
+  }
+
+  const feedbackEl = document.getElementById('checklist-scan-feedback');
+  if (feedbackEl) {
+    feedbackEl.style.display = 'none';
+    feedbackEl.innerHTML = '';
+  }
+
+  // Remarks
+  const remarksEl = document.getElementById('checklist-remarks');
+  remarksEl.value = req.managerNotes || '';
+  remarksEl.readOnly = readOnly;
+
+  // Stock Out button
+  const issueBtn = document.getElementById('checklist-issue-btn');
+  if (issueBtn) issueBtn.style.display = readOnly ? 'none' : '';
+
+  renderChecklistRows(readOnly);
+  document.getElementById('modal-checklist-overlay').classList.remove('hidden');
+}
+
+function handleChecklistScanKey(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    processChecklistBarcodeScan();
+  }
+}
+
+function processChecklistBarcodeScan() {
+  const input = document.getElementById('checklist-barcode-input');
+  if (!input) return;
+  const rawCode = input.value.trim();
+  if (!rawCode) return;
+
+  const code = rawCode.toLowerCase();
+  const feedbackEl = document.getElementById('checklist-scan-feedback');
+
+  // Match code against itemSku, barcode, itemId, or itemName in activeChecklist
+  const item = (state.activeChecklist || []).find(c => 
+    c.itemId.toLowerCase() === code ||
+    (c.itemSku && c.itemSku.toLowerCase() === code) ||
+    (c.barcode && c.barcode.toLowerCase() === code) ||
+    c.itemName.toLowerCase().includes(code)
+  );
+
+  if (item) {
+    item.checked = true;
+    input.value = '';
+    renderChecklistRows();
+    
+    if (feedbackEl) {
+      feedbackEl.style.display = 'block';
+      feedbackEl.style.color = '#10b981';
+      feedbackEl.innerHTML = `✓ Verified &amp; Scanned: <strong>${escHtml(item.itemName)}</strong> (${item.quantity} ${item.unit})`;
+    }
+    showToast(`Scanned & Verified: ${item.itemName}`, 'success');
+  } else {
+    if (feedbackEl) {
+      feedbackEl.style.display = 'block';
+      feedbackEl.style.color = '#ef4444';
+      feedbackEl.innerHTML = `✗ Barcode <strong>"${escHtml(rawCode)}"</strong> not found in this request order.`;
+    }
+    showToast(`Barcode "${rawCode}" not in request list`, 'error');
+  }
+}
+
+function renderChecklistRows(readOnly = false) {
+  const container = document.getElementById('checklist-rows');
+  const badgeEl = document.getElementById('checklist-progress-badge');
+  if (!container) return;
+  const cl = state.activeChecklist || [];
+  const checkedCount = cl.filter(c => c.checked).length;
+
+  if (badgeEl) {
+    badgeEl.textContent = `${checkedCount} of ${cl.length} Verified (${cl.length ? Math.round(checkedCount / cl.length * 100) : 0}%)`;
+    badgeEl.style.color = (checkedCount === cl.length && cl.length > 0) ? '#10b981' : 'var(--text-tertiary)';
+  }
+
+  container.innerHTML = cl.map((c, idx) => {
+    const chk = c.checked;
+    return `
+      <div onclick="${readOnly ? '' : `toggleChecklistItem('${c.itemId}')`}"
+        style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0.85rem;
+               background:${chk ? 'rgba(16,185,129,0.08)' : 'var(--bg-raised)'};
+               border:1px solid ${chk ? 'rgba(16,185,129,0.35)' : 'var(--border-subtle)'};
+               border-radius:var(--radius-md);cursor:${readOnly ? 'default' : 'pointer'};
+               transition:all 0.15s">
+        <!-- Checkbox -->
+        <div style="width:20px;height:20px;flex-shrink:0;border-radius:4px;
+                    border:2px solid ${chk ? '#10b981' : 'var(--border-muted)'};
+                    background:${chk ? '#10b981' : 'transparent'};
+                    display:flex;align-items:center;justify-content:center;transition:all 0.15s">
+          ${chk ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+        </div>
+        <!-- Details -->
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:0.4rem">
+            <span style="font-size:0.875rem;font-weight:600;color:${chk ? 'var(--text-primary)' : 'var(--text-primary)'}">
+              ${escHtml(c.itemName)}
+            </span>
+            ${chk ? `<span style="font-size:0.65rem;background:rgba(16,185,129,0.2);color:#10b981;padding:0.1rem 0.35rem;border-radius:4px;font-weight:700">VERIFIED</span>` : ''}
+          </div>
+          <div style="font-size:0.72rem;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:0.1rem">
+            SKU: ${escHtml(c.itemSku)} &nbsp;|&nbsp; Shelf: ${escHtml(c.location || 'R-A1')}
+          </div>
+        </div>
+        <!-- Quantity badge -->
+        <div style="text-align:right">
+          <span style="font-size:0.85rem;font-family:var(--font-mono);font-weight:700;color:${chk ? '#10b981' : 'var(--goose)'}">
+            ${c.quantity} ${c.unit}
+          </span>
+          <div style="font-size:0.68rem;color:var(--text-tertiary)">${chk ? 'Scanned' : 'Pending'}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleChecklistItem(itemId) {
+  const entry = (state.activeChecklist || []).find(c => c.itemId === itemId);
+  if (!entry) return;
+  entry.checked = !entry.checked;
+  renderChecklistRows();
+}
+
+function closeChecklistModal(e) {
+  if (e && e.target !== document.getElementById('modal-checklist-overlay')) return;
+  document.getElementById('modal-checklist-overlay')?.classList.add('hidden');
+  state.activeChecklistRequestId = null;
+  state.activeChecklist = [];
+}
+
+async function submitIssue() {
+  const reqId = state.activeChecklistRequestId;
+  if (!reqId) return;
+  const cl = state.activeChecklist || [];
+  const unchecked = cl.filter(c => !c.checked).length;
+  const remarks = document.getElementById('checklist-remarks')?.value.trim() || '';
+
+  const doIssue = async () => {
+    try {
+      await api.put(`/api/requests/${reqId}`, {
+        status: 'issued',
+        checklist: cl,
+        managerNotes: remarks,
+        processedBy: state.user?.name || 'Store Manager'
+      });
+      document.getElementById('modal-checklist-overlay')?.classList.add('hidden');
+      state.activeChecklistRequestId = null;
+      state.activeChecklist = [];
+      showToast('Material Stock Out completed & logged in Stock Movements!', 'success');
+      await loadAll();
+      renderView('requests');
+    } catch (err) {
+      showToast('Failed to complete stock out', 'error');
+    }
+  };
+
+  if (unchecked > 0) {
+    showConfirmModal({
+      title: 'Stock Out with unchecked items?',
+      message: `${unchecked} of ${cl.length} material${unchecked > 1 ? 's' : ''} not yet scanned or verified. Complete Stock Out anyway?`,
+      confirmLabel: 'Stock Out Anyway',
+      onConfirm: doIssue
+    });
+  } else {
+    await doIssue();
+  }
+}
+
+function revertApproval(reqId) {
+  showConfirmModal({
+    title: 'Revert Approval',
+    message: 'Move this Supplier Offer back to Pending? Any checklist progress will be discarded.',
+    confirmLabel: 'Revert',
+    onConfirm: async () => {
+      try {
+        await api.put(`/api/requests/${reqId}`, {
+          status: 'pending',
+          processedBy: null,
+          processedAt: null,
+          checklist: [],
+          managerNotes: ''
+        });
+        showToast('Offer reverted to pending', 'success');
+        await loadAll();
+        renderView('requests');
+      } catch (err) {
+        showToast('Failed to revert approval', 'error');
+      }
+    }
+  });
 }
 
 // ─── Custom Confirm Modal ─────────────────────────────────────────────────────
@@ -1839,10 +2112,28 @@ function generateProductId() {
   return id;
 }
 
+function populateCategorySuggestions() {
+  const dl = document.getElementById('category-suggestions');
+  if (!dl) return;
+  // Collect unique, non-empty categories from live state (case-insensitive dedup, preserve first-seen casing)
+  const seen = new Map();
+  (state.items || []).forEach(item => {
+    const cat = (item.category || '').trim();
+    if (cat && !seen.has(cat.toLowerCase())) {
+      seen.set(cat.toLowerCase(), cat);
+    }
+  });
+  const sorted = [...seen.values()].sort((a, b) => a.localeCompare(b));
+  dl.innerHTML = sorted.map(c => `<option value="${c}"></option>`).join('');
+}
+
 function openAddItemModal() {
   state.editingItemId = null;
   document.getElementById('modal-item-title').textContent = 'New Item';
   document.getElementById('form-item').reset();
+  // Clear Zoho Code explicitly (form.reset() handles it but being explicit is safe)
+  const zohoEl = document.getElementById('item-zoho-code');
+  if (zohoEl) zohoEl.value = '';
   setImagePreview('');
   // Auto-generate product ID
   generateProductId();
@@ -1853,6 +2144,8 @@ function openAddItemModal() {
   if (nameEl) {
     nameEl.oninput = () => checkDuplicateName(nameEl.value);
   }
+  // Populate category autocomplete suggestions from existing items
+  populateCategorySuggestions();
   document.getElementById('modal-item-overlay').classList.remove('hidden');
 }
 
@@ -1872,10 +2165,15 @@ function openEditItemModal(id) {
   document.getElementById('item-location').value = item.location;
   document.getElementById('item-barcode').value = item.barcode || item.sku || '';
   document.getElementById('item-notes').value = item.notes || '';
+  // Populate Zoho Code from saved item (fallback to empty string)
+  const zohoEl = document.getElementById('item-zoho-code');
+  if (zohoEl) zohoEl.value = item.zohoCode || '';
   setImagePreview(item.imageUrl || '');
   document.getElementById('duplicate-warning')?.classList.add('hidden');
   const nameEl = document.getElementById('item-name');
   if (nameEl) nameEl.oninput = null;
+  // Populate category autocomplete suggestions from existing items
+  populateCategorySuggestions();
   document.getElementById('modal-item-overlay').classList.remove('hidden');
 }
 
@@ -1925,6 +2223,7 @@ async function handleItemSubmit(e) {
     barcode: productId,
     notes: document.getElementById('item-notes').value.trim(),
     imageUrl: document.getElementById('item-imageUrl').value.trim(),
+    zohoCode: document.getElementById('item-zoho-code').value.trim(),
   };
 
   try {
@@ -2044,6 +2343,7 @@ function zoneInlineTag(zone) {
 function reqStatusTag(status) {
   if (status === 'approved') return `<span class="status-tag ok">Approved</span>`;
   if (status === 'rejected') return `<span class="status-tag out">Rejected</span>`;
+  if (status === 'issued')   return `<span class="status-tag issued">Issued</span>`;
   return `<span class="status-tag low">Pending</span>`;
 }
 
@@ -2075,56 +2375,209 @@ function toggleTheme() {
   if (menuLabel) menuLabel.textContent = isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode';
 }
 
-// ─── Modal Openers for Requesting ───────────────────────────────────────────
-function openRequestModal(itemId) {
-  const items = state.items || [];
-  if (items.length === 0) {
-    showToast('No materials currently in inventory to request', 'warning');
-    return;
-  }
+// ─── Material Row counter ─────────────────────────────────────────────────────
+let _rowCounter = 0;
 
-  const selectedItem = itemId ? items.find(i => i.id === itemId) : items[0];
-  state.requestingItemId = selectedItem ? selectedItem.id : items[0].id;
-
-  const selectOptions = items.map(i => `
-    <option value="${i.id}" ${i.id === state.requestingItemId ? 'selected' : ''}>
-      ${escHtml(i.name)} (${escHtml(i.sku)}) — Stock: ${i.quantity} ${i.unit} [Shelf: ${escHtml(i.location || 'R-A1')}]
-    </option>
-  `).join('');
-
-  document.getElementById('request-item-info').innerHTML = `
-    <div class="field-group" style="margin-bottom:0.25rem">
-      <label class="field-label">SELECT MATERIAL TO REQUEST <span class="req">*</span></label>
-      <select id="req-item-select" class="field-input" onchange="onRequestItemSelectChange(this.value)" style="font-weight:600">
-        ${selectOptions}
-      </select>
-    </div>
-    <div id="request-item-stock-details" style="font-size:0.75rem;color:var(--text-tertiary);margin-top:0.35rem">
-      Available Stock: ${selectedItem?.quantity || 0} ${selectedItem?.unit || 'pcs'} | Location: ${selectedItem?.location || '-'}
-    </div>
-  `;
-
-  document.getElementById('req-unit-label').textContent = selectedItem?.unit || 'pcs';
+// ─── Modal Openers for Requesting ─────────────────────────────────────────────
+function openRequestModal() {
+  _rowCounter = 0;
   document.getElementById('form-request').reset();
-
+  const container = document.getElementById('material-rows-container');
+  container.innerHTML = '';
+  // Pre-fill name from session if available
   if (state.user?.name) {
-    const engInput = document.getElementById('req-engineer');
-    if (engInput) engInput.value = state.user.name;
+    const el = document.getElementById('req-engineer');
+    if (el) el.value = state.user.name;
   }
-
+  // Add one empty row to start
+  addMaterialRow();
   document.getElementById('modal-request-overlay').classList.remove('hidden');
 }
 
-function onRequestItemSelectChange(selectedId) {
-  const item = state.items.find(i => i.id === selectedId);
-  if (!item) return;
-  state.requestingItemId = selectedId;
-  document.getElementById('req-unit-label').textContent = item.unit || 'pcs';
-  const details = document.getElementById('request-item-stock-details');
-  if (details) {
-    details.textContent = `Available Stock: ${item.quantity} ${item.unit} | Location: ${item.location || '-'}`;
-  }
+function addMaterialRow() {
+  const rowId = ++_rowCounter;
+  const container = document.getElementById('material-rows-container');
+  const row = document.createElement('div');
+  row.id = `mat-row-${rowId}`;
+  row.dataset.itemId = '';
+  row.dataset.itemName = '';
+  row.dataset.itemSku = '';
+  row.dataset.unit = 'pcs';
+  row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.5rem 0.625rem';
+  row.innerHTML = `
+    <button type="button"
+      style="flex:1;text-align:left;background:var(--bg-surface);border:1px solid var(--border-muted);border-radius:var(--radius);padding:0.4rem 0.65rem;font-size:0.82rem;color:var(--text-tertiary);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0"
+      onclick="openPickerModal(${rowId})" id="mat-picker-btn-${rowId}">
+      Select Material
+    </button>
+    <div style="display:flex;align-items:center;gap:0.3rem;flex-shrink:0">
+      <button type="button" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.55rem;font-size:1rem;line-height:1" onclick="stepQty(${rowId}, -1)">−</button>
+      <input type="number" id="mat-qty-${rowId}" value="1" min="1" class="field-input mono" style="width:52px;text-align:center;padding:0.3rem;font-size:0.88rem;-moz-appearance:textfield;-webkit-appearance:none;" oninput="if(this.value<1)this.value=1" />
+      <button type="button" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.55rem;font-size:1rem;line-height:1" onclick="stepQty(${rowId}, 1)">+</button>
+      <span id="mat-unit-${rowId}" style="font-size:0.75rem;color:var(--text-tertiary);min-width:24px">pcs</span>
+    </div>
+    <button type="button" onclick="removeMaterialRow(${rowId})" style="flex-shrink:0;background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:1.1rem;padding:0.15rem 0.3rem;line-height:1" title="Remove row">&times;</button>
+  `;
+  container.appendChild(row);
 }
+
+function removeMaterialRow(rowId) {
+  const container = document.getElementById('material-rows-container');
+  if (container.children.length <= 1) {
+    showToast('At least one material row is required', 'warning');
+    return;
+  }
+  document.getElementById(`mat-row-${rowId}`)?.remove();
+}
+
+function stepQty(rowId, delta) {
+  const input = document.getElementById(`mat-qty-${rowId}`);
+  if (!input) return;
+  const newVal = Math.max(1, (parseInt(input.value) || 1) + delta);
+  input.value = newVal;
+}
+
+// ─── Material Picker ──────────────────────────────────────────────────────────
+let _pickerTargetRowId = null;
+let _pickerCategory = 'All';
+
+function openPickerModal(rowId) {
+  _pickerTargetRowId = rowId;
+  _pickerCategory = 'All';
+  document.getElementById('picker-search').value = '';
+  renderPickerSidebar();
+  renderPickerGrid();
+  document.getElementById('modal-picker-overlay').classList.remove('hidden');
+}
+
+function closePickerModal(e) {
+  if (e && e.target !== document.getElementById('modal-picker-overlay')) return;
+  document.getElementById('modal-picker-overlay')?.classList.add('hidden');
+}
+
+function renderPickerSidebar() {
+  const sidebar = document.getElementById('picker-category-sidebar');
+  if (!sidebar) return;
+  const cats = ['All', ...[
+    ...new Set((state.items || []).map(i => i.category).filter(Boolean))
+  ].sort()];
+
+  sidebar.innerHTML = cats.map(cat => {
+    const active = cat === _pickerCategory;
+    return `<button type="button" onclick="setPickerCategory('${escHtml(cat)}')"
+      style="display:block;width:100%;text-align:left;padding:0.55rem 1rem;font-size:0.8rem;font-weight:${active ? 700 : 500};
+             background:${active ? 'var(--accent-subtle,rgba(139,92,246,0.12))' : 'none'};
+             color:${active ? 'var(--goose)' : 'var(--text-secondary)'};
+             border:none;cursor:pointer;border-left:3px solid ${active ? 'var(--goose)' : 'transparent'}">
+      ${escHtml(cat)}
+    </button>`;
+  }).join('');
+}
+
+function setPickerCategory(cat) {
+  _pickerCategory = cat;
+  renderPickerSidebar();
+  renderPickerGrid();
+}
+
+function renderPickerGrid() {
+  const grid = document.getElementById('picker-grid');
+  if (!grid) return;
+  const q = (document.getElementById('picker-search')?.value || '').toLowerCase();
+  let items = state.items || [];
+  if (_pickerCategory !== 'All') items = items.filter(i => i.category === _pickerCategory);
+  if (q) items = items.filter(i => ((i.name || '') + ' ' + (i.sku || '') + ' ' + (i.barcode || '')).toLowerCase().includes(q));
+
+  if (items.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-tertiary);font-size:0.85rem">No materials found</div>`;
+    return;
+  }
+
+  grid.innerHTML = items.map(item => {
+    const qty = item.quantity || 0;
+    const min = item.minStock || 5;
+    const isOut = qty <= 0;
+    const isLow = !isOut && qty <= min;
+
+    // Card border/background based on stock
+    let cardBorder, cardBg, hoverBorder, hoverShadow, badge;
+
+    if (isOut) {
+      cardBorder  = '1px solid rgba(239,68,68,0.35)';
+      cardBg      = 'rgba(239,68,68,0.06)';
+      hoverBorder = 'rgba(239,68,68,0.6)';
+      hoverShadow = '0 0 0 2px rgba(239,68,68,0.12)';
+      badge = `<span style="font-size:0.62rem;font-weight:700;color:#dc2626;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:3px;padding:0.1rem 0.35rem;letter-spacing:0.03em">OUT OF STOCK</span>`;
+    } else if (isLow) {
+      cardBorder  = '1px solid rgba(245,158,11,0.35)';
+      cardBg      = 'rgba(245,158,11,0.06)';
+      hoverBorder = 'rgba(245,158,11,0.7)';
+      hoverShadow = '0 0 0 2px rgba(245,158,11,0.15)';
+      badge = `<span style="font-size:0.62rem;font-weight:700;color:#d97706;background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.3);border-radius:3px;padding:0.1rem 0.35rem;letter-spacing:0.03em">LOW STOCK</span>`;
+    } else {
+      cardBorder  = '1px solid rgba(34,197,94,0.35)';
+      cardBg      = 'rgba(34,197,94,0.06)';
+      hoverBorder = 'rgba(34,197,94,0.7)';
+      hoverShadow = '0 0 0 2px rgba(34,197,94,0.15)';
+      badge = `<span style="font-size:0.62rem;font-weight:700;color:#16a34a;background:rgba(34,197,94,0.14);border:1px solid rgba(34,197,94,0.3);border-radius:3px;padding:0.1rem 0.35rem;letter-spacing:0.03em">IN STOCK</span>`;
+    }
+
+    const imgHtml = item.imageUrl
+      ? `<img src="${escHtml(item.imageUrl)}" style="width:100%;height:80px;object-fit:cover;border-radius:var(--radius) var(--radius) 0 0;${isOut ? 'opacity:0.5;' : ''}" />`
+      : `<div style="width:100%;height:80px;background:var(--bg-raised);border-radius:var(--radius) var(--radius) 0 0;display:flex;align-items:center;justify-content:center;color:var(--text-muted);${isOut ? 'opacity:0.5;' : ''}">
+           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+         </div>`;
+
+    return `
+      <div onclick="selectPickerItem('${escHtml(item.id)}')"
+        style="background:${cardBg};border:${cardBorder};border-radius:var(--radius);cursor:pointer;overflow:hidden;transition:border-color 0.15s,box-shadow 0.15s;${isOut ? 'opacity:0.75;' : ''}"
+        onmouseenter="this.style.borderColor='${hoverBorder}';this.style.boxShadow='${hoverShadow}'"
+        onmouseleave="this.style.borderColor='${cardBorder}';this.style.boxShadow='none'">
+        ${imgHtml}
+        <div style="padding:0.45rem 0.5rem">
+          <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(item.name)}">${escHtml(item.name)}</div>
+          <div style="font-size:0.68rem;font-family:var(--font-mono);color:var(--text-tertiary);margin-top:0.1rem">${escHtml(item.sku)}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.3rem;gap:0.3rem">
+            <span style="font-size:0.68rem;color:var(--text-secondary)">${item.quantity} ${item.unit} · ${escHtml(item.location || '')}</span>
+            ${badge}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function selectPickerItem(itemId) {
+  const item = state.items.find(i => i.id === itemId);
+  if (!item || _pickerTargetRowId === null) return;
+
+  const row = document.getElementById(`mat-row-${_pickerTargetRowId}`);
+  if (!row) return;
+
+  // Store item data on the row element
+  row.dataset.itemId   = item.id;
+  row.dataset.itemName = item.name;
+  row.dataset.itemSku  = item.sku;
+  row.dataset.unit     = item.unit || 'pcs';
+
+  // Update picker button label
+  const btn = document.getElementById(`mat-picker-btn-${_pickerTargetRowId}`);
+  if (btn) {
+    btn.style.color = 'var(--text-primary)';
+    btn.style.fontWeight = '600';
+    btn.textContent = `${item.name} (${item.sku})`;
+  }
+
+  // Update unit label
+  const unitEl = document.getElementById(`mat-unit-${_pickerTargetRowId}`);
+  if (unitEl) unitEl.textContent = item.unit || 'pcs';
+
+  // Close picker
+  document.getElementById('modal-picker-overlay')?.classList.add('hidden');
+  _pickerTargetRowId = null;
+}
+
+// ─── Old stubs kept for backward compat (now unused) ─────────────────────────
+function onRequestItemSelectChange() {}
 
 function closeRequestModal(e) {
   if (e && e.target !== document.getElementById('modal-request-overlay')) return;
@@ -2133,24 +2586,42 @@ function closeRequestModal(e) {
 
 async function handleRequestSubmit(e) {
   e.preventDefault();
-  const select = document.getElementById('req-item-select');
-  const selectedId = select ? select.value : state.requestingItemId;
-  const item = state.items.find(i => i.id === selectedId);
-  if (!item) {
-    showToast('Please select a valid material to request', 'error');
+
+  // Collect all material rows
+  const container = document.getElementById('material-rows-container');
+  const rows = Array.from(container.children);
+  const materials = [];
+
+  for (const row of rows) {
+    const itemId   = row.dataset.itemId;
+    const itemName = row.dataset.itemName;
+    const itemSku  = row.dataset.itemSku;
+    const unit     = row.dataset.unit || 'pcs';
+    const rowId    = row.id.replace('mat-row-', '');
+    const qty      = parseInt(document.getElementById(`mat-qty-${rowId}`)?.value) || 0;
+
+    if (!itemId) {
+      showToast('Please select a material for every row', 'error');
+      return;
+    }
+    if (qty < 1) {
+      showToast('Quantity must be at least 1 for every material', 'error');
+      return;
+    }
+    materials.push({ itemId, itemName, itemSku, unit, quantity: qty });
+  }
+
+  if (materials.length === 0) {
+    showToast('Add at least one material to the offer', 'error');
     return;
   }
 
   const data = {
-    itemId: item.id,
-    itemName: item.name,
-    itemSku: item.sku,
-    zone: item.zone,
-    quantityRequested: parseInt(document.getElementById('req-quantity').value) || 1,
-    unit: item.unit,
-    engineerName: document.getElementById('req-engineer').value.trim() || state.user?.name || 'Engineer',
+    name:       document.getElementById('req-engineer').value.trim(),
+    employeeId: document.getElementById('req-employee-id').value.trim(),
     projectName: document.getElementById('req-project').value.trim(),
-    purpose: document.getElementById('req-purpose').value.trim(),
+    purpose:    document.getElementById('req-purpose').value.trim(),
+    materials,
   };
 
   try {
@@ -2159,12 +2630,12 @@ async function handleRequestSubmit(e) {
       showToast(res.error, 'error');
       return;
     }
-    showToast('Material request submitted successfully!', 'success');
+    showToast('Supplier offer submitted successfully!', 'success');
     document.getElementById('modal-request-overlay').classList.add('hidden');
     await loadAll();
     renderView('requests');
   } catch (err) {
-    showToast('Failed to submit request', 'error');
+    showToast('Failed to submit offer', 'error');
   }
 }
 
@@ -2305,5 +2776,4 @@ document.addEventListener('DOMContentLoaded', () => {
   if (saved) {
     try { setUser(JSON.parse(saved)); return; } catch {}
   }
-  hideLoadingScreen();
 });

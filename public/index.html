@@ -4,20 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#090d16" id="meta-theme-color" />
-  <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <title>Inventory — Barcode & Digital Inventory System</title>
   <meta name="description" content="Industrial store inventory management system with barcode scanner & thermal label printer integration." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <!-- JsBarcode CDN for generating barcode labels -->
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js" integrity="sha384-Kk5SjBOKprEnGfyBWfD2zROFd1Cu8kwOXxG2GIhYPcoDL2rBJS9P8Ud1ZMy4412a" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <!-- jsPDF & jsPDF-AutoTable CDN for PDF Export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js" integrity="sha384-vuyrTV5nkscLp1knFvt+FIHfKKzmROBq5reruhMRslauj54mW+l2B8b6szMN6lCL" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <!-- Chart.js CDN for Overview Stock Analytics Charts -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
@@ -118,7 +116,7 @@
       <form id="login-form" onsubmit="handleLogin(event)" class="login-form">
         <div id="manager-pin-group" class="field-group">
           <label class="field-label">ENTER MANAGER PIN</label>
-          <input type="password" id="manager-pin" class="field-input mono" placeholder="Default PIN: 1234" maxlength="10" autocomplete="current-password" />
+          <input type="password" id="manager-pin" class="field-input mono" placeholder="" maxlength="6" autocomplete="current-password" />
         </div>
         <div id="engineer-name-group" class="field-group hidden">
           <label class="field-label">YOUR NAME / ENGINEER ID</label>
@@ -314,6 +312,14 @@
 
           <div class="field-grid two-col" style="gap:0.75rem">
             <div class="field-group">
+              <label class="field-label">ZOHO CODE</label>
+              <input type="text" id="item-zoho-code" class="field-input mono" placeholder="e.g. 522174000000024022" style="letter-spacing:0.03em" />
+            </div>
+            <div></div>
+          </div>
+
+          <div class="field-grid two-col" style="gap:0.75rem">
+            <div class="field-group">
               <label class="field-label">ZONE <span class="req">*</span></label>
               <select id="item-zone" class="field-input field-select" required>
                 <option value="">Select zone</option>
@@ -324,7 +330,8 @@
             </div>
             <div class="field-group">
               <label class="field-label">CATEGORY <span class="req">*</span></label>
-              <input type="text" id="item-category" class="field-input" placeholder="e.g. Fasteners" required />
+              <input type="text" id="item-category" class="field-input" placeholder="e.g. Fasteners" required list="category-suggestions" autocomplete="off" />
+              <datalist id="category-suggestions"></datalist>
             </div>
           </div>
 
@@ -440,48 +447,147 @@
     </div>
   </div>
 
-  <!-- Request Modal -->
+  <!-- Supplier Offer / Request Modal -->
   <div class="modal-backdrop hidden" id="modal-request-overlay" onclick="closeRequestModal(event)">
-    <div class="modal" id="modal-request">
+    <div class="modal" id="modal-request" style="max-width:640px" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title-block">
-          <div class="modal-title-tag">MATERIAL REQUEST</div>
-          <h2 class="modal-title">Request Material</h2>
+          <div class="modal-title-tag">SUPPLIER OFFER</div>
+          <h2 class="modal-title">Supplier Offer</h2>
         </div>
         <button class="modal-close-btn" onclick="closeRequestModal()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <form id="form-request" onsubmit="handleRequestSubmit(event)">
-        <div class="modal-body">
-          <div class="item-ref-card" id="request-item-info"></div>
-          <div class="field-grid two-col">
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:0.75rem;padding:1.125rem 1.35rem">
+
+          <!-- Name + Employee ID -->
+          <div class="field-grid two-col" style="gap:0.75rem">
             <div class="field-group">
-              <label class="field-label">ENGINEER NAME <span class="req">*</span></label>
-              <input type="text" id="req-engineer" class="field-input" placeholder="e.g. Er. Suresh Patel" required />
+              <label class="field-label">NAME <span class="req">*</span></label>
+              <input type="text" id="req-engineer" class="field-input" placeholder="e.g. Suresh Patel" required />
             </div>
             <div class="field-group">
-              <label class="field-label">PROJECT NAME / ID <span class="req">*</span></label>
-              <input type="text" id="req-project" class="field-input" placeholder="e.g. Dairy Plant Expansion" required />
+              <label class="field-label">EMPLOYEE ID <span class="req">*</span></label>
+              <input type="text" id="req-employee-id" class="field-input mono" placeholder="e.g. EMP-1042" required />
             </div>
           </div>
+
+          <!-- Project Name -->
           <div class="field-group">
-            <label class="field-label">QUANTITY REQUESTED <span class="req">*</span></label>
-            <div class="qty-input-wrap">
-              <input type="number" id="req-quantity" class="field-input mono" min="1" placeholder="1" required />
-              <span class="unit-tag" id="req-unit-label">pcs</span>
-            </div>
+            <label class="field-label">PROJECT NAME / ID <span class="req">*</span></label>
+            <input type="text" id="req-project" class="field-input" placeholder="e.g. Dairy Plant Expansion" required />
           </div>
+
+          <!-- Materials Required section -->
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+              <label class="field-label" style="margin:0">MATERIALS REQUIRED <span class="req">*</span></label>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="addMaterialRow()" style="font-size:0.75rem;padding:0.3rem 0.65rem">+ Add</button>
+            </div>
+            <div id="material-rows-container" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+          </div>
+
+          <!-- Reason / Purpose -->
           <div class="field-group">
             <label class="field-label">REASON / PURPOSE <span class="req">*</span></label>
             <textarea id="req-purpose" class="field-input field-textarea" rows="2" placeholder="e.g. Line 2 valve replacement, emergency fix" required></textarea>
           </div>
+
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-ghost" onclick="closeRequestModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Submit Request</button>
+          <button type="submit" class="btn btn-primary">Submit Offer</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Material Picker Modal -->
+  <div class="modal-backdrop hidden" id="modal-picker-overlay" onclick="closePickerModal(event)" style="z-index:1100">
+    <div class="modal" id="modal-picker" style="max-width:780px;height:80vh;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+      <div class="modal-header" style="flex-shrink:0">
+        <div class="modal-title-block">
+          <div class="modal-title-tag">INVENTORY</div>
+          <h2 class="modal-title">Select Material</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closePickerModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <!-- Search bar -->
+      <div style="padding:0.625rem 1rem;border-bottom:1px solid var(--border-subtle);flex-shrink:0">
+        <input type="text" id="picker-search" class="field-input" placeholder="Search by name or SKU…" oninput="renderPickerGrid()" style="width:100%" />
+      </div>
+      <!-- Body: sidebar + grid -->
+      <div style="display:flex;flex:1;overflow:hidden">
+        <!-- Category sidebar -->
+        <div id="picker-category-sidebar" style="width:160px;flex-shrink:0;overflow-y:auto;border-right:1px solid var(--border-subtle);padding:0.5rem 0"></div>
+        <!-- Material grid -->
+        <div id="picker-grid" style="flex:1;overflow-y:auto;padding:0.75rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.65rem;align-content:start"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Material Issue & Verification Modal -->
+  <div class="modal-backdrop hidden" id="modal-checklist-overlay" onclick="closeChecklistModal(event)" style="z-index:1050">
+    <div class="modal" id="modal-checklist" style="max-width:660px" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-block">
+          <div class="modal-title-tag">OUTWARD DISPATCH &amp; VERIFICATION</div>
+          <h2 class="modal-title" id="checklist-modal-title">Material Stock Out</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closeChecklistModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:0.875rem;padding:1.125rem 1.35rem">
+
+        <!-- Read-only Request info block -->
+        <div id="checklist-info-block" style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.75rem 1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.4rem 1rem;font-size:0.82rem"></div>
+
+        <!-- Live Barcode Scanner Input Container -->
+        <div id="checklist-scan-container" style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.25);border-radius:var(--radius-md);padding:0.875rem 1rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+            <label class="field-label" style="margin:0;color:var(--text-primary);display:flex;align-items:center;gap:0.4rem">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h1v10H7zM10 7h2v10h-2zM14 7h1v10h-1zM17 7h1v10h-1z"/></svg>
+              SCAN PRODUCT BARCODE / SKU
+            </label>
+            <span style="font-size:0.7rem;color:var(--goose);font-family:var(--font-mono);font-weight:600">HELETT HT20 READY</span>
+          </div>
+          <div style="display:flex;gap:0.5rem">
+            <input type="text" id="checklist-barcode-input" class="field-input mono" placeholder="Point scanner here or enter SKU / Barcode…" onkeydown="handleChecklistScanKey(event)" style="font-size:0.95rem;background:var(--bg-surface)" />
+            <button type="button" class="btn btn-primary" onclick="processChecklistBarcodeScan()" style="white-space:nowrap;padding:0 0.875rem">
+              Verify
+            </button>
+          </div>
+          <div id="checklist-scan-feedback" style="font-size:0.75rem;margin-top:0.35rem;display:none"></div>
+        </div>
+
+        <!-- Materials list -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+            <label class="field-label" style="margin:0">REQUESTED ITEMS VERIFICATION</label>
+            <span id="checklist-progress-badge" style="font-size:0.72rem;font-weight:700;font-family:var(--font-mono);color:var(--text-tertiary)"></span>
+          </div>
+          <div id="checklist-rows" style="display:flex;flex-direction:column;gap:0.4rem"></div>
+        </div>
+
+        <!-- Remarks -->
+        <div class="field-group" style="margin-top:0.25rem">
+          <label class="field-label">REMARKS / MANAGER NOTES</label>
+          <textarea id="checklist-remarks" class="field-input field-textarea" rows="2" placeholder="e.g. Verified by Store Manager, dispatched via shelf location R-A1"></textarea>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeChecklistModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" id="checklist-issue-btn" onclick="submitIssue()" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%);border-color:#10b981;font-weight:700">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          Stock Out
+        </button>
+      </div>
     </div>
   </div>
 
@@ -781,7 +887,7 @@
   </div>
 
   <!-- Custom Confirm Modal (replaces native browser confirm()) -->
-  <div class="modal-backdrop hidden" id="modal-confirm-overlay">
+  <div class="modal-backdrop hidden" id="modal-confirm-overlay" style="z-index:1200">
     <div class="modal card" style="max-width:420px" onclick="event.stopPropagation()">
       <div class="modal-hdr" style="padding:1.25rem 1.5rem 0">
         <h2 class="modal-title" id="confirm-modal-title">Confirm Action</h2>
