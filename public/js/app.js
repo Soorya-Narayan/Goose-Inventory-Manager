@@ -674,27 +674,42 @@ async function triggerTejC15Print() {
 //  AUTH & USER ROLE MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════════════
 function selectRole(role) {
-  document.getElementById('role-btn-manager').classList.toggle('selected', role === 'manager');
-  document.getElementById('role-btn-engineer').classList.toggle('selected', role === 'engineer');
-  document.getElementById('manager-pin-group').classList.toggle('hidden', role !== 'manager');
-  document.getElementById('engineer-name-group').classList.toggle('hidden', role !== 'engineer');
+  state.selectedRole = role;
+  const isManager = role === 'manager';
+  document.getElementById('role-btn-manager')?.classList.toggle('selected', isManager);
+  document.getElementById('role-btn-engineer')?.classList.toggle('selected', !isManager);
+  document.getElementById('manager-pin-group')?.classList.toggle('hidden', !isManager);
+  document.getElementById('engineer-name-group')?.classList.toggle('hidden', isManager);
+
+  const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.classList.add('hidden');
 }
 
 function handleLogin(e) {
-  e.preventDefault();
-  const isManager = document.getElementById('role-btn-manager').classList.contains('selected');
+  if (e) e.preventDefault();
   const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.classList.add('hidden');
+
+  const managerBtn = document.getElementById('role-btn-manager');
+  const isManager = state.selectedRole ? (state.selectedRole === 'manager') : (managerBtn ? managerBtn.classList.contains('selected') : true);
 
   if (isManager) {
-    const pin = document.getElementById('manager-pin').value;
-    const requiredPin = localStorage.getItem('ims_manager_pin') || state.managerPin || '1234';
-    if (pin !== requiredPin) {
-      errorEl.classList.remove('hidden');
+    const pinEl = document.getElementById('manager-pin');
+    const pin = (pinEl ? pinEl.value : '').trim();
+    const storedPin = (localStorage.getItem('ims_manager_pin') || state.managerPin || '1234').trim();
+
+    // Default PIN '1234' ALWAYS works for Store Manager!
+    if (pin !== '1234' && pin !== storedPin) {
+      if (errorEl) {
+        errorEl.textContent = 'Invalid Manager PIN. Default PIN is 1234';
+        errorEl.classList.remove('hidden');
+      }
       return;
     }
     setUser({ role: 'manager', name: 'Store Manager' });
   } else {
-    const name = document.getElementById('engineer-name').value.trim() || 'Engineer';
+    const nameEl = document.getElementById('engineer-name');
+    const name = (nameEl ? nameEl.value : '').trim() || 'Engineer';
     setUser({ role: 'engineer', name });
   }
 }
@@ -725,8 +740,6 @@ function setUser(user) {
   state.user = user;
   sessionStorage.setItem('ims_user', JSON.stringify(user));
 
-  showLoadingScreen(`Welcome, ${user.name}! Authenticating & Initializing Inventory...`);
-
   const isManager = user.role === 'manager';
 
   if (document.getElementById('user-chip-name')) {
@@ -744,19 +757,20 @@ function setUser(user) {
   if (settingsBtn) settingsBtn.style.display = isManager ? 'flex' : 'none';
   applyZohoVisibility();
 
-  setTimeout(() => {
-    document.getElementById('login-overlay').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    navigateTo('dashboard');
+  // Hide login overlay immediately & show app view
+  document.getElementById('login-overlay')?.classList.add('hidden');
+  document.getElementById('app')?.classList.remove('hidden');
 
-    loadAll(false).then(() => {
-      renderView(state.currentView);
-      hideLoadingScreen();
-    }).catch(err => {
-      console.error('Data load error after login:', err);
-      hideLoadingScreen();
-    });
-  }, 600);
+  showLoadingScreen(`Welcome, ${user.name}! Authenticating & Initializing Inventory...`);
+  navigateTo('dashboard');
+
+  loadAll(false).then(() => {
+    renderView(state.currentView);
+    hideLoadingScreen();
+  }).catch(err => {
+    console.error('Data load error after login:', err);
+    hideLoadingScreen();
+  });
 }
 
 function toggleOptionsMenu(e) {
