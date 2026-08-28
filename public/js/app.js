@@ -275,15 +275,19 @@ function showLoadingScreen(message = 'Loading Inventory Database...') {
   const txt = document.getElementById('loading-status-text');
   if (txt) txt.textContent = message;
   if (overlay) overlay.classList.remove('hidden');
+
+  // Auto safety fallback timeout: force hide after 2 seconds to prevent lockups
+  clearTimeout(_loadingTimer);
+  _loadingTimer = setTimeout(() => {
+    if (overlay) overlay.classList.add('hidden');
+  }, 2000);
 }
 
 function hideLoadingScreen() {
   const overlay = document.getElementById('app-loading-screen');
   if (overlay) {
     clearTimeout(_loadingTimer);
-    _loadingTimer = setTimeout(() => {
-      overlay.classList.add('hidden');
-    }, 450);
+    overlay.classList.add('hidden');
   }
 }
 

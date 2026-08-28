@@ -21,16 +21,14 @@ app.use((req, res, next) => {
   // 1. Content Security Policy (CSP)
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; " +
-    "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "font-src 'self' https://fonts.gstatic.com data:; " +
+    "default-src 'self' https:; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; " +
+    "style-src 'self' 'unsafe-inline' https:; " +
+    "font-src 'self' data: https:; " +
     "img-src 'self' data: blob: https:; " +
-    "connect-src 'self' https: wss: https://zohoapis.in https://zohoapis.com https://zohoapis.eu; " +
+    "connect-src 'self' https: wss:; " +
     "frame-ancestors 'none'; " +
-    "object-src 'none'; " +
-    "base-uri 'self'; " +
-    "form-action 'self';"
+    "object-src 'none';"
   );
 
   // 2. Strict-Transport-Security (HSTS)
@@ -63,11 +61,13 @@ function readData() {
   try {
     if (!fs.existsSync(DATA_FILE)) return { items: [], requests: [], transactions: [] };
     const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+    if (!raw || !raw.trim()) return { items: [], requests: [], transactions: [] };
     const data = JSON.parse(raw) || {};
-    if (!Array.isArray(data.items)) data.items = [];
-    if (!Array.isArray(data.requests)) data.requests = [];
-    if (!Array.isArray(data.transactions)) data.transactions = [];
-    return data;
+    return {
+      items: Array.isArray(data.items) ? data.items : [],
+      requests: Array.isArray(data.requests) ? data.requests : [],
+      transactions: Array.isArray(data.transactions) ? data.transactions : []
+    };
   } catch (e) {
     return { items: [], requests: [], transactions: [] };
   }
