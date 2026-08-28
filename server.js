@@ -62,6 +62,7 @@ app.post('/api/items', (req, res) => {
     hsn: req.body.hsn || '',
     notes: req.body.notes || '',
     imageUrl: req.body.imageUrl || '',
+    zohoCode: req.body.zohoCode || '',
     addedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };

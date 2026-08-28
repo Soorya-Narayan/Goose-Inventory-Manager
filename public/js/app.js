@@ -1785,10 +1785,28 @@ function generateProductId() {
   return id;
 }
 
+function populateCategorySuggestions() {
+  const dl = document.getElementById('category-suggestions');
+  if (!dl) return;
+  // Collect unique, non-empty categories from live state (case-insensitive dedup, preserve first-seen casing)
+  const seen = new Map();
+  (state.items || []).forEach(item => {
+    const cat = (item.category || '').trim();
+    if (cat && !seen.has(cat.toLowerCase())) {
+      seen.set(cat.toLowerCase(), cat);
+    }
+  });
+  const sorted = [...seen.values()].sort((a, b) => a.localeCompare(b));
+  dl.innerHTML = sorted.map(c => `<option value="${c}"></option>`).join('');
+}
+
 function openAddItemModal() {
   state.editingItemId = null;
   document.getElementById('modal-item-title').textContent = 'New Item';
   document.getElementById('form-item').reset();
+  // Clear Zoho Code explicitly (form.reset() handles it but being explicit is safe)
+  const zohoEl = document.getElementById('item-zoho-code');
+  if (zohoEl) zohoEl.value = '';
   setImagePreview('');
   // Auto-generate product ID
   generateProductId();
@@ -1799,6 +1817,8 @@ function openAddItemModal() {
   if (nameEl) {
     nameEl.oninput = () => checkDuplicateName(nameEl.value);
   }
+  // Populate category autocomplete suggestions from existing items
+  populateCategorySuggestions();
   document.getElementById('modal-item-overlay').classList.remove('hidden');
 }
 
@@ -1818,10 +1838,15 @@ function openEditItemModal(id) {
   document.getElementById('item-location').value = item.location;
   document.getElementById('item-barcode').value = item.barcode || item.sku || '';
   document.getElementById('item-notes').value = item.notes || '';
+  // Populate Zoho Code from saved item (fallback to empty string)
+  const zohoEl = document.getElementById('item-zoho-code');
+  if (zohoEl) zohoEl.value = item.zohoCode || '';
   setImagePreview(item.imageUrl || '');
   document.getElementById('duplicate-warning')?.classList.add('hidden');
   const nameEl = document.getElementById('item-name');
   if (nameEl) nameEl.oninput = null;
+  // Populate category autocomplete suggestions from existing items
+  populateCategorySuggestions();
   document.getElementById('modal-item-overlay').classList.remove('hidden');
 }
 
@@ -1871,6 +1896,7 @@ async function handleItemSubmit(e) {
     barcode: productId,
     notes: document.getElementById('item-notes').value.trim(),
     imageUrl: document.getElementById('item-imageUrl').value.trim(),
+    zohoCode: document.getElementById('item-zoho-code').value.trim(),
   };
 
   try {
