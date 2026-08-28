@@ -32,37 +32,27 @@
     <svg class="bg-silhouette silhouette-crate-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1.5"/><line x1="3" y1="3" x2="21" y2="21"/><line x1="21" y1="3" x2="3" y2="21"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       HIGH-TECH INDUSTRIAL LOGISTICS LOADING OVERLAY
-  ═══════════════════════════════════════════════════════════ -->
+  <!-- Minimal Loading Overlay with Cargo Boxes, Forklift & Birds -->
   <div id="app-loading-screen" class="loading-overlay hidden" aria-live="polite">
-    <div class="loading-ambient-glow"></div>
-    <div class="loading-container card-glass">
+    <div class="loading-container">
       
-      <!-- Flying Goose V-Formation Birds Sky Scene -->
+      <!-- Birds flying on top -->
       <div class="sky-scene">
         <svg class="flying-goose goose-1" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="1.8" stroke-linecap="round"><path d="M2 14c4-4 8-1 10-6 2 5 6 2 10 6M12 8v5"/></svg>
         <svg class="flying-goose goose-2" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="1.8" stroke-linecap="round"><path d="M2 14c4-4 8-1 10-6 2 5 6 2 10 6M12 8v5"/></svg>
         <svg class="flying-goose goose-3" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="1.8" stroke-linecap="round"><path d="M2 14c4-4 8-1 10-6 2 5 6 2 10 6M12 8v5"/></svg>
       </div>
 
-      <!-- Central Industrial Warehouse & Logistics Stage -->
+      <!-- Minimal Warehouse Stage -->
       <div class="warehouse-stage">
-        
-        <!-- Laser Barcode Scanner Beam -->
-        <div class="laser-scanner-beam"></div>
-
-        <!-- Stacked Cargo Boxes Group -->
+        <!-- Cargo Boxes -->
         <div class="stacked-boxes">
-          <!-- Base Cargo Box Left -->
           <svg class="cargo-box box-base-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 7v10"/><path d="M12 12v10"/><path d="M22 7v10"/><path d="M7 4.5l10 5"/></svg>
-          <!-- Base Cargo Box Right -->
           <svg class="cargo-box box-base-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 7v10"/><path d="M12 12v10"/><path d="M22 7v10"/><path d="M7 4.5l10 5"/></svg>
-          <!-- Top Cargo Box (Dropping & Stacking) -->
           <svg class="cargo-box box-top" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 7v10"/><path d="M12 12v10"/><path d="M22 7v10"/><path d="M7 4.5l10 5"/></svg>
         </div>
 
-        <!-- Moving Forklift Truck -->
+        <!-- Forklift Truck -->
         <div class="forklift-anim">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 17h12v-5l-3-4H8v4H3v5z"/>
@@ -70,16 +60,16 @@
             <line x1="17" y1="2" x2="17" y2="20"/>
             <path d="M17 18h5v-3"/>
             <path d="M17 14h4"/>
-            <circle cx="6" cy="18" r="2" class="forklift-wheel"/>
-            <circle cx="14" cy="18" r="2" class="forklift-wheel"/>
+            <circle cx="6" cy="18" r="2"/>
+            <circle cx="14" cy="18" r="2"/>
           </svg>
         </div>
 
-        <!-- Ground Platform Line with Laser Particle -->
-        <div class="warehouse-ground"><div class="ground-pulse-particle"></div></div>
+        <!-- Ground Line -->
+        <div class="warehouse-ground"></div>
       </div>
 
-      <!-- Status & Loading Label -->
+      <!-- Minimal Labels & Progress Bar -->
       <div class="loading-label-wrap">
         <div class="loading-brand-title">GOOSE INDUSTRIAL SOLUTIONS PVT LTD</div>
         <div class="loading-status-text" id="loading-status-text">Synchronizing Warehouse Database...</div>
