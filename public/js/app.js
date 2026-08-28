@@ -2104,7 +2104,7 @@ function addMaterialRow() {
     </button>
     <div style="display:flex;align-items:center;gap:0.3rem;flex-shrink:0">
       <button type="button" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.55rem;font-size:1rem;line-height:1" onclick="stepQty(${rowId}, -1)">−</button>
-      <input type="number" id="mat-qty-${rowId}" value="1" min="1" class="field-input mono" style="width:52px;text-align:center;padding:0.3rem;font-size:0.88rem" />
+      <input type="number" id="mat-qty-${rowId}" value="1" min="1" class="field-input mono" style="width:52px;text-align:center;padding:0.3rem;font-size:0.88rem;-moz-appearance:textfield;-webkit-appearance:none;" oninput="if(this.value<1)this.value=1" />
       <button type="button" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.55rem;font-size:1rem;line-height:1" onclick="stepQty(${rowId}, 1)">+</button>
       <span id="mat-unit-${rowId}" style="font-size:0.75rem;color:var(--text-tertiary);min-width:24px">pcs</span>
     </div>
