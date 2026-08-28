@@ -130,6 +130,30 @@ body {
   color: #0072ff;
 }
 
+[data-theme="light"] .loading-overlay {
+  background-color: #f8fafc;
+  background-image:
+    linear-gradient(rgba(203, 213, 225, 0.45) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(203, 213, 225, 0.45) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+[data-theme="light"] .loading-container {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="light"] .warehouse-ground {
+  background: #cbd5e1;
+  opacity: 1;
+}
+
+[data-theme="light"] .loading-progress-bar {
+  background: #e2e8f0;
+}
+
 .silhouette-forklift-1 {
   top: 6%;
   right: 6%;
