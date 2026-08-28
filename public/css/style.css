@@ -1341,6 +1341,11 @@ td {
   color: var(--danger);
 }
 
+.status-tag.issued {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+
 /* ─── Buttons & Inputs ───────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;

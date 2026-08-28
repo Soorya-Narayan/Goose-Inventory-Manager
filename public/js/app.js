@@ -18,6 +18,9 @@ const state = {
   // Bluetooth printer
   printerDevice: null,
   printerConnected: false,
+  // Issue checklist
+  activeChecklistRequestId: null,
+  activeChecklist: [],
 };
 
 // ─── API Helpers ─────────────────────────────────────────────────────────────
@@ -336,11 +339,34 @@ window.addEventListener('keydown', (e) => {
 let currentScannedItem = null;
 
 function handleBarcodeScanned(barcode) {
-  const matchedItem = state.items.find(i => 
-    (i.barcode && i.barcode.toLowerCase() === barcode.toLowerCase()) || 
-    (i.sku && i.sku.toLowerCase() === barcode.toLowerCase())
+  const matchedItem = state.items.find(i =>
+    (i.barcode && i.barcode.toLowerCase() === barcode.toLowerCase()) ||
+    (i.sku    && i.sku.toLowerCase()    === barcode.toLowerCase())
   );
 
+  // ── Checklist mode: intercept scan while Issue Checklist modal is open ──────
+  if (state.activeChecklistRequestId) {
+    if (!matchedItem) {
+      showToast(`Unknown barcode "${barcode}" — not in inventory`, 'warning');
+      return;
+    }
+    // Check if this item is part of the active checklist
+    const clEntry = state.activeChecklist.find(c => c.itemId === matchedItem.id);
+    if (!clEntry) {
+      showToast(`"${matchedItem.name}" is not part of this Supplier Offer`, 'warning');
+      return;
+    }
+    if (clEntry.checked) {
+      showToast(`${matchedItem.name} is already checked off`, 'info');
+      return;
+    }
+    clEntry.checked = true;
+    renderChecklistRows();
+    showToast(`Checked: ${matchedItem.name}`, 'success');
+    return;
+  }
+
+  // ── Normal mode ─────────────────────────────────────────────────────────────
   if (matchedItem) {
     openScanActionModal(matchedItem);
   } else {
@@ -1656,12 +1682,29 @@ function renderRequests() {
               <span>${escHtml(r.purpose || '')}</span>
               <span>${new Date(r.requestedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
             </div>
-            ${isManager && r.status === 'pending' ? `
-              <div style="display:flex;gap:0.5rem;margin-top:0.4rem">
-                <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'approved')">Approve</button>
-                <button class="btn btn-danger btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
-              </div>
-            ` : ''}
+            ${isManager ? (() => {
+              if (r.status === 'pending') return `
+                <div style="display:flex;gap:0.5rem;margin-top:0.4rem">
+                  <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'approved')">Approve</button>
+                  <button class="btn btn-danger btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
+                </div>`;
+              if (r.status === 'approved') return `
+                <div style="display:flex;gap:0.4rem;margin-top:0.4rem">
+                  <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center;gap:0.3rem" onclick="openChecklistModal('${r.id}')" title="Open Issue Checklist">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                    Issue
+                  </button>
+                  <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>
+                </div>`;
+              if (r.status === 'issued') return `
+                <div style="margin-top:0.4rem">
+                  <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;gap:0.3rem;opacity:0.6" onclick="openChecklistModal('${r.id}', true)" title="View Issue Record">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                    View Record
+                  </button>
+                </div>`;
+              return '';
+            })() : ''}
           </div>`;
         }).join('')}
       </div>
@@ -1703,11 +1746,22 @@ function renderRequests() {
                 <td>${escHtml(r.projectName)}</td>
                 <td>${reqStatusTag(r.status)}</td>
                 ${isManager ? `
-                  <td>
+                  <td style="white-space:nowrap">
                     ${r.status === 'pending' ? `
                       <button class="btn btn-primary btn-sm" onclick="processRequest('${r.id}', 'approved')">Approve</button>
                       <button class="btn btn-danger btn-sm" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
-                    ` : `<span style="font-size:0.75rem;color:var(--text-tertiary)">Processed</span>`}
+                    ` : r.status === 'approved' ? `
+                      <button class="btn btn-primary btn-sm" style="gap:0.3rem" onclick="openChecklistModal('${r.id}')" title="Open Issue Checklist">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                        Issue
+                      </button>
+                      <button class="btn btn-ghost btn-sm" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>
+                    ` : r.status === 'issued' ? `
+                      <button class="btn btn-ghost btn-sm" style="gap:0.3rem;opacity:0.6" onclick="openChecklistModal('${r.id}', true)" title="View Issue Record">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                        View Record
+                      </button>
+                    ` : `<span style="font-size:0.75rem;color:var(--text-tertiary)">—</span>`}
                   </td>
                 ` : ''}
               </tr>`;
@@ -1738,12 +1792,186 @@ function renderRequests() {
 async function processRequest(reqId, status) {
   try {
     await api.put(`/api/requests/${reqId}`, { status, processedBy: state.user?.name });
-    showToast(`Request ${status}`, 'success');
+    const labels = { approved: 'Offer approved', rejected: 'Offer rejected', pending: 'Reverted to pending' };
+    showToast(labels[status] || `Status: ${status}`, 'success');
     await loadAll();
     renderView('requests');
   } catch (err) {
     showToast('Failed to process request', 'error');
   }
+}
+
+// ─── Issue Checklist Modal ────────────────────────────────────────────────────
+function openChecklistModal(reqId, readOnly = false) {
+  const req = state.requests.find(r => r.id === reqId);
+  if (!req) return;
+
+  state.activeChecklistRequestId = reqId;
+  // Build checklist from the request's materials (or restore saved checklist if re-opening)
+  const savedChecklist = Array.isArray(req.checklist) && req.checklist.length ? req.checklist : null;
+  state.activeChecklist = (req.materials || []).map(m => {
+    const saved = savedChecklist?.find(c => c.itemId === m.itemId);
+    return {
+      itemId:    m.itemId,
+      itemName:  m.itemName,
+      itemSku:   m.itemSku,
+      quantity:  m.quantity,
+      unit:      m.unit || 'pcs',
+      checked:   readOnly ? (saved?.checked ?? false) : false
+    };
+  });
+
+  // Header
+  document.getElementById('checklist-modal-title').textContent =
+    req.projectName || req.name || 'Issue Checklist';
+
+  // Info block
+  const info = document.getElementById('checklist-info-block');
+  const row = (label, val) =>
+    `<div><span style="font-size:0.7rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">${label}</span><div style="font-weight:600;color:var(--text-primary);margin-top:0.1rem">${escHtml(val || '—')}</div></div>`;
+  info.innerHTML =
+    row('Name', req.name || req.engineerName) +
+    row('Employee ID', req.employeeId) +
+    row('Project', req.projectName) +
+    row('Purpose', req.purpose);
+
+  // Remarks
+  const remarksEl = document.getElementById('checklist-remarks');
+  remarksEl.value = req.managerNotes || '';
+  remarksEl.readOnly = readOnly;
+
+  // Issue button
+  const issueBtn = document.getElementById('checklist-issue-btn');
+  if (issueBtn) issueBtn.style.display = readOnly ? 'none' : '';
+
+  renderChecklistRows(readOnly);
+  document.getElementById('modal-checklist-overlay').classList.remove('hidden');
+}
+
+function renderChecklistRows(readOnly = false) {
+  const container = document.getElementById('checklist-rows');
+  if (!container) return;
+  const cl = state.activeChecklist || [];
+  const checkedCount = cl.filter(c => c.checked).length;
+
+  container.innerHTML = cl.map((c, idx) => {
+    const chk = c.checked;
+    return `
+      <div onclick="${readOnly ? '' : `toggleChecklistItem('${c.itemId}')`}"
+        style="display:flex;align-items:center;gap:0.65rem;padding:0.5rem 0.75rem;
+               background:${chk ? 'rgba(34,197,94,0.08)' : 'var(--bg-raised)'};
+               border:1px solid ${chk ? 'rgba(34,197,94,0.35)' : 'var(--border-subtle)'};
+               border-radius:var(--radius);cursor:${readOnly ? 'default' : 'pointer'};
+               transition:background 0.15s,border-color 0.15s">
+        <!-- Checkbox -->
+        <div style="width:18px;height:18px;flex-shrink:0;border-radius:4px;
+                    border:2px solid ${chk ? '#16a34a' : 'var(--border-muted)'};
+                    background:${chk ? '#16a34a' : 'transparent'};
+                    display:flex;align-items:center;justify-content:center;transition:all 0.15s">
+          ${chk ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+        </div>
+        <!-- Label -->
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.82rem;font-weight:600;color:${chk ? 'var(--text-secondary)' : 'var(--text-primary)'};
+                      ${chk ? 'text-decoration:line-through;' : ''}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            ${escHtml(c.itemName)}
+          </div>
+          <div style="font-size:0.68rem;color:var(--text-tertiary);font-family:var(--font-mono)">${escHtml(c.itemSku)}</div>
+        </div>
+        <!-- Qty badge -->
+        <span style="font-size:0.75rem;font-family:var(--font-mono);font-weight:700;
+                     color:${chk ? 'var(--text-tertiary)' : 'var(--goose)'}">
+          ${c.quantity} ${c.unit}
+        </span>
+      </div>`;
+  }).join('');
+
+  // Progress indicator
+  const pct = cl.length ? Math.round(checkedCount / cl.length * 100) : 0;
+  container.insertAdjacentHTML('beforeend', `
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.35rem;font-size:0.75rem;color:var(--text-tertiary)">
+      <div style="flex:1;height:4px;background:var(--border-subtle);border-radius:2px">
+        <div style="width:${pct}%;height:100%;background:#16a34a;border-radius:2px;transition:width 0.3s"></div>
+      </div>
+      <span>${checkedCount} / ${cl.length} checked</span>
+    </div>`);
+}
+
+function toggleChecklistItem(itemId) {
+  const entry = (state.activeChecklist || []).find(c => c.itemId === itemId);
+  if (!entry) return;
+  entry.checked = !entry.checked;
+  renderChecklistRows();
+}
+
+function closeChecklistModal(e) {
+  if (e && e.target !== document.getElementById('modal-checklist-overlay')) return;
+  document.getElementById('modal-checklist-overlay')?.classList.add('hidden');
+  // Clear checklist state — does NOT change request status
+  state.activeChecklistRequestId = null;
+  state.activeChecklist = [];
+}
+
+async function submitIssue() {
+  const reqId = state.activeChecklistRequestId;
+  if (!reqId) return;
+  const cl = state.activeChecklist || [];
+  const unchecked = cl.filter(c => !c.checked).length;
+  const remarks = document.getElementById('checklist-remarks')?.value.trim() || '';
+
+  const doIssue = async () => {
+    try {
+      await api.put(`/api/requests/${reqId}`, {
+        status: 'issued',
+        checklist: cl,
+        managerNotes: remarks,
+        processedBy: state.user?.name
+      });
+      document.getElementById('modal-checklist-overlay')?.classList.add('hidden');
+      state.activeChecklistRequestId = null;
+      state.activeChecklist = [];
+      showToast('Materials issued successfully!', 'success');
+      await loadAll();
+      renderView('requests');
+    } catch (err) {
+      showToast('Failed to issue materials', 'error');
+    }
+  };
+
+  if (unchecked > 0) {
+    showConfirmModal({
+      title: 'Issue with unchecked items?',
+      message: `${unchecked} of ${cl.length} material${unchecked > 1 ? 's' : ''} not yet checked off. Issue anyway?`,
+      confirmLabel: 'Issue Anyway',
+      onConfirm: doIssue
+    });
+  } else {
+    await doIssue();
+  }
+}
+
+function revertApproval(reqId) {
+  showConfirmModal({
+    title: 'Revert Approval',
+    message: 'Move this Supplier Offer back to Pending? Any checklist progress will be discarded.',
+    confirmLabel: 'Revert',
+    onConfirm: async () => {
+      try {
+        await api.put(`/api/requests/${reqId}`, {
+          status: 'pending',
+          processedBy: null,
+          processedAt: null,
+          checklist: [],
+          managerNotes: ''
+        });
+        showToast('Offer reverted to pending', 'success');
+        await loadAll();
+        renderView('requests');
+      } catch (err) {
+        showToast('Failed to revert approval', 'error');
+      }
+    }
+  });
 }
 
 // ─── Custom Confirm Modal ─────────────────────────────────────────────────────
@@ -2036,6 +2264,7 @@ function zoneInlineTag(zone) {
 function reqStatusTag(status) {
   if (status === 'approved') return `<span class="status-tag ok">Approved</span>`;
   if (status === 'rejected') return `<span class="status-tag out">Rejected</span>`;
+  if (status === 'issued')   return `<span class="status-tag issued">Issued</span>`;
   return `<span class="status-tag low">Pending</span>`;
 }
 

@@ -530,6 +530,49 @@
     </div>
   </div>
 
+  <!-- Issue Checklist Modal -->
+  <div class="modal-backdrop hidden" id="modal-checklist-overlay" onclick="closeChecklistModal(event)" style="z-index:1050">
+    <div class="modal" id="modal-checklist" style="max-width:620px" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-block">
+          <div class="modal-title-tag">ISSUE MATERIALS</div>
+          <h2 class="modal-title" id="checklist-modal-title">Issue Checklist</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closeChecklistModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:0.75rem;padding:1.125rem 1.35rem">
+
+        <!-- Read-only info block -->
+        <div id="checklist-info-block" style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.75rem 1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.4rem 1rem;font-size:0.82rem"></div>
+
+        <!-- Materials checklist -->
+        <div>
+          <label class="field-label" style="margin-bottom:0.5rem;display:block">MATERIALS CHECKLIST</label>
+          <div id="checklist-rows" style="display:flex;flex-direction:column;gap:0.35rem"></div>
+          <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:0.5rem">
+            Scan each item with the Helett HT20 scanner, or tap a row to check it manually.
+          </div>
+        </div>
+
+        <!-- Remarks -->
+        <div class="field-group">
+          <label class="field-label">REMARKS / MANAGER NOTES</label>
+          <textarea id="checklist-remarks" class="field-input field-textarea" rows="2" placeholder="e.g. 1 item short, follow-up needed"></textarea>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeChecklistModal()">Close</button>
+        <button type="button" class="btn btn-primary" id="checklist-issue-btn" onclick="submitIssue()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Issue
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Delete Modal -->
   <div class="modal-backdrop hidden" id="modal-delete-overlay" onclick="closeDeleteModal(event)">
     <div class="modal modal-sm">

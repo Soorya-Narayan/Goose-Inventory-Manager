@@ -161,19 +161,23 @@ app.put('/api/requests/:id', (req, res) => {
   const idx = data.requests.findIndex(r => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Request not found' });
 
-  const { status, processedBy, managerNotes } = req.body;
+  const { status, processedBy, managerNotes, checklist, processedAt } = req.body;
   const oldStatus = data.requests[idx].status;
 
+  // Build the updated request — allow any status transition (including revert to pending)
   data.requests[idx] = {
     ...data.requests[idx],
     status,
-    processedBy: processedBy || null,
-    managerNotes: managerNotes || '',
-    processedAt: new Date().toISOString()
+    processedBy: processedBy !== undefined ? processedBy : data.requests[idx].processedBy,
+    managerNotes: managerNotes !== undefined ? managerNotes : data.requests[idx].managerNotes,
+    checklist: Array.isArray(checklist) ? checklist : data.requests[idx].checklist || [],
+    processedAt: processedAt !== undefined
+      ? processedAt  // explicit null allowed (for revert)
+      : new Date().toISOString()
   };
 
-  // Deduct stock if approved and wasn't already approved
-  if (status === 'approved' && oldStatus !== 'approved') {
+  // ── Stock deduction: only when transitioning TO 'issued' ──────────────────
+  if (status === 'issued' && oldStatus !== 'issued') {
     const request = data.requests[idx];
 
     if (Array.isArray(request.materials) && request.materials.length > 0) {
@@ -186,7 +190,7 @@ app.put('/api/requests/:id', (req, res) => {
         }
       });
     } else if (request.itemId) {
-      // Legacy single-item format fallback
+      // Legacy single-item fallback
       const itemIdx = data.items.findIndex(i => i.id === request.itemId);
       if (itemIdx !== -1) {
         data.items[itemIdx].quantity = Math.max(0, data.items[itemIdx].quantity - (request.quantityRequested || 0));
@@ -194,6 +198,7 @@ app.put('/api/requests/:id', (req, res) => {
       }
     }
   }
+  // NOTE: 'approved' does NOT deduct stock — that only happens at 'issued'.
 
   writeData(data);
   res.json(data.requests[idx]);
