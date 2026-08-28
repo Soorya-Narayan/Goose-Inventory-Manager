@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#090d16" id="meta-theme-color" />
+  <title>Inventory — Barcode & Digital Inventory System</title>
+  <meta name="description" content="Industrial store inventory management system with barcode scanner & thermal label printer integration." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- JsBarcode CDN for generating barcode labels -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <!-- jsPDF & jsPDF-AutoTable CDN for PDF Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <!-- Chart.js CDN for Overview Stock Analytics Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MINIMAL WAREHOUSE & LOGISTICS BACKGROUND SILHOUETTES
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="bg-silhouettes-wrap" aria-hidden="true">
+    <!-- Forklift -->
+    <svg class="bg-silhouette silhouette-forklift-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h12v-5l-3-4H8v4H3v5z"/><path d="M8 8V4h6l2 4"/><line x1="17" y1="2" x2="17" y2="20"/><path d="M17 18h5v-3"/><path d="M17 14h4"/><circle cx="6" cy="18" r="2"/><circle cx="14" cy="18" r="2"/></svg>
+    <!-- Cargo Box -->
+    <svg class="bg-silhouette silhouette-box-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 7v10"/><path d="M12 12v10"/><path d="M22 7v10"/><path d="M7 4.5l10 5"/></svg>
+    <!-- Wooden Crate / Box Unit -->
+    <svg class="bg-silhouette silhouette-crate-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1.5"/><line x1="3" y1="3" x2="21" y2="21"/><line x1="21" y1="3" x2="3" y2="21"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       INDUSTRIAL LOGISTICS LOADING OVERLAY
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="app-loading-screen" class="loading-overlay hidden" aria-live="polite">
+    <div class="loading-container">
+      
+      <!-- Flying Goose Birds Sky Scene -->
+      <div class="sky-scene">
+        <svg class="flying-goose goose-1" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="1.8" stroke-linecap="round"><path d="M2 14c4-4 8-1 10-6 2 5 6 2 10 6M12 8v5"/></svg>
+        <svg class="flying-goose goose-2" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="1.8" stroke-linecap="round"><path d="M2 14c4-4 8-1 10-6 2 5 6 2 10 6M12 8v5"/></svg>
+        <svg class="flying-goose goose-3" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="1.8" stroke-linecap="round"><path d="M2 14c4-4 8-1 10-6 2 5 6 2 10 6M12 8v5"/></svg>
+      </div>
+
+      <!-- Central Industrial Warehouse Stage -->
+      <div class="warehouse-stage">
+        
+        <!-- Stacked Cargo Boxes Group -->
+        <div class="stacked-boxes">
+          <!-- Base Cargo Box Left -->
+          <svg class="cargo-box box-base-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 7v10"/><path d="M12 12v10"/><path d="M22 7v10"/><path d="M7 4.5l10 5"/></svg>
+          <!-- Base Cargo Box Right -->
+          <svg class="cargo-box box-base-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 7v10"/><path d="M12 12v10"/><path d="M22 7v10"/><path d="M7 4.5l10 5"/></svg>
+          <!-- Top Cargo Box (Dropping & Stacking) -->
+          <svg class="cargo-box box-top" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 7v10"/><path d="M12 12v10"/><path d="M22 7v10"/><path d="M7 4.5l10 5"/></svg>
+        </div>
+
+        <!-- Moving Forklift Truck -->
+        <div class="forklift-anim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 17h12v-5l-3-4H8v4H3v5z"/>
+            <path d="M8 8V4h6l2 4"/>
+            <line x1="17" y1="2" x2="17" y2="20"/>
+            <path d="M17 18h5v-3"/>
+            <path d="M17 14h4"/>
+            <circle cx="6" cy="18" r="2"/>
+            <circle cx="14" cy="18" r="2"/>
+          </svg>
+        </div>
+
+        <!-- Ground Platform Line -->
+        <div class="warehouse-ground"></div>
+      </div>
+
+      <!-- Status & Loading Label -->
+      <div class="loading-label-wrap">
+        <div class="loading-brand-title">GOOSE INDUSTRIAL SOLUTIONS PVT LTD</div>
+        <div class="loading-status-text" id="loading-status-text">Synchronizing Warehouse Database...</div>
+        <div class="loading-progress-bar"><div class="loading-progress-fill"></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       LOGIN OVERLAY
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="login-overlay" class="login-overlay">
+    <div class="login-panel">
+      <div class="login-brand">
+        <img src="/goose_logo.png" alt="Goose Logo" class="login-logo-img" />
+        <div>
+          <span class="login-brand-name">Inventory</span>
+          <span class="login-brand-sub">Goose Industrial Solutions Pvt Ltd</span>
+        </div>
+      </div>
+      <div class="login-divider"></div>
+      
+      <div class="login-prompt-label">SELECT YOUR ROLE</div>
+      <div class="role-selector">
+        <button type="button" class="role-btn selected" id="role-btn-manager" onclick="selectRole('manager')">
+          <svg class="role-btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span class="role-btn-label">Store Manager</span>
+          <span class="role-btn-tag">FULL ACCESS</span>
+        </button>
+        <button type="button" class="role-btn" id="role-btn-engineer" onclick="selectRole('engineer')">
+          <svg class="role-btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span class="role-btn-label">Engineer</span>
+          <span class="role-btn-tag">REQUEST ONLY</span>
+        </button>
+      </div>
+
+      <form id="login-form" onsubmit="handleLogin(event)" class="login-form">
+        <div id="manager-pin-group" class="field-group">
+          <label class="field-label">ENTER MANAGER PIN</label>
+          <input type="password" id="manager-pin" class="field-input mono" placeholder="" maxlength="6" autocomplete="current-password" />
+        </div>
+        <div id="engineer-name-group" class="field-group hidden">
+          <label class="field-label">YOUR NAME / ENGINEER ID</label>
+          <input type="text" id="engineer-name" class="field-input" placeholder="e.g. Er. Rahul Sharma" />
+        </div>
+        <button type="submit" class="login-btn">
+          <span>Access Inventory</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+        <div id="login-error" class="login-error hidden">Invalid PIN. Default manager PIN is 1234</div>
+      </form>
+
+      <div class="login-footer">
+        <span>INVENTORY v1.0 &middot; GOOSE INDUSTRIAL SOLUTIONS PVT LTD</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MAIN APPLICATION
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="app" class="app hidden">
+
+    <!-- Top Rail Header -->
+    <header class="top-rail">
+      <div class="top-rail-left">
+        <div class="brand-block">
+          <div class="brand-names">
+            <span class="brand-primary">Inventory</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER: Goose Logo Refresh Button (No Highlight) -->
+      <div class="top-rail-center">
+        <button type="button" class="nav-center-logo-btn" onclick="location.reload()" title="Refresh Application">
+          <img src="/goose_logo.png" alt="Goose Logo" class="nav-center-logo" />
+        </button>
+      </div>
+
+      <!-- RIGHT: Options & Profile Menu Dropdown -->
+      <div class="top-rail-right">
+        <div class="nav-options-wrapper" id="nav-options-wrapper">
+          <button class="nav-options-btn" id="nav-options-btn" onclick="toggleOptionsMenu(event)" title="Options & Account Menu">
+            <div class="user-chip-avatar" id="user-chip-avatar">M</div>
+            <span class="user-chip-name" id="user-chip-name">Store Manager</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          
+          <!-- Dropdown Options Menu -->
+          <div class="options-menu hidden" id="options-menu">
+            <div class="options-header">
+              <div class="user-chip-avatar lg" id="menu-avatar">M</div>
+              <div>
+                <div class="menu-user-name" id="menu-user-name">Store Manager</div>
+                <div class="menu-user-role" id="menu-user-role">MANAGER</div>
+              </div>
+            </div>
+            <div class="options-divider"></div>
+
+            <!-- Settings Option (Store Manager Only) -->
+            <button class="options-item" id="menu-item-settings" onclick="openSettingsModal()" title="System & Security Settings">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>Settings</span>
+            </button>
+            
+            <!-- Zoho Books Connection Option (Store Manager Only) -->
+            <button class="options-item" id="menu-item-zoho" onclick="openZohoModal()" title="Import or sync from Zoho Books">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              <span>Connect Zoho Books</span>
+            </button>
+
+            <!-- Theme Toggle Option -->
+            <button class="options-item" onclick="toggleTheme()" title="Toggle Dark / Light mode">
+              <svg id="menu-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>
+              <svg id="menu-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              <span id="menu-theme-label">Switch to Light Mode</span>
+            </button>
+            
+            <div class="options-divider"></div>
+            
+            <!-- Logout Option -->
+            <button class="options-item danger" onclick="logout()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-body">
+
+      <!-- Left Nav -->
+      <nav class="left-nav" id="left-nav">
+        <div class="nav-section">
+          <a href="#" class="nav-link active" data-view="dashboard" onclick="navigateTo('dashboard');return false;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            <span>Overview</span>
+          </a>
+          <a href="#" class="nav-link" data-view="inventory" onclick="navigateTo('inventory');return false;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+            <span>Store Inventory</span>
+          </a>
+          <a href="#" class="nav-link" data-view="requests" onclick="navigateTo('requests');return false;" id="nav-requests-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>Material Requests</span>
+            <span class="nav-count hidden" id="pending-badge">0</span>
+          </a>
+          <a href="#" class="nav-link" data-view="transactions" onclick="navigateTo('transactions');return false;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            <span>Stock Movements</span>
+          </a>
+          <a href="#" class="nav-link" data-view="storemap" onclick="navigateTo('storemap');return false;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+            <span>Store Layout</span>
+          </a>
+          <a href="#" class="nav-link" data-view="labeldesigner" onclick="navigateTo('labeldesigner');return false;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+            <span>Label Designer</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Main Content Area -->
+      <main class="content-area" id="content-area">
+        <div class="view" id="view-dashboard"></div>
+        <div class="view hidden" id="view-storemap"></div>
+        <div class="view hidden" id="view-inventory"></div>
+        <div class="view hidden" id="view-requests"></div>
+        <div class="view hidden" id="view-transactions"></div>
+        <div class="view hidden" id="view-labeldesigner"></div>
+      </main>
+
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <button class="bnav-btn active" data-view="dashboard" onclick="navigateTo('dashboard')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="bnav-btn" data-view="inventory" onclick="navigateTo('inventory')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        <span>Inventory</span>
+      </button>
+      <button class="bnav-btn" data-view="requests" onclick="navigateTo('requests')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Requests</span>
+      </button>
+      <button class="bnav-btn" data-view="transactions" onclick="navigateTo('transactions')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        <span>Movements</span>
+      </button>
+      <button class="bnav-btn" data-view="storemap" onclick="navigateTo('storemap')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        <span>Layout</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MODALS
+  ═══════════════════════════════════════════════════════════ -->
+
+  <!-- Item Modal -->
+  <div class="modal-backdrop hidden" id="modal-item-overlay" onclick="closeItemModal(event)">
+    <div class="modal" id="modal-item">
+      <div class="modal-header">
+        <div class="modal-title-block">
+          <div class="modal-title-tag">INVENTORY</div>
+          <h2 class="modal-title" id="modal-item-title">New Item</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closeItemModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="form-item" onsubmit="handleItemSubmit(event)">
+        <div class="modal-body" style="padding:1.125rem 1.35rem;display:flex;flex-direction:column;gap:0.65rem">
+          <div class="field-grid two-col" style="gap:0.75rem">
+            <div class="field-group">
+              <label class="field-label">ITEM NAME <span class="req">*</span></label>
+              <input type="text" id="item-name" class="field-input" placeholder="e.g. Hex Bolt M10×40" required />
+            </div>
+            <div class="field-group">
+              <label class="field-label">PRODUCT ID <span class="req">*</span></label>
+              <div style="display:flex;gap:0.4rem;align-items:center">
+                <input type="text" id="item-sku" class="field-input mono" placeholder="GIS-2408-0001" required style="font-weight:700;color:var(--goose);letter-spacing:0.05em" readonly />
+                <button type="button" class="btn btn-ghost btn-sm" onclick="generateProductId()" title="Generate new ID" style="flex-shrink:0;font-size:0.75rem;padding:0.35rem 0.6rem">Regenerate</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-grid two-col" style="gap:0.75rem">
+            <div class="field-group">
+              <label class="field-label">ZONE <span class="req">*</span></label>
+              <select id="item-zone" class="field-input field-select" required>
+                <option value="">Select zone</option>
+                <option value="mechanical">Mechanical</option>
+                <option value="electrical">Electrical</option>
+                <option value="consumables">Consumables</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">CATEGORY <span class="req">*</span></label>
+              <input type="text" id="item-category" class="field-input" placeholder="e.g. Fasteners" required />
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1.2fr;gap:0.65rem">
+            <div class="field-group">
+              <label class="field-label">QUANTITY <span class="req">*</span></label>
+              <input type="number" id="item-quantity" class="field-input mono" min="0" placeholder="0" required />
+            </div>
+            <div class="field-group">
+              <label class="field-label">UNIT <span class="req">*</span></label>
+              <select id="item-unit" class="field-input field-select" required>
+                <option value="pcs">pcs</option>
+                <option value="m">m</option>
+                <option value="kg">kg</option>
+                <option value="rolls">rolls</option>
+                <option value="sets">sets</option>
+                <option value="pairs">pairs</option>
+                <option value="cans">cans</option>
+                <option value="tubes">tubes</option>
+                <option value="packs">packs</option>
+                <option value="boxes">boxes</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">MIN STOCK</label>
+              <input type="number" id="item-min-stock" class="field-input mono" min="0" placeholder="0" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">SHELF <span class="req">*</span></label>
+              <input type="text" id="item-location" class="field-input mono" placeholder="e.g. R-A1" required />
+            </div>
+            <input type="hidden" id="item-barcode" />
+          </div>
+
+          <div id="duplicate-warning" class="hidden" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.4);border-radius:var(--radius);padding:0.4rem 0.65rem;font-size:0.75rem;color:var(--text-secondary)">
+            <strong style="color:#b45309">Possible duplicate:</strong> <span id="duplicate-warning-text"></span>
+          </div>
+
+          <div class="field-grid two-col" style="gap:0.75rem">
+            <div class="field-group">
+              <label class="field-label">NOTES / SPECIFICATIONS</label>
+              <input type="text" id="item-notes" class="field-input" placeholder="Grade, dimensions, supplier info, etc." />
+            </div>
+            <div class="field-group">
+              <label class="field-label">MATERIAL PHOTO</label>
+              <div class="image-upload-wrap" style="gap:0.5rem">
+                <div class="image-preview-box" id="item-img-preview-box" style="width:38px;height:38px;border-radius:6px">
+                  <img id="item-img-preview" class="image-preview-img hidden" alt="Material preview" />
+                  <div id="item-img-placeholder" class="image-placeholder" style="font-size:0.65rem">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  </div>
+                </div>
+                <div class="image-upload-controls" style="display:flex;gap:0.4rem;align-items:center">
+                  <input type="file" id="item-img-file" accept="image/*" capture="environment" class="hidden" onchange="handleImageFileSelect(event)" />
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('item-img-file').click()" style="padding:0.35rem 0.65rem;font-size:0.75rem">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Upload Photo
+                  </button>
+                  <button type="button" id="btn-remove-img" class="btn btn-ghost btn-sm danger-hover hidden" onclick="removeSelectedImage()" style="padding:0.35rem 0.5rem;font-size:0.75rem">Remove</button>
+                  <input type="hidden" id="item-imageUrl" value="" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeItemModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="item-submit-btn">Save Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Barcode Label Details Modal (FlashLabel Pro Helper) -->
+  <div class="modal-backdrop hidden" id="modal-print-overlay" onclick="closePrintModal(event)">
+    <div class="modal card" style="max-width:440px" onclick="event.stopPropagation()">
+      <div class="modal-hdr">
+        <div>
+          <div style="font-size:0.65rem;font-weight:700;color:var(--goose);letter-spacing:0.08em;margin-bottom:0.15rem">FLASHLABEL PRO WORKFLOW</div>
+          <h2 class="modal-title" id="print-modal-item-name">Product Barcode Details</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closePrintModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem">
+        <!-- Visual Barcode Preview -->
+        <div class="sticker-preview-box" id="sticker-print-area" style="background:#ffffff;padding:1rem;border-radius:var(--radius);border:1px solid var(--border-subtle);text-align:center;margin-bottom:1rem">
+          <div style="font-size:0.75rem;font-weight:700;color:#000000;margin-bottom:0.25rem" id="print-item-title-preview">MATERIAL ITEM</div>
+          <svg id="barcode-canvas" class="barcode-svg" style="max-width:100%;height:60px"></svg>
+          <div style="font-family:var(--font-mono);font-size:1.1rem;font-weight:800;color:#000000;letter-spacing:0.05em;margin-top:0.25rem" id="print-item-sku">GIS-2608-4721</div>
+        </div>
+
+        <!-- 1-Click Copy Box for FlashLabel -->
+        <div style="background:var(--bg-elevated);padding:1rem;border-radius:var(--radius);border:1px solid var(--border-muted);margin-bottom:1rem">
+          <label class="field-label" style="font-size:0.68rem;margin-bottom:0.35rem">UNIQUE BARCODE ID (FOR FLASHLABEL PRO)</label>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <input type="text" id="copy-barcode-input" class="field-input mono" readonly style="font-size:1.1rem;font-weight:700;color:var(--goose);text-align:center" />
+            <button type="button" class="btn btn-primary" onclick="copyBarcodeToClipboard()" style="flex-shrink:0">Copy ID</button>
+          </div>
+        </div>
+
+        <!-- Quick 2-Step Instructions -->
+        <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.45;background:var(--bg-raised);padding:0.875rem;border-radius:var(--radius)">
+          <strong>FlashLabel Pro Printing Instructions:</strong>
+          <ol style="margin:0.35rem 0 0 1.1rem;padding:0">
+            <li>Click <strong>Copy ID</strong> above to copy the unique barcode number.</li>
+            <li>Open <strong>FlashLabel Pro</strong> app, paste into Code128 barcode field, and print to <strong>Tej C15</strong>.</li>
+          </ol>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closePrintModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Request Modal -->
+  <div class="modal-backdrop hidden" id="modal-request-overlay" onclick="closeRequestModal(event)">
+    <div class="modal" id="modal-request">
+      <div class="modal-header">
+        <div class="modal-title-block">
+          <div class="modal-title-tag">MATERIAL REQUEST</div>
+          <h2 class="modal-title">Request Material</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closeRequestModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="form-request" onsubmit="handleRequestSubmit(event)">
+        <div class="modal-body">
+          <div class="item-ref-card" id="request-item-info"></div>
+          <div class="field-grid two-col">
+            <div class="field-group">
+              <label class="field-label">ENGINEER NAME <span class="req">*</span></label>
+              <input type="text" id="req-engineer" class="field-input" placeholder="e.g. Er. Suresh Patel" required />
+            </div>
+            <div class="field-group">
+              <label class="field-label">PROJECT NAME / ID <span class="req">*</span></label>
+              <input type="text" id="req-project" class="field-input" placeholder="e.g. Dairy Plant Expansion" required />
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">QUANTITY REQUESTED <span class="req">*</span></label>
+            <div class="qty-input-wrap">
+              <input type="number" id="req-quantity" class="field-input mono" min="1" placeholder="1" required />
+              <span class="unit-tag" id="req-unit-label">pcs</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">REASON / PURPOSE <span class="req">*</span></label>
+            <textarea id="req-purpose" class="field-input field-textarea" rows="2" placeholder="e.g. Line 2 valve replacement, emergency fix" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeRequestModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Modal -->
+  <div class="modal-backdrop hidden" id="modal-delete-overlay" onclick="closeDeleteModal(event)">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title danger">Confirm Delete</h2>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to remove <strong id="delete-item-name">this item</strong> from inventory?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Lightbox Modal -->
+  <div class="modal-backdrop hidden" id="modal-lightbox-overlay" onclick="closeLightboxModal(event)">
+    <div class="lightbox-modal" onclick="event.stopPropagation()">
+      <div class="lightbox-hdr">
+        <span class="lightbox-title" id="lightbox-title">Material Photo</span>
+        <button class="modal-close-btn" onclick="closeLightboxModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="lightbox-body">
+        <img id="lightbox-img" src="" alt="Full Material View" />
+      </div>
+      <div class="lightbox-ftr" id="lightbox-caption"></div>
+    </div>
+  </div>
+
+  <!-- Zoho Books Integration Modal -->
+  <div class="modal-backdrop hidden" id="modal-zoho-overlay" onclick="closeZohoModal(event)">
+    <div class="modal card" style="max-width:620px" onclick="event.stopPropagation()">
+      <div class="modal-hdr">
+        <div style="display:flex;align-items:center;gap:0.625rem">
+          <div style="width:34px;height:34px;background:rgba(235,87,87,0.14);border:1px solid #eb5757;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#eb5757;font-weight:800;font-size:0.9rem">Z</div>
+          <div>
+            <h2 class="modal-title" style="font-size:1.15rem">Connect Zoho Books</h2>
+            <div style="font-size:0.75rem;color:var(--text-tertiary)">Sync your product catalog &amp; 50+ item attributes</div>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeZohoModal()">&times;</button>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div style="display:flex;gap:0.5rem;padding:0.75rem 1.5rem 0;border-bottom:1px solid var(--border-subtle)">
+        <button class="btn btn-ghost btn-sm" id="zoho-tab-csv-btn" onclick="switchZohoTab('csv')" style="border-bottom:2px solid var(--accent);border-radius:0">CSV File Export Import</button>
+        <button class="btn btn-ghost btn-sm" id="zoho-tab-api-btn" onclick="switchZohoTab('api')" style="border-radius:0">Live REST API Sync</button>
+      </div>
+
+      <div class="modal-body" style="padding:1.5rem">
+        <!-- Tab 1: CSV Export Upload -->
+        <div id="zoho-tab-csv">
+          <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.25rem;line-height:1.5">
+            Export your items list from <strong>Zoho Books</strong> (Items &rarr; Export Items &rarr; CSV) and upload it here to import all 50+ attributes instantly.
+          </p>
+          <div style="border:2px dashed var(--border-muted);padding:2.25rem 1.5rem;text-align:center;border-radius:var(--radius-lg);background:var(--bg-elevated)" id="zoho-dropzone">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="1.8" style="margin:0 auto 0.75rem"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div style="font-weight:600;font-size:0.95rem;color:var(--text-primary);margin-bottom:0.25rem">Select or Drop Zoho Items CSV File</div>
+            <p style="font-size:0.78rem;color:var(--text-tertiary);margin-bottom:1.25rem">Supports standard Zoho Books .csv export files</p>
+            <input type="file" id="zoho-csv-input" accept=".csv" style="display:none" onchange="handleZohoCsvFile(event)" />
+            <button class="btn btn-primary" onclick="document.getElementById('zoho-csv-input').click()">Choose CSV File &rarr;</button>
+          </div>
+        </div>
+
+        <!-- Tab 2: Live API Sync -->
+        <div id="zoho-tab-api" class="hidden">
+          <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.25rem;line-height:1.5">
+            Connect directly to your <strong>Zoho Books API</strong> for 1-click live synchronization.
+          </p>
+          <form id="form-zoho-api" onsubmit="handleZohoApiSync(event)">
+            <div class="field-group" style="margin-bottom:1rem">
+              <label class="field-label">ZOHO ORGANIZATION ID</label>
+              <input type="text" id="zoho-org-id" class="field-input mono" placeholder="e.g. 60012345678" required />
+            </div>
+            <div class="field-group" style="margin-bottom:1rem">
+              <label class="field-label">ZOHO OAUTH BEARER TOKEN</label>
+              <input type="password" id="zoho-auth-token" class="field-input mono" placeholder="1000.xxxx.xxxx" required />
+            </div>
+            <div class="field-group" style="margin-bottom:1.25rem">
+              <label class="field-label">ZOHO REGION DOMAIN</label>
+              <select id="zoho-domain" class="field-input">
+                <option value="in" selected>zohoapis.in (India)</option>
+                <option value="com">zohoapis.com (Global / US)</option>
+                <option value="eu">zohoapis.eu (Europe)</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%">Sync Live Items from Zoho API</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-backdrop hidden" id="modal-settings-overlay" onclick="closeSettingsModal(event)">
+    <div class="modal card" style="max-width:480px" onclick="event.stopPropagation()">
+      <div class="modal-hdr">
+        <h2 class="modal-title">System Settings</h2>
+        <button type="button" class="modal-close-btn" onclick="closeSettingsModal()">&times;</button>
+      </div>
+      <form id="form-settings" onsubmit="handleSaveSettings(event)">
+        <div class="modal-body">
+          <div class="field-group" style="margin-bottom:1.25rem">
+            <label class="field-label">UPDATE STORE MANAGER PIN</label>
+            <input type="password" id="settings-manager-pin" class="field-input mono" value="1234" maxlength="10" required />
+            <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:0.35rem">Security PIN required to access Store Manager account</div>
+          </div>
+          <div class="field-group" style="margin-bottom:1.25rem">
+            <label class="field-label">COMPANY / ORGANIZATION NAME</label>
+            <input type="text" id="settings-store-name" class="field-input" value="Goose Industrial Solutions Pvt Ltd" required />
+          </div>
+
+          <!-- Zoho Books Enable / Disable Setting -->
+          <div class="field-group" style="margin-bottom:1.25rem;background:var(--bg-elevated);padding:0.875rem 1rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:1rem">
+            <div>
+              <label class="field-label" style="margin-bottom:0.15rem">ZOHO BOOKS INTEGRATION</label>
+              <div style="font-size:0.75rem;color:var(--text-tertiary)">Enable or disable Zoho Books import and live API sync menu options</div>
+            </div>
+            <button type="button" id="btn-toggle-zoho-setting" class="btn btn-primary btn-sm" onclick="toggleZohoIntegrationSetting()" style="min-width:95px;justify-content:center;flex-shrink:0">
+              Enabled
+            </button>
+          </div>
+
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">DEFAULT REORDER THRESHOLD</label>
+            <input type="number" id="settings-default-minstock" class="field-input mono" value="1" min="0" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeSettingsModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Quick Barcode Stock Inward / Allocation Action Modal -->
+  <div class="modal-backdrop hidden" id="modal-scan-action-overlay" onclick="closeScanActionModal(event)">
+    <div class="modal card" style="max-width:580px" onclick="event.stopPropagation()">
+      <div class="modal-hdr">
+        <div>
+          <div style="font-size:0.65rem;font-weight:700;color:var(--goose);letter-spacing:0.08em;margin-bottom:0.15rem">HELETT HT20 BARCODE SCANNER</div>
+          <h2 class="modal-title" id="scan-action-item-name">Material Identified & Verified</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closeScanActionModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding:1.25rem">
+        <!-- Cross-Check Verification Badge -->
+        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:var(--radius);padding:0.6rem 0.875rem;margin-bottom:1rem">
+          <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;font-weight:700;color:var(--ok)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>REGISTERED IN INVENTORY DATABASE</span>
+          </div>
+          <span style="font-size:0.7rem;color:var(--text-tertiary);font-family:var(--font-mono)" id="scan-verify-time">VERIFIED LIVE</span>
+        </div>
+
+        <!-- Item Details Summary -->
+        <div style="display:flex;align-items:center;gap:1rem;padding:1rem;background:var(--bg-elevated);border-radius:var(--radius);border:1px solid var(--border-subtle);margin-bottom:1.25rem">
+          <div id="scan-action-img-wrap" style="width:64px;height:64px;border-radius:8px;background:var(--bg-raised);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          </div>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:1rem;color:var(--text-primary)" id="scan-action-title">Item Name</div>
+            <div style="font-size:0.78rem;color:var(--goose);font-family:var(--font-mono);font-weight:700;margin-top:0.15rem" id="scan-action-sku">SKU: GIS-2608-4721</div>
+            <div style="display:flex;gap:0.75rem;margin-top:0.35rem;font-size:0.78rem;color:var(--text-secondary)">
+              <span>Location: <strong id="scan-action-location" style="font-family:var(--font-mono)">Shelf A1</strong></span>
+              <span>Category: <strong id="scan-action-category">Goods</strong></span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:0.68rem;color:var(--text-tertiary);text-transform:uppercase;font-weight:700">CURRENT STOCK</div>
+            <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);font-family:var(--font-mono)" id="scan-action-qty">0 pcs</div>
+          </div>
+        </div>
+
+        <!-- Mode Selector Tabs: Details & Logs vs Allocation vs Store Entry -->
+        <div style="display:flex;gap:0.35rem;margin-bottom:1rem;background:var(--bg-raised);padding:0.25rem;border-radius:var(--radius);border:1px solid var(--border-muted)">
+          <button type="button" class="btn btn-primary btn-sm" id="tab-btn-details" style="flex:1;font-weight:700" onclick="switchScanTab('details')">Material Details & Logs</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="tab-btn-allocate" style="flex:1;font-weight:700" onclick="switchScanTab('allocate')">&minus; Allocate / Issue</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="tab-btn-inward" style="flex:1;font-weight:700" onclick="switchScanTab('inward')">+ Store Stock IN</button>
+        </div>
+
+        <!-- Form Mode A: Full Material Details & Recent Allocation Logs (DEFAULT ON SCAN) -->
+        <div id="scan-mode-details" style="background:var(--bg-raised);padding:1.25rem;border-radius:var(--radius);border:1px solid var(--border-muted)">
+          <!-- Specifications Grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;font-size:0.8rem">
+            <div style="background:var(--bg-elevated);padding:0.6rem 0.8rem;border-radius:6px;border:1px solid var(--border-subtle)">
+              <div style="font-size:0.68rem;color:var(--text-tertiary);font-weight:700">STORE ZONE</div>
+              <div style="font-weight:600;margin-top:0.15rem" id="scan-detail-zone">Mechanical</div>
+            </div>
+            <div style="background:var(--bg-elevated);padding:0.6rem 0.8rem;border-radius:6px;border:1px solid var(--border-subtle)">
+              <div style="font-size:0.68rem;color:var(--text-tertiary);font-weight:700">UNIT RATE</div>
+              <div style="font-weight:700;color:var(--goose);margin-top:0.15rem" id="scan-detail-rate">₹ 0.00</div>
+            </div>
+            <div style="background:var(--bg-elevated);padding:0.6rem 0.8rem;border-radius:6px;border:1px solid var(--border-subtle)">
+              <div style="font-size:0.68rem;color:var(--text-tertiary);font-weight:700">REORDER THRESHOLD</div>
+              <div style="font-weight:600;font-family:var(--font-mono);margin-top:0.15rem" id="scan-detail-minstock">1 pcs</div>
+            </div>
+            <div style="background:var(--bg-elevated);padding:0.6rem 0.8rem;border-radius:6px;border:1px solid var(--border-subtle)">
+              <div style="font-size:0.68rem;color:var(--text-tertiary);font-weight:700">HSN / CODE</div>
+              <div style="font-weight:600;font-family:var(--font-mono);margin-top:0.15rem" id="scan-detail-hsn">8537</div>
+            </div>
+          </div>
+
+          <!-- Notes / Description -->
+          <div id="scan-detail-notes-wrap" style="background:var(--bg-elevated);padding:0.6rem 0.8rem;border-radius:6px;border:1px solid var(--border-subtle);margin-bottom:1rem;font-size:0.8rem">
+            <div style="font-size:0.68rem;color:var(--text-tertiary);font-weight:700;margin-bottom:0.15rem">SPECIFICATIONS / NOTES</div>
+            <div style="color:var(--text-secondary)" id="scan-detail-notes">No description added</div>
+          </div>
+
+          <!-- Recent Movement History Box -->
+          <div style="margin-top:1rem">
+            <div style="font-size:0.7rem;font-weight:800;color:var(--text-tertiary);letter-spacing:0.06em;margin-bottom:0.5rem;text-transform:uppercase">RECENT MOVEMENT & ALLOCATION LOGS</div>
+            <div id="scan-detail-recent-logs" style="max-height:140px;overflow-y:auto;background:var(--bg-elevated);border-radius:var(--radius);border:1px solid var(--border-subtle);padding:0.5rem">
+              <span style="font-size:0.75rem;color:var(--text-tertiary);display:block;text-align:center;padding:0.5rem">No allocation logs recorded yet</span>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:1.25rem">
+            <button type="button" class="btn btn-primary" style="padding:0.75rem;font-size:0.85rem;background:var(--goose);border-color:var(--goose)" onclick="switchScanTab('allocate')">
+              &minus; Allocate to Project / Client
+            </button>
+            <button type="button" class="btn btn-ghost" style="padding:0.75rem;font-size:0.85rem;border:1px solid var(--border-base)" onclick="switchScanTab('inward')">
+              + Receive Store Stock
+            </button>
+          </div>
+        </div>
+
+        <!-- Form Mode B: Allocate & Issue (Project, Vendor, or Client) -->
+        <div id="scan-mode-allocate" class="hidden" style="background:var(--bg-raised);padding:1.25rem;border-radius:var(--radius);border:1px solid var(--border-muted)">
+          <div class="field-grid two-col" style="margin-bottom:1rem">
+            <div class="field-group">
+              <label class="field-label">ALLOCATION TARGET <span class="req">*</span></label>
+              <select id="scan-alloc-type" class="field-input field-select" required>
+                <option value="project">Specific Project Allocation</option>
+                <option value="client">Given to Customer / Client</option>
+                <option value="vendor">Vendor / Subcontractor Issue</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">QUANTITY TO ISSUE <span class="req">*</span></label>
+              <input type="number" id="scan-alloc-qty" class="field-input mono" value="1" min="1" required style="font-weight:700;text-align:center" />
+            </div>
+          </div>
+
+          <div class="field-grid two-col" style="margin-bottom:1rem">
+            <div class="field-group">
+              <label class="field-label">PERSON NAME (RECIPIENT) <span class="req">*</span></label>
+              <input type="text" id="scan-alloc-person" class="field-input" placeholder="e.g. Rajesh Kumar (Site Engg)" required />
+            </div>
+            <div class="field-group">
+              <label class="field-label">PROJECT / CLIENT NAME <span class="req">*</span></label>
+              <input type="text" id="scan-alloc-project" class="field-input" placeholder="e.g. Project HeatWatch Phase 3" required />
+            </div>
+          </div>
+
+          <div class="field-group" style="margin-bottom:1.25rem">
+            <label class="field-label">REQUISITION / WORK ORDER NOTES</label>
+            <input type="text" id="scan-alloc-notes" class="field-input" placeholder="e.g. WO-2026-089 / Urgent site issue" />
+          </div>
+
+          <button type="button" class="btn btn-primary" style="width:100%;padding:0.875rem;font-size:0.9rem;background:var(--goose);border-color:var(--goose)" onclick="submitAllocationIssue()">
+            &minus; Allocate & Issue Material Outward
+          </button>
+        </div>
+
+        <!-- Form Mode C: Stock IN (Inward Receipt) -->
+        <div id="scan-mode-inward" class="hidden" style="background:var(--bg-raised);padding:1.25rem;border-radius:var(--radius);border:1px solid var(--border-muted)">
+          <label class="field-label" style="margin-bottom:0.5rem">INWARD RECEIPT QUANTITY</label>
+          <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem">
+            <input type="number" id="scan-inward-input-qty" class="field-input mono" value="1" min="1" style="font-size:1.2rem;font-weight:700;text-align:center" />
+            <div style="display:flex;gap:0.25rem">
+              <button class="btn btn-ghost" type="button" onclick="document.getElementById('scan-inward-input-qty').value = Math.max(1, (parseInt(document.getElementById('scan-inward-input-qty').value)||1) + 1)">+1</button>
+              <button class="btn btn-ghost" type="button" onclick="document.getElementById('scan-inward-input-qty').value = Math.max(1, (parseInt(document.getElementById('scan-inward-input-qty').value)||1) + 5)">+5</button>
+              <button class="btn btn-ghost" type="button" onclick="document.getElementById('scan-inward-input-qty').value = Math.max(1, (parseInt(document.getElementById('scan-inward-input-qty').value)||1) + 10)">+10</button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary" style="width:100%;padding:0.875rem;font-size:0.9rem;background:var(--ok);border-color:var(--ok)" onclick="submitInwardReceipt()">
+            + Receive & Store in Inventory
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content:space-between">
+        <button type="button" class="btn btn-ghost" onclick="printStickerFromScanModal()">Copy ID for FlashLabel</button>
+        <button type="button" class="btn btn-ghost" onclick="closeScanActionModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Confirm Modal (replaces native browser confirm()) -->
+  <div class="modal-backdrop hidden" id="modal-confirm-overlay">
+    <div class="modal card" style="max-width:420px" onclick="event.stopPropagation()">
+      <div class="modal-hdr" style="padding:1.25rem 1.5rem 0">
+        <h2 class="modal-title" id="confirm-modal-title">Confirm Action</h2>
+      </div>
+      <div class="modal-body" style="padding:1rem 1.5rem 0.5rem">
+        <p id="confirm-modal-message" style="font-size:0.9rem;color:var(--text-secondary);line-height:1.5;margin:0"></p>
+      </div>
+      <div class="modal-footer" style="padding:1rem 1.5rem 1.25rem;gap:0.75rem">
+        <button type="button" class="btn btn-ghost" id="confirm-modal-cancel" onclick="closeConfirmModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirm-modal-ok" style="background:var(--danger);border-color:var(--danger)">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden">
+    <div class="toast-indicator" id="toast-indicator"></div>
+    <span id="toast-message">Done</span>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

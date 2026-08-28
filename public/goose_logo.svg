@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 70" width="260" height="70">
+  <g fill="#111111">
+    <!-- "Goose" Wordmark -->
+    <text x="4" y="50"
+      font-family="'Arial Black', 'Arial Bold', Arial, Helvetica, sans-serif"
+      font-weight="900"
+      font-size="44"
+      letter-spacing="-2"
+      fill="#111">Goose</text>
+
+    <!-- Flying Goose Silhouette (right of text) -->
+    <!-- Body -->
+    <path d="M185 38 C190 30 200 20 218 10 C222 18 228 26 240 28
+             C228 32 218 38 212 46 C208 52 206 58 205 64
+             C201 58 197 50 188 46 C194 42 196 36 185 38 Z"/>
+    <!-- Head/Neck -->
+    <path d="M215 10 C218 4 224 1 230 2 C226 8 220 12 215 10 Z"/>
+    <!-- Wing top sweep -->
+    <path d="M200 16 C210 8 222 2 240 -2 C233 8 224 16 214 22 Z"/>
+    <!-- Tail feathers -->
+    <path d="M238 28 C246 26 254 23 260 19 C253 25 247 29 238 34 Z"/>
+  </g>
+</svg>
