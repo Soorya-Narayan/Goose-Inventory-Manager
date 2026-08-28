@@ -22,11 +22,47 @@ const state = {
 
 // ─── API Helpers ─────────────────────────────────────────────────────────────
 const api = {
-  get:    async (url) => (await fetch(url)).json(),
-  post:   async (url, data) => (await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })).json(),
-  put:    async (url, data) => (await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })).json(),
-  del:    async (url) => (await fetch(url, { method: 'DELETE' })).json(),
-  delete: async (url) => (await fetch(url, { method: 'DELETE' })).json(),
+  get: async (url) => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+  post: async (url, data) => {
+    try {
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      return await res.json();
+    } catch {
+      return { success: false, error: 'Network request failed' };
+    }
+  },
+  put: async (url, data) => {
+    try {
+      const res = await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      return await res.json();
+    } catch {
+      return { success: false, error: 'Network request failed' };
+    }
+  },
+  del: async (url) => {
+    try {
+      const res = await fetch(url, { method: 'DELETE' });
+      return await res.json();
+    } catch {
+      return { success: false, error: 'Network request failed' };
+    }
+  },
+  delete: async (url) => {
+    try {
+      const res = await fetch(url, { method: 'DELETE' });
+      return await res.json();
+    } catch {
+      return { success: false, error: 'Network request failed' };
+    }
+  }
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -256,15 +292,18 @@ async function loadAll(showLoader = true, customMsg = 'Synchronizing Warehouse D
     showLoadingScreen(customMsg);
   }
   try {
-    const [items, requests] = await Promise.all([
+    const [itemsRes, requestsRes] = await Promise.all([
       api.get('/api/items'),
       api.get('/api/requests')
     ]);
-    state.items = items || [];
-    state.requests = requests || [];
+    state.items = Array.isArray(itemsRes) ? itemsRes : [];
+    state.requests = Array.isArray(requestsRes) ? requestsRes : [];
     computeStats();
   } catch (err) {
-    showToast('Failed to load data from server', 'error');
+    console.error('loadAll error:', err);
+    state.items = Array.isArray(state.items) ? state.items : [];
+    state.requests = Array.isArray(state.requests) ? state.requests : [];
+    computeStats();
   } finally {
     if (showLoader) {
       hideLoadingScreen();

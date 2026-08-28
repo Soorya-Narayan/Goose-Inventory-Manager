@@ -450,6 +450,15 @@ app.delete('/api/transactions', (req, res) => {
   res.json({ success: true, message: 'All transactions cleared' });
 });
 
+// ─── Health Check & SPA Wildcard Fallback ────────────────────────────────────
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date() });
+});
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 
 
 // ─── Server Start ────────────────────────────────────────────────────────────
