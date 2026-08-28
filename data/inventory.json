@@ -7,7 +7,7 @@
       "barcode": "GIS-2608-1001",
       "zone": "mechanical",
       "category": "Fasteners",
-      "quantity": 240,
+      "quantity": 235,
       "unit": "pcs",
       "minStock": 50,
       "location": "R-A1",
@@ -18,7 +18,7 @@
       "imageUrl": "",
       "zohoCode": "",
       "addedAt": "2026-08-01T06:00:00.000Z",
-      "updatedAt": "2026-08-28T06:00:00.000Z"
+      "updatedAt": "2026-08-28T15:27:25.992Z"
     },
     {
       "id": "GIS-2608-1002",
@@ -201,6 +201,45 @@
       "updatedAt": "2026-08-28T06:00:00.000Z"
     }
   ],
-  "requests": [],
+  "requests": [
+    {
+      "id": "0c442a95-e25c-42c4-940f-3bd7c686db82",
+      "name": "Surya",
+      "employeeId": "GIS-067",
+      "projectName": "HeatWatch",
+      "purpose": "Parts required for heat watch",
+      "materials": [
+        {
+          "itemId": "GIS-2608-1003",
+          "itemName": "Bearing 6205-2RS",
+          "itemSku": "GIS-2608-1003",
+          "unit": "pcs",
+          "quantity": 1
+        }
+      ],
+      "status": "issued",
+      "requestedAt": "2026-08-28T13:35:01.168Z",
+      "processedAt": "2026-08-28T13:35:21.462Z",
+      "processedBy": "Store Manager",
+      "managerNotes": ""
+    },
+    {
+      "id": "250767b4-bd7c-4403-8771-a7cd5eaf6314",
+      "itemId": "GIS-2608-1001",
+      "itemName": "Hex Bolt M10×40",
+      "itemSku": "GIS-2608-1001",
+      "zone": "mechanical",
+      "quantityRequested": 5,
+      "unit": "pcs",
+      "engineerName": "Er. Rahul Sharma",
+      "projectName": "Project Alpha",
+      "purpose": "Need for Project Alpha production line",
+      "status": "approved",
+      "requestedAt": "2026-08-28T15:25:49.519Z",
+      "processedAt": "2026-08-28T15:27:25.992Z",
+      "processedBy": "Store Manager",
+      "managerNotes": ""
+    }
+  ],
   "transactions": []
 }

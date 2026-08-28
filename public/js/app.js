@@ -1805,46 +1805,69 @@ async function processRequest(reqId, status) {
   }
 }
 
-// ─── Issue Checklist Modal ────────────────────────────────────────────────────
+// ─── Issue Checklist & Barcode Verification Modal ────────────────────────────
 function openChecklistModal(reqId, readOnly = false) {
   const req = state.requests.find(r => r.id === reqId);
   if (!req) return;
 
   state.activeChecklistRequestId = reqId;
-  // Build checklist from the request's materials (or restore saved checklist if re-opening)
   const savedChecklist = Array.isArray(req.checklist) && req.checklist.length ? req.checklist : null;
+
+  // Build checklist from request's materials
   state.activeChecklist = (req.materials || []).map(m => {
+    const invItem = state.items.find(i => i.id === m.itemId || i.sku === m.itemSku || i.barcode === m.itemSku);
     const saved = savedChecklist?.find(c => c.itemId === m.itemId);
     return {
-      itemId:    m.itemId,
-      itemName:  m.itemName,
-      itemSku:   m.itemSku,
-      quantity:  m.quantity,
-      unit:      m.unit || 'pcs',
-      checked:   readOnly ? (saved?.checked ?? false) : false
+      itemId:       m.itemId,
+      itemName:     m.itemName,
+      itemSku:      m.itemSku || m.itemId,
+      barcode:      invItem?.barcode || m.itemSku || m.itemId,
+      location:     invItem?.location || 'Rack',
+      quantity:     m.quantity,
+      unit:         m.unit || 'pcs',
+      checked:      readOnly ? (saved?.checked ?? false) : false
     };
   });
 
   // Header
   document.getElementById('checklist-modal-title').textContent =
-    req.projectName || req.name || 'Issue Checklist';
+    `Issue Materials — ${req.projectName || req.name || 'Order'}`;
 
   // Info block
   const info = document.getElementById('checklist-info-block');
   const row = (label, val) =>
     `<div><span style="font-size:0.7rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.05em">${label}</span><div style="font-weight:600;color:var(--text-primary);margin-top:0.1rem">${escHtml(val || '—')}</div></div>`;
   info.innerHTML =
-    row('Name', req.name || req.engineerName) +
+    row('Engineer Name', req.name || req.engineerName) +
     row('Employee ID', req.employeeId) +
-    row('Project', req.projectName) +
+    row('Target Project', req.projectName) +
     row('Purpose', req.purpose);
+
+  // Scan container visibility
+  const scanContainer = document.getElementById('checklist-scan-container');
+  if (scanContainer) scanContainer.style.display = readOnly ? 'none' : 'block';
+
+  // Barcode input auto-focus
+  const barcodeInput = document.getElementById('checklist-barcode-input');
+  if (barcodeInput) {
+    barcodeInput.value = '';
+    if (!readOnly) {
+      setTimeout(() => barcodeInput.focus(), 150);
+    }
+  }
+
+  const feedbackEl = document.getElementById('checklist-scan-feedback');
+  if (feedbackEl) {
+    feedbackEl.style.display = 'none';
+    feedbackEl.innerHTML = '';
+  }
 
   // Remarks
   const remarksEl = document.getElementById('checklist-remarks');
   remarksEl.value = req.managerNotes || '';
   remarksEl.readOnly = readOnly;
 
-  // Issue button
+  // Stock Out button
   const issueBtn = document.getElementById('checklist-issue-btn');
   if (issueBtn) issueBtn.style.display = readOnly ? 'none' : '';
 
@@ -1852,53 +1875,100 @@ function openChecklistModal(reqId, readOnly = false) {
   document.getElementById('modal-checklist-overlay').classList.remove('hidden');
 }
 
+function handleChecklistScanKey(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    processChecklistBarcodeScan();
+  }
+}
+
+function processChecklistBarcodeScan() {
+  const input = document.getElementById('checklist-barcode-input');
+  if (!input) return;
+  const rawCode = input.value.trim();
+  if (!rawCode) return;
+
+  const code = rawCode.toLowerCase();
+  const feedbackEl = document.getElementById('checklist-scan-feedback');
+
+  // Match code against itemSku, barcode, itemId, or itemName in activeChecklist
+  const item = (state.activeChecklist || []).find(c => 
+    c.itemId.toLowerCase() === code ||
+    (c.itemSku && c.itemSku.toLowerCase() === code) ||
+    (c.barcode && c.barcode.toLowerCase() === code) ||
+    c.itemName.toLowerCase().includes(code)
+  );
+
+  if (item) {
+    item.checked = true;
+    input.value = '';
+    renderChecklistRows();
+    
+    if (feedbackEl) {
+      feedbackEl.style.display = 'block';
+      feedbackEl.style.color = '#10b981';
+      feedbackEl.innerHTML = `✓ Verified &amp; Scanned: <strong>${escHtml(item.itemName)}</strong> (${item.quantity} ${item.unit})`;
+    }
+    showToast(`Scanned & Verified: ${item.itemName}`, 'success');
+  } else {
+    if (feedbackEl) {
+      feedbackEl.style.display = 'block';
+      feedbackEl.style.color = '#ef4444';
+      feedbackEl.innerHTML = `✗ Barcode <strong>"${escHtml(rawCode)}"</strong> not found in this request order.`;
+    }
+    showToast(`Barcode "${rawCode}" not in request list`, 'error');
+  }
+}
+
 function renderChecklistRows(readOnly = false) {
   const container = document.getElementById('checklist-rows');
+  const badgeEl = document.getElementById('checklist-progress-badge');
   if (!container) return;
   const cl = state.activeChecklist || [];
   const checkedCount = cl.filter(c => c.checked).length;
+
+  if (badgeEl) {
+    badgeEl.textContent = `${checkedCount} of ${cl.length} Verified (${cl.length ? Math.round(checkedCount / cl.length * 100) : 0}%)`;
+    badgeEl.style.color = (checkedCount === cl.length && cl.length > 0) ? '#10b981' : 'var(--text-tertiary)';
+  }
 
   container.innerHTML = cl.map((c, idx) => {
     const chk = c.checked;
     return `
       <div onclick="${readOnly ? '' : `toggleChecklistItem('${c.itemId}')`}"
-        style="display:flex;align-items:center;gap:0.65rem;padding:0.5rem 0.75rem;
-               background:${chk ? 'rgba(34,197,94,0.08)' : 'var(--bg-raised)'};
-               border:1px solid ${chk ? 'rgba(34,197,94,0.35)' : 'var(--border-subtle)'};
-               border-radius:var(--radius);cursor:${readOnly ? 'default' : 'pointer'};
-               transition:background 0.15s,border-color 0.15s">
+        style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0.85rem;
+               background:${chk ? 'rgba(16,185,129,0.08)' : 'var(--bg-raised)'};
+               border:1px solid ${chk ? 'rgba(16,185,129,0.35)' : 'var(--border-subtle)'};
+               border-radius:var(--radius-md);cursor:${readOnly ? 'default' : 'pointer'};
+               transition:all 0.15s">
         <!-- Checkbox -->
-        <div style="width:18px;height:18px;flex-shrink:0;border-radius:4px;
-                    border:2px solid ${chk ? '#16a34a' : 'var(--border-muted)'};
-                    background:${chk ? '#16a34a' : 'transparent'};
+        <div style="width:20px;height:20px;flex-shrink:0;border-radius:4px;
+                    border:2px solid ${chk ? '#10b981' : 'var(--border-muted)'};
+                    background:${chk ? '#10b981' : 'transparent'};
                     display:flex;align-items:center;justify-content:center;transition:all 0.15s">
-          ${chk ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+          ${chk ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
         </div>
-        <!-- Label -->
+        <!-- Details -->
         <div style="flex:1;min-width:0">
-          <div style="font-size:0.82rem;font-weight:600;color:${chk ? 'var(--text-secondary)' : 'var(--text-primary)'};
-                      overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-            ${escHtml(c.itemName)}
+          <div style="display:flex;align-items:center;gap:0.4rem">
+            <span style="font-size:0.875rem;font-weight:600;color:${chk ? 'var(--text-primary)' : 'var(--text-primary)'}">
+              ${escHtml(c.itemName)}
+            </span>
+            ${chk ? `<span style="font-size:0.65rem;background:rgba(16,185,129,0.2);color:#10b981;padding:0.1rem 0.35rem;border-radius:4px;font-weight:700">VERIFIED</span>` : ''}
           </div>
-          <div style="font-size:0.68rem;color:var(--text-tertiary);font-family:var(--font-mono)">${escHtml(c.itemSku)}</div>
+          <div style="font-size:0.72rem;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:0.1rem">
+            SKU: ${escHtml(c.itemSku)} &nbsp;|&nbsp; Shelf: ${escHtml(c.location || 'R-A1')}
+          </div>
         </div>
-        <!-- Qty badge -->
-        <span style="font-size:0.75rem;font-family:var(--font-mono);font-weight:700;
-                     color:${chk ? 'var(--text-tertiary)' : 'var(--goose)'}">
-          ${c.quantity} ${c.unit}
-        </span>
+        <!-- Quantity badge -->
+        <div style="text-align:right">
+          <span style="font-size:0.85rem;font-family:var(--font-mono);font-weight:700;color:${chk ? '#10b981' : 'var(--goose)'}">
+            ${c.quantity} ${c.unit}
+          </span>
+          <div style="font-size:0.68rem;color:var(--text-tertiary)">${chk ? 'Scanned' : 'Pending'}</div>
+        </div>
       </div>`;
   }).join('');
-
-  // Progress indicator
-  const pct = cl.length ? Math.round(checkedCount / cl.length * 100) : 0;
-  container.insertAdjacentHTML('beforeend', `
-    <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.35rem;font-size:0.75rem;color:var(--text-tertiary)">
-      <div style="flex:1;height:4px;background:var(--border-subtle);border-radius:2px">
-        <div style="width:${pct}%;height:100%;background:#16a34a;border-radius:2px;transition:width 0.3s"></div>
-      </div>
-      <span>${checkedCount} / ${cl.length} checked</span>
-    </div>`);
 }
 
 function toggleChecklistItem(itemId) {
@@ -1911,7 +1981,6 @@ function toggleChecklistItem(itemId) {
 function closeChecklistModal(e) {
   if (e && e.target !== document.getElementById('modal-checklist-overlay')) return;
   document.getElementById('modal-checklist-overlay')?.classList.add('hidden');
-  // Clear checklist state — does NOT change request status
   state.activeChecklistRequestId = null;
   state.activeChecklist = [];
 }
@@ -1929,24 +1998,24 @@ async function submitIssue() {
         status: 'issued',
         checklist: cl,
         managerNotes: remarks,
-        processedBy: state.user?.name
+        processedBy: state.user?.name || 'Store Manager'
       });
       document.getElementById('modal-checklist-overlay')?.classList.add('hidden');
       state.activeChecklistRequestId = null;
       state.activeChecklist = [];
-      showToast('Materials issued successfully!', 'success');
+      showToast('Material Stock Out completed & logged in Stock Movements!', 'success');
       await loadAll();
       renderView('requests');
     } catch (err) {
-      showToast('Failed to issue materials', 'error');
+      showToast('Failed to complete stock out', 'error');
     }
   };
 
   if (unchecked > 0) {
     showConfirmModal({
-      title: 'Issue with unchecked items?',
-      message: `${unchecked} of ${cl.length} material${unchecked > 1 ? 's' : ''} not yet checked off. Issue anyway?`,
-      confirmLabel: 'Issue Anyway',
+      title: 'Stock Out with unchecked items?',
+      message: `${unchecked} of ${cl.length} material${unchecked > 1 ? 's' : ''} not yet scanned or verified. Complete Stock Out anyway?`,
+      confirmLabel: 'Stock Out Anyway',
       onConfirm: doIssue
     });
   } else {

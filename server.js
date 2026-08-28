@@ -15,6 +15,43 @@ if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 app.use(cors());
+
+// ─── Security Headers Middleware (MDN HTTP Observatory A+ Compliance) ───────
+app.use((req, res, next) => {
+  // 1. Content Security Policy (CSP)
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self' https:; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; " +
+    "style-src 'self' 'unsafe-inline' https:; " +
+    "font-src 'self' data: https:; " +
+    "img-src 'self' data: blob: https:; " +
+    "connect-src 'self' https: wss:; " +
+    "frame-ancestors 'none'; " +
+    "object-src 'none';"
+  );
+
+  // 2. Strict-Transport-Security (HSTS)
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+
+  // 3. Referrer Policy
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // 4. X-Content-Type-Options
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+
+  // 5. X-Frame-Options
+  res.setHeader('X-Frame-Options', 'DENY');
+
+  // 6. X-XSS-Protection
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+
+  // 7. Permissions Policy
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(), payment=()');
+
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -179,22 +216,65 @@ app.put('/api/requests/:id', (req, res) => {
   // ── Stock deduction: only when transitioning TO 'issued' ──────────────────
   if (status === 'issued' && oldStatus !== 'issued') {
     const request = data.requests[idx];
+    if (!data.transactions) data.transactions = [];
+
+    const recipientName = request.name || request.engineerName || processedBy || 'Engineer';
+    const projectName = request.projectName || 'General Issue';
 
     if (Array.isArray(request.materials) && request.materials.length > 0) {
-      // New multi-material format: deduct each material
+      // Multi-material format: deduct each material & create Stock Movement transaction log
       request.materials.forEach(mat => {
         const itemIdx = data.items.findIndex(i => i.id === mat.itemId);
         if (itemIdx !== -1) {
-          data.items[itemIdx].quantity = Math.max(0, data.items[itemIdx].quantity - (mat.quantity || 0));
-          data.items[itemIdx].updatedAt = new Date().toISOString();
+          const item = data.items[itemIdx];
+          const qtyOut = Math.abs(mat.quantity || 0);
+          const newQty = Math.max(0, item.quantity - qtyOut);
+
+          item.quantity = newQty;
+          item.updatedAt = new Date().toISOString();
+
+          // Log Stock Out Movement
+          data.transactions.unshift({
+            id: uuidv4(),
+            itemId: item.id,
+            itemName: item.name,
+            sku: item.sku || item.barcode || item.id,
+            type: 'outward',
+            allocationType: 'project',
+            recipientName: recipientName,
+            projectName: projectName,
+            delta: -qtyOut,
+            newQuantity: newQty,
+            notes: managerNotes ? `Issued: ${managerNotes}` : `Issued for project: ${projectName}`,
+            timestamp: new Date().toISOString()
+          });
         }
       });
     } else if (request.itemId) {
       // Legacy single-item fallback
       const itemIdx = data.items.findIndex(i => i.id === request.itemId);
       if (itemIdx !== -1) {
-        data.items[itemIdx].quantity = Math.max(0, data.items[itemIdx].quantity - (request.quantityRequested || 0));
-        data.items[itemIdx].updatedAt = new Date().toISOString();
+        const item = data.items[itemIdx];
+        const qtyOut = Math.abs(request.quantityRequested || 0);
+        const newQty = Math.max(0, item.quantity - qtyOut);
+
+        item.quantity = newQty;
+        item.updatedAt = new Date().toISOString();
+
+        data.transactions.unshift({
+          id: uuidv4(),
+          itemId: item.id,
+          itemName: item.name,
+          sku: item.sku || item.barcode || item.id,
+          type: 'outward',
+          allocationType: 'project',
+          recipientName: recipientName,
+          projectName: projectName,
+          delta: -qtyOut,
+          newQuantity: newQty,
+          notes: managerNotes ? `Issued: ${managerNotes}` : `Issued for project: ${projectName}`,
+          timestamp: new Date().toISOString()
+        });
       }
     }
   }
@@ -423,6 +503,15 @@ app.delete('/api/transactions', (req, res) => {
   data.transactions = [];
   writeData(data);
   res.json({ success: true, message: 'All transactions cleared' });
+});
+
+// ─── Health Check & SPA Wildcard Fallback ────────────────────────────────────
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date() });
+});
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 

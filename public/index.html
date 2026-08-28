@@ -530,44 +530,62 @@
     </div>
   </div>
 
-  <!-- Issue Checklist Modal -->
+  <!-- Material Issue & Verification Modal -->
   <div class="modal-backdrop hidden" id="modal-checklist-overlay" onclick="closeChecklistModal(event)" style="z-index:1050">
-    <div class="modal" id="modal-checklist" style="max-width:620px" onclick="event.stopPropagation()">
+    <div class="modal" id="modal-checklist" style="max-width:660px" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title-block">
-          <div class="modal-title-tag">ISSUE MATERIALS</div>
-          <h2 class="modal-title" id="checklist-modal-title">Issue Checklist</h2>
+          <div class="modal-title-tag">OUTWARD DISPATCH &amp; VERIFICATION</div>
+          <h2 class="modal-title" id="checklist-modal-title">Material Stock Out</h2>
         </div>
         <button class="modal-close-btn" onclick="closeChecklistModal()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-      <div class="modal-body" style="display:flex;flex-direction:column;gap:0.75rem;padding:1.125rem 1.35rem">
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:0.875rem;padding:1.125rem 1.35rem">
 
-        <!-- Read-only info block -->
-        <div id="checklist-info-block" style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.75rem 1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.4rem 1rem;font-size:0.82rem"></div>
+        <!-- Read-only Request info block -->
+        <div id="checklist-info-block" style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.75rem 1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.4rem 1rem;font-size:0.82rem"></div>
 
-        <!-- Materials checklist -->
-        <div>
-          <label class="field-label" style="margin-bottom:0.5rem;display:block">MATERIALS CHECKLIST</label>
-          <div id="checklist-rows" style="display:flex;flex-direction:column;gap:0.35rem"></div>
-          <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:0.5rem">
-            Scan each item with the Helett HT20 scanner, or tap a row to check it manually.
+        <!-- Live Barcode Scanner Input Container -->
+        <div id="checklist-scan-container" style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.25);border-radius:var(--radius-md);padding:0.875rem 1rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+            <label class="field-label" style="margin:0;color:var(--text-primary);display:flex;align-items:center;gap:0.4rem">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h1v10H7zM10 7h2v10h-2zM14 7h1v10h-1zM17 7h1v10h-1z"/></svg>
+              SCAN PRODUCT BARCODE / SKU
+            </label>
+            <span style="font-size:0.7rem;color:var(--goose);font-family:var(--font-mono);font-weight:600">HELETT HT20 READY</span>
           </div>
+          <div style="display:flex;gap:0.5rem">
+            <input type="text" id="checklist-barcode-input" class="field-input mono" placeholder="Point scanner here or enter SKU / Barcode…" onkeydown="handleChecklistScanKey(event)" style="font-size:0.95rem;background:var(--bg-surface)" />
+            <button type="button" class="btn btn-primary" onclick="processChecklistBarcodeScan()" style="white-space:nowrap;padding:0 0.875rem">
+              Verify
+            </button>
+          </div>
+          <div id="checklist-scan-feedback" style="font-size:0.75rem;margin-top:0.35rem;display:none"></div>
+        </div>
+
+        <!-- Materials list -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+            <label class="field-label" style="margin:0">REQUESTED ITEMS VERIFICATION</label>
+            <span id="checklist-progress-badge" style="font-size:0.72rem;font-weight:700;font-family:var(--font-mono);color:var(--text-tertiary)"></span>
+          </div>
+          <div id="checklist-rows" style="display:flex;flex-direction:column;gap:0.4rem"></div>
         </div>
 
         <!-- Remarks -->
-        <div class="field-group">
+        <div class="field-group" style="margin-top:0.25rem">
           <label class="field-label">REMARKS / MANAGER NOTES</label>
-          <textarea id="checklist-remarks" class="field-input field-textarea" rows="2" placeholder="e.g. 1 item short, follow-up needed"></textarea>
+          <textarea id="checklist-remarks" class="field-input field-textarea" rows="2" placeholder="e.g. Verified by Store Manager, dispatched via shelf location R-A1"></textarea>
         </div>
 
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-ghost" onclick="closeChecklistModal()">Close</button>
-        <button type="button" class="btn btn-primary" id="checklist-issue-btn" onclick="submitIssue()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-          Issue
+        <button type="button" class="btn btn-ghost" onclick="closeChecklistModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" id="checklist-issue-btn" onclick="submitIssue()" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%);border-color:#10b981;font-weight:700">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          Stock Out
         </button>
       </div>
     </div>
