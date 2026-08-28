@@ -1579,7 +1579,13 @@ function filterAndRenderInventoryRows() {
 
   if (state.searchQuery) {
     const q = state.searchQuery.toLowerCase();
-    items = items.filter(i => i.name.toLowerCase().includes(q) || i.sku.toLowerCase().includes(q) || (i.location && i.location.toLowerCase().includes(q)));
+    items = items.filter(i => 
+      (i.name || '').toLowerCase().includes(q) || 
+      (i.sku || '').toLowerCase().includes(q) || 
+      (i.barcode || '').toLowerCase().includes(q) || 
+      (i.location || '').toLowerCase().includes(q) ||
+      (i.category || '').toLowerCase().includes(q)
+    );
   }
 
   const subtitle = document.getElementById('inventory-subtitle-count');
@@ -2480,7 +2486,7 @@ function renderPickerGrid() {
   const q = (document.getElementById('picker-search')?.value || '').toLowerCase();
   let items = state.items || [];
   if (_pickerCategory !== 'All') items = items.filter(i => i.category === _pickerCategory);
-  if (q) items = items.filter(i => (i.name + ' ' + i.sku).toLowerCase().includes(q));
+  if (q) items = items.filter(i => ((i.name || '') + ' ' + (i.sku || '') + ' ' + (i.barcode || '')).toLowerCase().includes(q));
 
   if (items.length === 0) {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-tertiary);font-size:0.85rem">No materials found</div>`;
