@@ -178,17 +178,39 @@ textarea {
   inset: 0;
   z-index: 3000;
   background: var(--bg-base);
+  background-image: 
+    radial-gradient(circle at 50% 40%, rgba(0, 198, 255, 0.08) 0%, transparent 60%),
+    linear-gradient(var(--border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+  background-size: 100% 100%, 36px 36px, 36px 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 1;
   transition: opacity 0.35s ease, visibility 0.35s ease;
+  overflow: hidden;
 }
 
 .loading-overlay.hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+}
+
+.loading-ambient-glow {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 198, 255, 0.15) 0%, rgba(16, 185, 129, 0.05) 50%, transparent 70%);
+  filter: blur(40px);
+  animation: ambientPulse 4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes ambientPulse {
+  0% { transform: scale(0.85); opacity: 0.5; }
+  100% { transform: scale(1.25); opacity: 0.9; }
 }
 
 .loading-container {
@@ -198,8 +220,14 @@ textarea {
   justify-content: center;
   position: relative;
   width: 100%;
-  max-width: 440px;
-  padding: 2rem;
+  max-width: 420px;
+  padding: 2.25rem 2rem;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(0, 198, 255, 0.25);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  z-index: 2;
 }
 
 /* 1. Flying Goose Birds Sky Scene */
@@ -215,12 +243,12 @@ textarea {
   position: absolute;
   width: 30px;
   height: 30px;
-  filter: drop-shadow(0 0 6px rgba(0, 198, 255, 0.4));
+  filter: drop-shadow(0 0 8px rgba(0, 198, 255, 0.6));
   animation: flyAcross 3.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .goose-1 {
-  top: 8px;
+  top: 6px;
   left: -40px;
   animation-delay: 0s;
 }
@@ -234,7 +262,7 @@ textarea {
 }
 
 .goose-3 {
-  top: 4px;
+  top: 2px;
   left: -40px;
   width: 26px;
   height: 26px;
@@ -243,39 +271,57 @@ textarea {
 
 @keyframes flyAcross {
   0% {
-    transform: translateX(0) translateY(0) scale(0.9);
+    transform: translateX(0) translateY(0) scale(0.85) rotate(-4deg);
     opacity: 0;
   }
   15% {
     opacity: 1;
   }
   50% {
-    transform: translateX(200px) translateY(-10px) scale(1.05);
+    transform: translateX(200px) translateY(-12px) scale(1.08) rotate(2deg);
   }
   85% {
     opacity: 1;
   }
   100% {
-    transform: translateX(440px) translateY(4px) scale(0.9);
+    transform: translateX(440px) translateY(4px) scale(0.85) rotate(0deg);
     opacity: 0;
   }
 }
 
-/* 2. Warehouse Stage */
+/* 2. Warehouse Stage & Laser Scanner */
 .warehouse-stage {
   position: relative;
   width: 260px;
-  height: 110px;
+  height: 115px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
+}
+
+.laser-scanner-beam {
+  position: absolute;
+  top: 10px;
+  left: 20px;
+  width: 2px;
+  height: 95px;
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0) 0%, rgba(16, 185, 129, 0.9) 50%, rgba(0, 198, 255, 1) 100%);
+  box-shadow: 0 0 12px #00c6ff, 0 0 4px #10b981;
+  z-index: 10;
+  animation: laserScan 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes laserScan {
+  0% { left: 25px; opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { left: 220px; opacity: 0.3; }
 }
 
 /* Stacked Cargo Boxes */
 .stacked-boxes {
   position: absolute;
   left: 25px;
-  bottom: 6px;
+  bottom: 8px;
   width: 85px;
   height: 85px;
 }
@@ -283,7 +329,7 @@ textarea {
 .cargo-box {
   position: absolute;
   color: var(--goose);
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
 }
 
 .box-base-left {
@@ -308,13 +354,13 @@ textarea {
   left: 20px;
   bottom: 34px;
   color: var(--goose);
-  animation: boxStackDrop 2.2s ease-in-out infinite;
+  animation: boxStackDrop 2.2s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
 }
 
 @keyframes boxStackDrop {
   0%, 100% {
-    transform: translateY(-22px) rotate(-6deg);
-    opacity: 0.2;
+    transform: translateY(-26px) rotate(-8deg);
+    opacity: 0.15;
   }
   35%, 75% {
     transform: translateY(0) rotate(0deg);
@@ -325,10 +371,10 @@ textarea {
 /* Forklift Drive Animation */
 .forklift-anim {
   position: absolute;
-  bottom: 6px;
+  bottom: 8px;
   right: 15px;
-  width: 50px;
-  height: 50px;
+  width: 52px;
+  height: 52px;
   animation: forkliftDrive 3.4s ease-in-out infinite;
 }
 
@@ -337,19 +383,29 @@ textarea {
   height: 100%;
 }
 
+.forklift-wheel {
+  animation: spinWheel 0.8s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes spinWheel {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
 @keyframes forkliftDrive {
   0%, 100% {
-    transform: translateX(35px);
+    transform: translateX(38px);
     opacity: 0;
   }
   20% {
     opacity: 1;
   }
   50% {
-    transform: translateX(-35px);
+    transform: translateX(-38px);
   }
   75% {
-    transform: translateX(10px);
+    transform: translateX(12px);
     opacity: 1;
   }
   90% {
@@ -357,17 +413,35 @@ textarea {
   }
 }
 
-/* Ground Line */
+/* Ground Line & Particle */
 .warehouse-ground {
+  position: relative;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--goose), transparent);
+  background: linear-gradient(90deg, transparent, var(--goose), var(--accent-cyan), transparent);
   border-radius: 2px;
-  margin-bottom: 4px;
-  opacity: 0.6;
+  margin-bottom: 6px;
+  opacity: 0.8;
+  overflow: hidden;
 }
 
-/* 3. Status Labels & Progress Line */
+.ground-pulse-particle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: 0 0 10px #00c6ff;
+  animation: particleMove 2.2s linear infinite;
+}
+
+@keyframes particleMove {
+  0% { left: -40px; }
+  100% { left: 100%; }
+}
+
+/* 3. Status Labels & Shimmery Progress Line */
 .loading-label-wrap {
   text-align: center;
   margin-top: 1.25rem;
@@ -378,26 +452,29 @@ textarea {
   font-size: 0.68rem;
   font-weight: 800;
   color: var(--goose);
-  letter-spacing: 0.14em;
+  letter-spacing: 0.18em;
   margin-bottom: 0.35rem;
+  text-shadow: 0 0 10px rgba(0, 198, 255, 0.3);
 }
 
 .loading-status-text {
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.875rem;
+  letter-spacing: 0.01em;
 }
 
 .loading-progress-bar {
   width: 100%;
-  max-width: 260px;
-  height: 3px;
-  background: var(--bg-elevated);
-  border-radius: 3px;
+  max-width: 280px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
   overflow: hidden;
   margin: 0 auto;
   position: relative;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .loading-progress-fill {
@@ -405,19 +482,20 @@ textarea {
   top: 0;
   left: 0;
   height: 100%;
-  width: 40%;
-  background: var(--goose-gradient);
-  border-radius: 3px;
+  width: 45%;
+  background: linear-gradient(90deg, #00c6ff 0%, #3b82f6 50%, #10b981 100%);
+  border-radius: 4px;
+  box-shadow: 0 0 12px rgba(0, 198, 255, 0.8);
   animation: progressMove 1.6s ease-in-out infinite;
 }
 
 @keyframes progressMove {
   0% {
-    left: -40%;
+    left: -45%;
     width: 30%;
   }
   50% {
-    width: 60%;
+    width: 65%;
   }
   100% {
     left: 100%;

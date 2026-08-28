@@ -33,21 +33,25 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
-       INDUSTRIAL LOGISTICS LOADING OVERLAY
+       HIGH-TECH INDUSTRIAL LOGISTICS LOADING OVERLAY
   ═══════════════════════════════════════════════════════════ -->
   <div id="app-loading-screen" class="loading-overlay hidden" aria-live="polite">
-    <div class="loading-container">
+    <div class="loading-ambient-glow"></div>
+    <div class="loading-container card-glass">
       
-      <!-- Flying Goose Birds Sky Scene -->
+      <!-- Flying Goose V-Formation Birds Sky Scene -->
       <div class="sky-scene">
         <svg class="flying-goose goose-1" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="1.8" stroke-linecap="round"><path d="M2 14c4-4 8-1 10-6 2 5 6 2 10 6M12 8v5"/></svg>
         <svg class="flying-goose goose-2" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="1.8" stroke-linecap="round"><path d="M2 14c4-4 8-1 10-6 2 5 6 2 10 6M12 8v5"/></svg>
         <svg class="flying-goose goose-3" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="1.8" stroke-linecap="round"><path d="M2 14c4-4 8-1 10-6 2 5 6 2 10 6M12 8v5"/></svg>
       </div>
 
-      <!-- Central Industrial Warehouse Stage -->
+      <!-- Central Industrial Warehouse & Logistics Stage -->
       <div class="warehouse-stage">
         
+        <!-- Laser Barcode Scanner Beam -->
+        <div class="laser-scanner-beam"></div>
+
         <!-- Stacked Cargo Boxes Group -->
         <div class="stacked-boxes">
           <!-- Base Cargo Box Left -->
@@ -66,13 +70,13 @@
             <line x1="17" y1="2" x2="17" y2="20"/>
             <path d="M17 18h5v-3"/>
             <path d="M17 14h4"/>
-            <circle cx="6" cy="18" r="2"/>
-            <circle cx="14" cy="18" r="2"/>
+            <circle cx="6" cy="18" r="2" class="forklift-wheel"/>
+            <circle cx="14" cy="18" r="2" class="forklift-wheel"/>
           </svg>
         </div>
 
-        <!-- Ground Platform Line -->
-        <div class="warehouse-ground"></div>
+        <!-- Ground Platform Line with Laser Particle -->
+        <div class="warehouse-ground"><div class="ground-pulse-particle"></div></div>
       </div>
 
       <!-- Status & Loading Label -->
