@@ -447,48 +447,86 @@
     </div>
   </div>
 
-  <!-- Request Modal -->
+  <!-- Supplier Offer / Request Modal -->
   <div class="modal-backdrop hidden" id="modal-request-overlay" onclick="closeRequestModal(event)">
-    <div class="modal" id="modal-request">
+    <div class="modal" id="modal-request" style="max-width:640px" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title-block">
-          <div class="modal-title-tag">MATERIAL REQUEST</div>
-          <h2 class="modal-title">Request Material</h2>
+          <div class="modal-title-tag">SUPPLIER OFFER</div>
+          <h2 class="modal-title">Supplier Offer</h2>
         </div>
         <button class="modal-close-btn" onclick="closeRequestModal()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <form id="form-request" onsubmit="handleRequestSubmit(event)">
-        <div class="modal-body">
-          <div class="item-ref-card" id="request-item-info"></div>
-          <div class="field-grid two-col">
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:0.75rem;padding:1.125rem 1.35rem">
+
+          <!-- Name + Employee ID -->
+          <div class="field-grid two-col" style="gap:0.75rem">
             <div class="field-group">
-              <label class="field-label">ENGINEER NAME <span class="req">*</span></label>
-              <input type="text" id="req-engineer" class="field-input" placeholder="e.g. Er. Suresh Patel" required />
+              <label class="field-label">NAME <span class="req">*</span></label>
+              <input type="text" id="req-engineer" class="field-input" placeholder="e.g. Suresh Patel" required />
             </div>
             <div class="field-group">
-              <label class="field-label">PROJECT NAME / ID <span class="req">*</span></label>
-              <input type="text" id="req-project" class="field-input" placeholder="e.g. Dairy Plant Expansion" required />
+              <label class="field-label">EMPLOYEE ID <span class="req">*</span></label>
+              <input type="text" id="req-employee-id" class="field-input mono" placeholder="e.g. EMP-1042" required />
             </div>
           </div>
+
+          <!-- Project Name -->
           <div class="field-group">
-            <label class="field-label">QUANTITY REQUESTED <span class="req">*</span></label>
-            <div class="qty-input-wrap">
-              <input type="number" id="req-quantity" class="field-input mono" min="1" placeholder="1" required />
-              <span class="unit-tag" id="req-unit-label">pcs</span>
-            </div>
+            <label class="field-label">PROJECT NAME / ID <span class="req">*</span></label>
+            <input type="text" id="req-project" class="field-input" placeholder="e.g. Dairy Plant Expansion" required />
           </div>
+
+          <!-- Materials Required section -->
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+              <label class="field-label" style="margin:0">MATERIALS REQUIRED <span class="req">*</span></label>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="addMaterialRow()" style="font-size:0.75rem;padding:0.3rem 0.65rem">+ Add</button>
+            </div>
+            <div id="material-rows-container" style="display:flex;flex-direction:column;gap:0.5rem"></div>
+          </div>
+
+          <!-- Reason / Purpose -->
           <div class="field-group">
             <label class="field-label">REASON / PURPOSE <span class="req">*</span></label>
             <textarea id="req-purpose" class="field-input field-textarea" rows="2" placeholder="e.g. Line 2 valve replacement, emergency fix" required></textarea>
           </div>
+
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-ghost" onclick="closeRequestModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Submit Request</button>
+          <button type="submit" class="btn btn-primary">Submit Offer</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Material Picker Modal -->
+  <div class="modal-backdrop hidden" id="modal-picker-overlay" onclick="closePickerModal(event)" style="z-index:1100">
+    <div class="modal" id="modal-picker" style="max-width:780px;height:80vh;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+      <div class="modal-header" style="flex-shrink:0">
+        <div class="modal-title-block">
+          <div class="modal-title-tag">INVENTORY</div>
+          <h2 class="modal-title">Select Material</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closePickerModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <!-- Search bar -->
+      <div style="padding:0.625rem 1rem;border-bottom:1px solid var(--border-subtle);flex-shrink:0">
+        <input type="text" id="picker-search" class="field-input" placeholder="Search by name or SKU…" oninput="renderPickerGrid()" style="width:100%" />
+      </div>
+      <!-- Body: sidebar + grid -->
+      <div style="display:flex;flex:1;overflow:hidden">
+        <!-- Category sidebar -->
+        <div id="picker-category-sidebar" style="width:160px;flex-shrink:0;overflow-y:auto;border-right:1px solid var(--border-subtle);padding:0.5rem 0"></div>
+        <!-- Material grid -->
+        <div id="picker-grid" style="flex:1;overflow-y:auto;padding:0.75rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.65rem;align-content:start"></div>
+      </div>
     </div>
   </div>
 

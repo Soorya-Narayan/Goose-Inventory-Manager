@@ -174,10 +174,24 @@ app.put('/api/requests/:id', (req, res) => {
 
   // Deduct stock if approved and wasn't already approved
   if (status === 'approved' && oldStatus !== 'approved') {
-    const itemIdx = data.items.findIndex(i => i.id === data.requests[idx].itemId);
-    if (itemIdx !== -1) {
-      data.items[itemIdx].quantity = Math.max(0, data.items[itemIdx].quantity - data.requests[idx].quantityRequested);
-      data.items[itemIdx].updatedAt = new Date().toISOString();
+    const request = data.requests[idx];
+
+    if (Array.isArray(request.materials) && request.materials.length > 0) {
+      // New multi-material format: deduct each material
+      request.materials.forEach(mat => {
+        const itemIdx = data.items.findIndex(i => i.id === mat.itemId);
+        if (itemIdx !== -1) {
+          data.items[itemIdx].quantity = Math.max(0, data.items[itemIdx].quantity - (mat.quantity || 0));
+          data.items[itemIdx].updatedAt = new Date().toISOString();
+        }
+      });
+    } else if (request.itemId) {
+      // Legacy single-item format fallback
+      const itemIdx = data.items.findIndex(i => i.id === request.itemId);
+      if (itemIdx !== -1) {
+        data.items[itemIdx].quantity = Math.max(0, data.items[itemIdx].quantity - (request.quantityRequested || 0));
+        data.items[itemIdx].updatedAt = new Date().toISOString();
+      }
     }
   }
 
