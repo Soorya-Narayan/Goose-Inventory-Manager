@@ -626,36 +626,39 @@ function copyBarcodeToClipboard(val) {
 }
 
 function testPrintSticker() {
-  // Remove any old test item first
-  state.items = state.items.filter(i => i.id !== 'demo-test');
-  const dummyItem = {
-    id: 'demo-test',
-    name: 'Test Material',
-    sku: 'TEST-001',
-    barcode: 'TEST-001',
-    location: 'A1',
-    zone: 'mechanical'
-  };
-  state.items.push(dummyItem);
-  openPrintModal('demo-test');
+  // Print a placeholder label directly — no fake record is injected into state
+  showToast('Sending test label to printer...', 'info');
+  api.post('/api/print-tspl', {
+    name: 'PRINT TEST',
+    sku: 'TEST',
+    location: '—',
+    zone: '—',
+    copies: 1
+  }).then(res => {
+    if (res.success) {
+      showToast('Test sticker printed successfully!', 'success');
+    } else {
+      showToast(res.error || 'Printer not connected', 'warning');
+    }
+  }).catch(() => showToast('Failed to connect to printer server', 'error'));
 }
 
 async function triggerTejC15Print() {
-  const item = state.items.find(i => i.id === state.printItemId) || {
-    name: 'MATERIAL ITEM',
-    sku: 'ELEC0001',
-    location: 'A1',
-    zone: 'MECH'
-  };
+  const item = state.items.find(i => i.id === state.printItemId);
+
+  if (!item) {
+    showToast('No item selected to print', 'error');
+    return;
+  }
 
   showToast('Sending direct barcode print to Tej C15...', 'info');
 
   try {
     const res = await api.post('/api/print-tspl', {
       name: item.name,
-      sku: item.sku || item.barcode || 'ELEC0001',
-      location: item.location || 'A1',
-      zone: item.zone || 'MECH',
+      sku: item.sku || item.barcode || '',
+      location: item.location || '',
+      zone: item.zone || '',
       copies: 1
     });
 
