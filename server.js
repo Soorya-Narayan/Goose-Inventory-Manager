@@ -26,7 +26,7 @@ app.use((req, res, next) => {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com data:; " +
     "img-src 'self' data: blob: https:; " +
-    "connect-src 'self' https://zohoapis.in https://zohoapis.com https://zohoapis.eu; " +
+    "connect-src 'self' https: wss: https://zohoapis.in https://zohoapis.com https://zohoapis.eu; " +
     "frame-ancestors 'none'; " +
     "object-src 'none'; " +
     "base-uri 'self'; " +
@@ -74,7 +74,13 @@ function readData() {
 }
 
 function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  try {
+    const dir = path.dirname(DATA_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error writing data file:', err);
+  }
 }
 
 // ─── Items API ───────────────────────────────────────────────────────────────

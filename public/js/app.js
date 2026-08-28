@@ -2262,4 +2262,5 @@ document.addEventListener('DOMContentLoaded', () => {
   if (saved) {
     try { setUser(JSON.parse(saved)); return; } catch {}
   }
+  hideLoadingScreen();
 });
