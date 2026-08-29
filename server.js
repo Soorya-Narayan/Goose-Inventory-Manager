@@ -271,6 +271,8 @@ app.post('/api/items', (req, res) => {
     notes: req.body.notes || '',
     imageUrl: req.body.imageUrl || '',
     zohoCode: req.body.zohoCode || '',
+    soNumber: req.body.soNumber || req.body.so || '',
+    poNumber: req.body.poNumber || req.body.po || '',
     addedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };

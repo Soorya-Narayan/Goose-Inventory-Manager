@@ -1715,7 +1715,9 @@ function filterAndRenderInventoryRows() {
       (i.sku || '').toLowerCase().includes(q) || 
       (i.barcode || '').toLowerCase().includes(q) || 
       (i.location || '').toLowerCase().includes(q) ||
-      (i.category || '').toLowerCase().includes(q)
+      (i.category || '').toLowerCase().includes(q) ||
+      (i.soNumber || i.so || '').toLowerCase().includes(q) ||
+      (i.poNumber || i.po || '').toLowerCase().includes(q)
     );
   }
 
@@ -1751,6 +1753,12 @@ function filterAndRenderInventoryRows() {
       <td>
         <strong style="font-size:0.85rem">${escHtml(item.name)}</strong>
         ${item.notes ? `<div style="font-size:0.7rem;color:var(--text-tertiary)">${escHtml(item.notes)}</div>` : ''}
+        ${(item.soNumber || item.so || item.poNumber || item.po) ? `
+          <div style="display:flex;gap:0.35rem;font-size:0.68rem;margin-top:0.2rem;font-family:var(--font-mono)">
+            ${(item.soNumber || item.so) ? `<span style="background:rgba(59,130,246,0.12);color:var(--accent-cyan);padding:0.08rem 0.35rem;border-radius:3px;border:1px solid rgba(59,130,246,0.25)">SO: ${escHtml(item.soNumber || item.so)}</span>` : ''}
+            ${(item.poNumber || item.po) ? `<span style="background:rgba(16,185,129,0.12);color:var(--accent-emerald);padding:0.08rem 0.35rem;border-radius:3px;border:1px solid rgba(16,185,129,0.25)">PO: ${escHtml(item.poNumber || item.po)}</span>` : ''}
+          </div>
+        ` : ''}
       </td>
       <td>${zoneInlineTag(item.zone)}</td>
       <td style="color:var(--text-tertiary);font-size:0.75rem">${escHtml(item.category)}</td>
@@ -2262,9 +2270,14 @@ function openAddItemModal() {
   state.editingItemId = null;
   document.getElementById('modal-item-title').textContent = 'New Item';
   document.getElementById('form-item').reset();
-  // Clear Zoho Code explicitly (form.reset() handles it but being explicit is safe)
+  // Clear Zoho Code, SO #, and PO # explicitly
   const zohoEl = document.getElementById('item-zoho-code');
   if (zohoEl) zohoEl.value = '';
+  const soEl = document.getElementById('item-so');
+  if (soEl) soEl.value = '';
+  const poEl = document.getElementById('item-po');
+  if (poEl) poEl.value = '';
+
   setImagePreview('');
   // Auto-generate product ID
   generateProductId();
@@ -2296,9 +2309,14 @@ function openEditItemModal(id) {
   document.getElementById('item-location').value = item.location;
   document.getElementById('item-barcode').value = item.barcode || item.sku || '';
   document.getElementById('item-notes').value = item.notes || '';
-  // Populate Zoho Code from saved item (fallback to empty string)
+  // Populate Zoho Code, SO #, and PO #
   const zohoEl = document.getElementById('item-zoho-code');
   if (zohoEl) zohoEl.value = item.zohoCode || '';
+  const soEl = document.getElementById('item-so');
+  if (soEl) soEl.value = item.soNumber || item.so || '';
+  const poEl = document.getElementById('item-po');
+  if (poEl) poEl.value = item.poNumber || item.po || '';
+
   setImagePreview(item.imageUrl || '');
   document.getElementById('duplicate-warning')?.classList.add('hidden');
   const nameEl = document.getElementById('item-name');
@@ -2309,10 +2327,27 @@ function openEditItemModal(id) {
 }
 
 function closeItemModal(e) {
-  if (e && e.target !== document.getElementById('modal-item-overlay')) return;
+  if (e && e.target === document.getElementById('modal-item-overlay')) {
+    // Prevent accidental closing when clicking outside the Add Item modal
+    return;
+  }
   document.getElementById('modal-item-overlay')?.classList.add('hidden');
   const nameEl = document.getElementById('item-name');
   if (nameEl) nameEl.oninput = null;
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+
+  const eyeOpen = btn.querySelector('.eye-icon-open');
+  const eyeClosed = btn.querySelector('.eye-icon-closed');
+  if (eyeOpen && eyeClosed) {
+    eyeOpen.classList.toggle('hidden', isPassword);
+    eyeClosed.classList.toggle('hidden', !isPassword);
+  }
 }
 
 function checkDuplicateName(name) {
@@ -2355,6 +2390,8 @@ async function handleItemSubmit(e) {
     notes: document.getElementById('item-notes').value.trim(),
     imageUrl: document.getElementById('item-imageUrl').value.trim(),
     zohoCode: document.getElementById('item-zoho-code').value.trim(),
+    soNumber: document.getElementById('item-so')?.value.trim() || '',
+    poNumber: document.getElementById('item-po')?.value.trim() || ''
   };
 
   try {
