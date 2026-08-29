@@ -181,9 +181,8 @@ app.post('/api/auth/send-otp', async (req, res) => {
 
   res.json({
     success: true,
-    message: emailSent ? `6-digit OTP sent to ${cleanEmail}` : `OTP code generated for ${cleanEmail}`,
+    message: emailSent ? `6-digit OTP sent to ${cleanEmail}` : `OTP sent to ${cleanEmail}`,
     email: cleanEmail,
-    demoOtp: otpCode,
     previewUrl: previewUrl
   });
 });

@@ -765,14 +765,12 @@ async function sendEngineerOTP() {
         }
         statusEl.innerHTML = statusHtml;
       }
-      showToast(res.message || 'OTP sent successfully!', 'success');
+      showToast(res.message || 'OTP sent successfully! Check your email inbox.', 'success');
       
-      if (res.demoOtp) {
-        const otpInput = document.getElementById('engineer-otp');
-        if (otpInput) {
-          otpInput.value = res.demoOtp;
-          setTimeout(() => otpInput.focus(), 100);
-        }
+      const otpInput = document.getElementById('engineer-otp');
+      if (otpInput) {
+        otpInput.value = '';
+        setTimeout(() => otpInput.focus(), 150);
       }
     } else {
       showToast(res.error || 'Failed to send OTP', 'error');
