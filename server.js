@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -79,19 +80,55 @@ function writeData(data) {
 const nodemailer = require('nodemailer');
 const otpStore = {}; // { 'surya@goosesolutions.in': { code: '584920', expiresAt: timestamp } }
 
-function getMailTransporter() {
+async function createMailTransporter() {
+  // 1. Configured SMTP via env variables (Zoho / Gmail / Custom SMTP)
   if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-    return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT) || 587,
-      secure: process.env.SMTP_SECURE === 'true',
+    return {
+      transporter: nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT) || 587,
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      }),
+      fromEmail: process.env.SMTP_FROM || process.env.SMTP_USER
+    };
+  }
+
+  // 2. Zoho Quick Config via ZOHO_EMAIL & ZOHO_PASSWORD
+  if (process.env.ZOHO_EMAIL && process.env.ZOHO_PASSWORD) {
+    return {
+      transporter: nodemailer.createTransport({
+        host: 'smtp.zoho.in',
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.ZOHO_EMAIL,
+          pass: process.env.ZOHO_PASSWORD
+        }
+      }),
+      fromEmail: process.env.ZOHO_EMAIL
+    };
+  }
+
+  // 3. Fallback: Ethereal Mail for instant local testing without configuring SMTP
+  try {
+    const testAccount = await nodemailer.createTestAccount();
+    const testTransporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      secure: false,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: testAccount.user,
+        pass: testAccount.pass
       }
     });
+    return { transporter: testTransporter, fromEmail: testAccount.user, isTest: true };
+  } catch (e) {
+    return { transporter: null, fromEmail: null };
   }
-  return null;
 }
 
 app.post('/api/auth/send-otp', async (req, res) => {
@@ -110,11 +147,13 @@ app.post('/api/auth/send-otp', async (req, res) => {
   console.log(`[OTP DISPATCH] Email: ${cleanEmail} | OTP Code: ${otpCode}`);
 
   let emailSent = false;
+  let previewUrl = null;
+
   try {
-    const transporter = getMailTransporter();
-    if (transporter) {
-      await transporter.sendMail({
-        from: '"Goose Inventory System" <no-reply@goosesolutions.in>',
+    const mailSetup = await createMailTransporter();
+    if (mailSetup && mailSetup.transporter) {
+      const info = await mailSetup.transporter.sendMail({
+        from: `"Goose Inventory System" <${mailSetup.fromEmail || 'no-reply@goosesolutions.in'}>`,
         to: cleanEmail,
         subject: '🔒 Your 6-Digit Login OTP — Goose Inventory Manager',
         html: `
@@ -131,16 +170,21 @@ app.post('/api/auth/send-otp', async (req, res) => {
         `
       });
       emailSent = true;
+      if (mailSetup.isTest) {
+        previewUrl = nodemailer.getTestMessageUrl(info);
+        console.log(`[ETHEREAL PREVIEW URL]: ${previewUrl}`);
+      }
     }
   } catch (err) {
-    console.error('Mail Send Error:', err);
+    console.error('Mail Send Error:', err.message);
   }
 
   res.json({
     success: true,
-    message: emailSent ? `6-digit OTP sent to ${cleanEmail}` : `OTP sent to ${cleanEmail}`,
+    message: emailSent ? `6-digit OTP sent to ${cleanEmail}` : `OTP code generated for ${cleanEmail}`,
     email: cleanEmail,
-    demoOtp: otpCode
+    demoOtp: otpCode,
+    previewUrl: previewUrl
   });
 });
 

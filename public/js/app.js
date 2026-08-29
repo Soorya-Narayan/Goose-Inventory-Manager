@@ -759,7 +759,11 @@ async function sendEngineerOTP() {
       if (statusEl) {
         statusEl.style.display = 'block';
         statusEl.style.color = 'var(--goose)';
-        statusEl.innerHTML = `✓ OTP sent to <strong>${escHtml(email)}</strong>. Check your inbox.`;
+        let statusHtml = `✓ 6-Digit OTP sent to <strong>${escHtml(email)}</strong>.`;
+        if (res.previewUrl) {
+          statusHtml += ` <a href="${res.previewUrl}" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;margin-left:0.25rem">View Test Mail Inbox ↗</a>`;
+        }
+        statusEl.innerHTML = statusHtml;
       }
       showToast(res.message || 'OTP sent successfully!', 'success');
       
