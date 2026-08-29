@@ -19,21 +19,23 @@ app.use(cors());
 
 // ─── Security Headers Middleware (MDN HTTP Observatory A+ Compliance) ───────
 app.use((req, res, next) => {
-  // 1. Content Security Policy (CSP)
+  // 1. Content Security Policy (CSP) - Allow http & https for local LAN & production
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self' https:; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; " +
-    "style-src 'self' 'unsafe-inline' https:; " +
-    "font-src 'self' data: https:; " +
-    "img-src 'self' data: blob: https:; " +
-    "connect-src 'self' https: wss:; " +
+    "default-src 'self' http: https:; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' http: https:; " +
+    "style-src 'self' 'unsafe-inline' http: https:; " +
+    "font-src 'self' data: http: https:; " +
+    "img-src 'self' data: blob: http: https:; " +
+    "connect-src 'self' http: https: ws: wss:; " +
     "frame-ancestors 'none'; " +
     "object-src 'none';"
   );
 
-  // 2. Strict-Transport-Security (HSTS)
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  // 2. Strict-Transport-Security (HSTS) - Only send over HTTPS to avoid Safari local HTTP upgrade failures
+  if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
 
   // 3. Referrer Policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');

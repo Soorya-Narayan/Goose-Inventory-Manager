@@ -25,21 +25,28 @@ const state = {
 
 // ─── API Helpers ─────────────────────────────────────────────────────────────
 async function safeFetchJson(url, options = {}) {
-  const res = await fetch(url, options);
-  const contentType = res.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || data.message || `Server error (${res.status})`);
-    return data;
-  }
-  const text = await res.text();
-  if (!res.ok) {
-    throw new Error(res.status === 404 ? 'Endpoint not found on server' : `Server error (${res.status})`);
-  }
   try {
-    return JSON.parse(text);
-  } catch (e) {
-    throw new Error('Server returned non-JSON response');
+    const res = await fetch(url, options);
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || `Server error (${res.status})`);
+      return data;
+    }
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(res.status === 404 ? 'Endpoint not found on server' : `Server error (${res.status})`);
+    }
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      throw new Error('Server returned non-JSON response');
+    }
+  } catch (err) {
+    if (err && err.message && err.message.toLowerCase().includes('load failed')) {
+      throw new Error('Network error on Safari. Please check server URL & connection.');
+    }
+    throw err;
   }
 }
 
