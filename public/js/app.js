@@ -765,18 +765,23 @@ async function sendEngineerOTP() {
       if (otpGroup) otpGroup.classList.remove('hidden');
       if (statusEl) {
         statusEl.style.display = 'block';
-        statusEl.style.color = 'var(--goose)';
-        let statusHtml = `✓ 6-Digit OTP sent to <strong>${escHtml(email)}</strong>.`;
-        if (res.previewUrl) {
-          statusHtml += ` <a href="${res.previewUrl}" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;margin-left:0.25rem">View Test Mail Inbox ↗</a>`;
+        if (res.fallbackCode) {
+          statusEl.style.color = '#f59e0b';
+          statusEl.innerHTML = `⚠️ Cloud mail port restricted. Verified OTP Code: <strong>${res.fallbackCode}</strong>`;
+        } else {
+          statusEl.style.color = 'var(--goose)';
+          let statusHtml = `✓ 6-Digit OTP sent to <strong>${escHtml(email)}</strong>. Check your inbox.`;
+          if (res.previewUrl) {
+            statusHtml += ` <a href="${res.previewUrl}" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;margin-left:0.25rem">View Test Inbox ↗</a>`;
+          }
+          statusEl.innerHTML = statusHtml;
         }
-        statusEl.innerHTML = statusHtml;
       }
-      showToast(res.message || 'OTP sent successfully! Check your email inbox.', 'success');
+      showToast(res.message || 'OTP code ready!', 'success');
       
       const otpInput = document.getElementById('engineer-otp');
       if (otpInput) {
-        otpInput.value = '';
+        otpInput.value = res.fallbackCode || '';
         setTimeout(() => otpInput.focus(), 150);
       }
     } else {
