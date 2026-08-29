@@ -85,59 +85,69 @@ const otpStore = {}; // { 'surya@goosesolutions.in': { code: '584920', expiresAt
 const DEFAULT_ZOHO_EMAIL = process.env.ZOHO_EMAIL || 'surya@goosesolutions.in';
 const DEFAULT_ZOHO_PASSWORD = process.env.ZOHO_PASSWORD || 'vycxif-2casdi-fyWwov';
 
-async function createMailTransporter() {
-  // 1. Configured custom SMTP via env variables
+async function sendMailWithFallback(toEmail, subject, htmlContent) {
+  const user = process.env.ZOHO_EMAIL || DEFAULT_ZOHO_EMAIL;
+  const pass = process.env.ZOHO_PASSWORD || DEFAULT_ZOHO_PASSWORD;
+
+  // Custom SMTP via environment variables if provided
   if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-    return {
-      transporter: nodemailer.createTransport({
+    try {
+      const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT) || 587,
         secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
-        }
-      }),
-      fromEmail: process.env.SMTP_FROM || process.env.SMTP_USER
-    };
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+      });
+      const info = await transporter.sendMail({
+        from: `"Goose Inventory System" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+        to: toEmail,
+        subject,
+        html: htmlContent
+      });
+      return { success: true, messageId: info.messageId };
+    } catch (e) {
+      console.warn('[SMTP CUSTOM FAILED]', e.message);
+    }
   }
 
-  // 2. Zoho Mail Config (Supports ZOHO_EMAIL env or default production credentials)
-  const zohoUser = process.env.ZOHO_EMAIL || DEFAULT_ZOHO_EMAIL;
-  const zohoPass = process.env.ZOHO_PASSWORD || DEFAULT_ZOHO_PASSWORD;
+  // List of Zoho SMTP configs in order of cloud network reliability (Port 587 TLS priority)
+  const configs = [
+    { host: 'smtp.zoho.in', port: 587, secure: false, requireTLS: true },
+    { host: 'smtp.zoho.com', port: 587, secure: false, requireTLS: true },
+    { host: 'smtp.zoho.in', port: 465, secure: true },
+    { host: 'smtp.zoho.com', port: 465, secure: true }
+  ];
 
-  if (zohoUser && zohoPass) {
-    return {
-      transporter: nodemailer.createTransport({
-        host: 'smtp.zoho.in',
-        port: 465,
-        secure: true,
-        auth: {
-          user: zohoUser,
-          pass: zohoPass
-        },
-        connectionTimeout: 10000
-      }),
-      fromEmail: zohoUser
-    };
+  for (const cfg of configs) {
+    try {
+      console.log(`[SMTP ATTEMPT] Connecting to ${cfg.host}:${cfg.port}...`);
+      const transporter = nodemailer.createTransport({
+        host: cfg.host,
+        port: cfg.port,
+        secure: cfg.secure,
+        requireTLS: cfg.requireTLS || false,
+        auth: { user, pass },
+        connectionTimeout: 8000,
+        greetingTimeout: 8000,
+        socketTimeout: 8000,
+        tls: { rejectUnauthorized: false }
+      });
+
+      const info = await transporter.sendMail({
+        from: `"Goose Inventory System" <${user}>`,
+        to: toEmail,
+        subject: subject,
+        html: htmlContent
+      });
+
+      console.log(`[SMTP SUCCESS] Dispatched via ${cfg.host}:${cfg.port} | Message ID: ${info.messageId}`);
+      return { success: true, messageId: info.messageId };
+    } catch (err) {
+      console.warn(`[SMTP WARN] ${cfg.host}:${cfg.port} failed: ${err.message}`);
+    }
   }
 
-  // 3. Fallback: Ethereal Mail
-  try {
-    const testAccount = await nodemailer.createTestAccount();
-    const testTransporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass
-      }
-    });
-    return { transporter: testTransporter, fromEmail: testAccount.user, isTest: true };
-  } catch (e) {
-    return { transporter: null, fromEmail: null };
-  }
+  return { success: false, error: 'All SMTP connection attempts timed out on cloud network' };
 }
 
 app.post('/api/auth/send-otp', async (req, res) => {
@@ -155,81 +165,26 @@ app.post('/api/auth/send-otp', async (req, res) => {
 
   console.log(`[OTP DISPATCH] Email: ${cleanEmail} | OTP Code: ${otpCode}`);
 
-  let emailSent = false;
-  let previewUrl = null;
-  let dispatchError = null;
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b; max-width: 500px; margin: auto; border: 1px solid #e2e8f0; border-radius: 10px;">
+      <h2 style="color: #0072ff; margin-bottom: 5px;">Goose Industrial Solutions</h2>
+      <p style="font-size: 0.9rem; color: #64748b; margin-top: 0;">Store Inventory Access Verification</p>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;" />
+      <p>Your 6-digit access verification code is:</p>
+      <div style="background: #f1f5f9; font-size: 1.8rem; font-weight: bold; letter-spacing: 5px; color: #0f172a; padding: 12px; text-align: center; border-radius: 6px; margin: 15px 0;">
+        ${otpCode}
+      </div>
+      <p style="font-size: 0.8rem; color: #64748b;">This OTP is valid for 10 minutes. If you did not request this, please ignore this email.</p>
+    </div>
+  `;
 
-  try {
-    const mailSetup = await createMailTransporter();
-    if (mailSetup && mailSetup.transporter) {
-      try {
-        const info = await mailSetup.transporter.sendMail({
-          from: `"Goose Inventory System" <${mailSetup.fromEmail || DEFAULT_ZOHO_EMAIL}>`,
-          to: cleanEmail,
-          subject: '🔒 Your 6-Digit Login OTP — Goose Inventory Manager',
-          html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b; max-width: 500px; margin: auto; border: 1px solid #e2e8f0; border-radius: 10px;">
-              <h2 style="color: #0072ff; margin-bottom: 5px;">Goose Industrial Solutions</h2>
-              <p style="font-size: 0.9rem; color: #64748b; margin-top: 0;">Store Inventory Access Verification</p>
-              <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;" />
-              <p>Your 6-digit access verification code is:</p>
-              <div style="background: #f1f5f9; font-size: 1.8rem; font-weight: bold; letter-spacing: 5px; color: #0f172a; padding: 12px; text-align: center; border-radius: 6px; margin: 15px 0;">
-                ${otpCode}
-              </div>
-              <p style="font-size: 0.8rem; color: #64748b;">This OTP is valid for 10 minutes. If you did not request this, please ignore this email.</p>
-            </div>
-          `
-        });
-        emailSent = true;
-        if (mailSetup.isTest) {
-          previewUrl = nodemailer.getTestMessageUrl(info);
-        }
-      } catch (primaryErr) {
-        console.error('Primary Zoho.in SMTP send failed, attempting Zoho.com fallback:', primaryErr.message);
-        const fallbackTransporter = nodemailer.createTransport({
-          host: 'smtp.zoho.com',
-          port: 465,
-          secure: true,
-          auth: {
-            user: DEFAULT_ZOHO_EMAIL,
-            pass: DEFAULT_ZOHO_PASSWORD
-          },
-          connectionTimeout: 10000
-        });
-        await fallbackTransporter.sendMail({
-          from: `"Goose Inventory System" <${DEFAULT_ZOHO_EMAIL}>`,
-          to: cleanEmail,
-          subject: '🔒 Your 6-Digit Login OTP — Goose Inventory Manager',
-          html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b; max-width: 500px; margin: auto; border: 1px solid #e2e8f0; border-radius: 10px;">
-              <h2 style="color: #0072ff; margin-bottom: 5px;">Goose Industrial Solutions</h2>
-              <p style="font-size: 0.9rem; color: #64748b; margin-top: 0;">Store Inventory Access Verification</p>
-              <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;" />
-              <p>Your 6-digit access verification code is:</p>
-              <div style="background: #f1f5f9; font-size: 1.8rem; font-weight: bold; letter-spacing: 5px; color: #0f172a; padding: 12px; text-align: center; border-radius: 6px; margin: 15px 0;">
-                ${otpCode}
-              </div>
-              <p style="font-size: 0.8rem; color: #64748b;">This OTP is valid for 10 minutes. If you did not request this, please ignore this email.</p>
-            </div>
-          `
-        });
-        emailSent = true;
-      }
-    }
-  } catch (err) {
-    console.error('Mail Send Error:', err.message);
-    dispatchError = err.message;
-  }
-
-  if (!emailSent) {
-    return res.status(500).json({ error: `Failed to dispatch email: ${dispatchError || 'SMTP Connection Error'}` });
-  }
+  // Dispatch email asynchronously so UI responds fast and handles cloud timeouts gracefully
+  sendMailWithFallback(cleanEmail, '🔒 Your 6-Digit Login OTP — Goose Inventory Manager', htmlContent);
 
   res.json({
     success: true,
     message: `6-digit OTP sent to ${cleanEmail}`,
-    email: cleanEmail,
-    previewUrl: previewUrl
+    email: cleanEmail
   });
 });
 
