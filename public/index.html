@@ -648,6 +648,29 @@
     </div>
   </div>
 
+  <!-- Shelf Detail Inspector Modal -->
+  <div class="modal-backdrop hidden" id="modal-shelf-detail-overlay" onclick="closeShelfDetailModal(event)">
+    <div class="modal card" style="max-width:550px" onclick="event.stopPropagation()">
+      <div class="modal-hdr">
+        <div>
+          <div style="font-size:0.65rem;font-weight:700;color:var(--goose);letter-spacing:0.08em;margin-bottom:0.15rem">SHELF LOCATION INSPECTOR</div>
+          <h2 class="modal-title" id="shelf-detail-title">Shelf Location</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closeShelfDetailModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem">
+        <div id="shelf-detail-content"></div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between">
+        <button type="button" class="btn btn-ghost" onclick="closeShelfDetailModal()">Close</button>
+        <div style="display:flex;gap:0.5rem">
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-shelf-view-table" onclick="filterTableByCurrentShelf()">🔍 View in Inventory Table</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-shelf-add-item" onclick="addItemToCurrentShelf()">+ Add Item Here</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Delete Modal -->
   <div class="modal-backdrop hidden" id="modal-delete-overlay" onclick="closeDeleteModal(event)">
     <div class="modal modal-sm">

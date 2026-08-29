@@ -1415,21 +1415,331 @@ function filterZone(zone) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  STORE MAP (Coming Soon)
 // ═══════════════════════════════════════════════════════════════════════════════
+//  STORE LAYOUT MAP & SHELF MATRIX
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const ELECTRICAL_RACK_GROUPS = [
+  {
+    groupTitle: 'Primary Bay (Racks A – E)',
+    description: 'Standard Medium-Duty Electrical Shelving',
+    racks: [
+      { name: 'Rack A', shelves: ['A1', 'A2', 'A3', 'A4', 'A5'] },
+      { name: 'Rack B', shelves: ['B1', 'B2', 'B3', 'B4'] },
+      { name: 'Rack C', shelves: ['C1', 'C2', 'C3', 'C4'] },
+      { name: 'Rack D', shelves: ['D1', 'D2', 'D3', 'D4'] },
+      { name: 'Rack E', shelves: ['E1', 'E2', 'E3', 'E4'] }
+    ]
+  },
+  {
+    groupTitle: 'High-Capacity Bay (Racks F – J)',
+    description: 'Extended Vertical Electrical Shelving (6 Tiers)',
+    racks: [
+      { name: 'Rack F', shelves: ['F1', 'F2', 'F3', 'F4', 'F5', 'F6'] },
+      { name: 'Rack G', shelves: ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'] },
+      { name: 'Rack H', shelves: ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'] },
+      { name: 'Rack I', shelves: ['I1', 'I2', 'I3', 'I4', 'I5', 'I6'] },
+      { name: 'Rack J', shelves: ['J1', 'J2', 'J3', 'J4', 'J5', 'J6'] }
+    ]
+  },
+  {
+    groupTitle: 'Compact Component Bay (Racks K – T)',
+    description: '2-Tier Precision Modular Storage',
+    racks: [
+      { name: 'Rack K', shelves: ['K1', 'K2'] },
+      { name: 'Rack L', shelves: ['L1', 'L2'] },
+      { name: 'Rack M', shelves: ['M1', 'M2'] },
+      { name: 'Rack N', shelves: ['N1', 'N2'] },
+      { name: 'Rack O', shelves: ['O1', 'O2'] },
+      { name: 'Rack P', shelves: ['P1', 'P2'] },
+      { name: 'Rack Q', shelves: ['Q1', 'Q2'] },
+      { name: 'Rack R', shelves: ['R1', 'R2'] },
+      { name: 'Rack S', shelves: ['S1', 'S2'] },
+      { name: 'Rack T', shelves: ['T1', 'T2'] }
+    ]
+  },
+  {
+    groupTitle: 'Heavy Equipment Bay (Racks U – Y)',
+    description: '4-Tier Heavy Electrical Gear & Switchgear Storage',
+    racks: [
+      { name: 'Rack U', shelves: ['U1', 'U2', 'U3', 'U4'] },
+      { name: 'Rack V', shelves: ['V1', 'V2', 'V3', 'V4'] },
+      { name: 'Rack W', shelves: ['W1', 'W2', 'W3', 'W4'] },
+      { name: 'Rack X', shelves: ['X1', 'X2', 'X3', 'X4'] },
+      { name: 'Rack Y', shelves: ['Y1', 'Y2', 'Y3', 'Y4'] }
+    ]
+  },
+  {
+    groupTitle: 'Special & Oversized Storage (Z, XX, XY, XZ)',
+    description: 'Transformers, Heavy Cable Drums & Enclosures',
+    racks: [
+      { name: 'Special Racks', shelves: ['Z', 'XX', 'XY', 'XZ'] }
+    ]
+  }
+];
+
+const MECHANICAL_RACK_GROUPS = [
+  {
+    groupTitle: 'Mechanical Racks (M-A – M-E)',
+    description: 'Pipes, Valves, Fittings & Heavy Hardware',
+    racks: [
+      { name: 'Rack M-A', shelves: ['M-A1', 'M-A2', 'M-A3', 'M-A4', 'M-A5', 'M-A6'] },
+      { name: 'Rack M-B', shelves: ['M-B1', 'M-B2', 'M-B3', 'M-B4', 'M-B5', 'M-B6'] },
+      { name: 'Rack M-C', shelves: ['M-C1', 'M-C2', 'M-C3', 'M-C4', 'M-C5', 'M-C6'] },
+      { name: 'Rack M-D', shelves: ['M-D1', 'M-D2', 'M-D3', 'M-D4', 'M-D5', 'M-D6'] },
+      { name: 'Rack M-E', shelves: ['M-E1', 'M-E2', 'M-E3', 'M-E4', 'M-E5', 'M-E6'] }
+    ]
+  }
+];
+
+const CONSUMABLES_RACK_GROUPS = [
+  {
+    groupTitle: 'Consumables Racks (C-A – C-D)',
+    description: 'Adhesives, Lubricants, Tapes & Safety Gear',
+    racks: [
+      { name: 'Rack C-A', shelves: ['C-A1', 'C-A2', 'C-A3', 'C-A4'] },
+      { name: 'Rack C-B', shelves: ['C-B1', 'C-B2', 'C-B3', 'C-B4'] },
+      { name: 'Rack C-C', shelves: ['C-C1', 'C-C2', 'C-C3', 'C-C4'] },
+      { name: 'Rack C-D', shelves: ['C-D1', 'C-D2', 'C-D3', 'C-D4'] }
+    ]
+  }
+];
+
+let currentInspectedShelf = '';
+
+function getItemsForShelf(shelfCode) {
+  const codeLower = shelfCode.toLowerCase().trim();
+  return (state.items || []).filter(item => {
+    const loc = (item.location || '').toLowerCase().trim();
+    if (!loc) return false;
+    return loc === codeLower || loc === `r-${codeLower}` || loc === `shelf-${codeLower}` || loc.split(/[\s,-]+/).includes(codeLower);
+  });
+}
+
+function selectStoreMapZone(zone) {
+  state.storeMapZone = zone;
+  renderStoreMap();
+}
+
+function filterStoreMapShelves(query) {
+  state.storeMapSearch = query.trim().toLowerCase();
+  renderStoreMap();
+}
+
 function renderStoreMap() {
-  document.getElementById('view-storemap').innerHTML = `
-    <div class="page-hdr">
+  const currentZone = state.storeMapZone || 'electrical';
+  const searchQuery = state.storeMapSearch || '';
+
+  let activeGroups = ELECTRICAL_RACK_GROUPS;
+  if (currentZone === 'mechanical') activeGroups = MECHANICAL_RACK_GROUPS;
+  if (currentZone === 'consumables') activeGroups = CONSUMABLES_RACK_GROUPS;
+
+  const allShelves = [];
+  activeGroups.forEach(g => {
+    g.racks.forEach(r => {
+      r.shelves.forEach(s => allShelves.push(s));
+    });
+  });
+
+  let occupiedCount = 0;
+  let totalStoredItems = 0;
+  allShelves.forEach(s => {
+    const items = getItemsForShelf(s);
+    if (items.length > 0) {
+      occupiedCount++;
+      totalStoredItems += items.length;
+    }
+  });
+
+  const emptyCount = allShelves.length - occupiedCount;
+
+  const viewContainer = document.getElementById('view-storemap');
+  if (!viewContainer) return;
+
+  viewContainer.innerHTML = `
+    <div class="page-hdr" style="margin-bottom:1rem">
       <div>
-        <h1 class="page-title">Store Layout Map</h1>
+        <div style="font-size:0.7rem;font-weight:700;color:var(--goose);letter-spacing:0.08em;margin-bottom:0.15rem">PHYSICAL STORE LOCATION MATRIX</div>
+        <h1 class="page-title">Store Layout & Shelf Directory</h1>
+      </div>
+      <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+        <input type="text" class="field-input mono" placeholder="🔍 Search shelf code (e.g. F3, XX, A1)..." 
+               value="${escHtml(searchQuery)}" 
+               oninput="filterStoreMapShelves(this.value)" 
+               style="width:260px;font-size:0.82rem;padding:0.45rem 0.75rem;background:var(--bg-surface)" />
       </div>
     </div>
-    <div class="card" style="padding:4rem 2rem;max-width:600px;margin:2rem auto;text-align:center;background:var(--bg-raised)">
-      <div style="font-size:1.5rem;font-weight:700;color:var(--text-primary)">
-        Coming Soon
+
+    <!-- Zone Selector Tabs -->
+    <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border-subtle);padding-bottom:0.75rem">
+      <button class="btn ${currentZone === 'electrical' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('electrical')" style="gap:0.4rem;padding:0.45rem 1rem">
+        ⚡ Electrical Section (${ELECTRICAL_RACK_GROUPS.reduce((acc, g) => acc + g.racks.reduce((a, r) => a + r.shelves.length, 0), 0)} Shelves)
+      </button>
+      <button class="btn ${currentZone === 'mechanical' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('mechanical')" style="gap:0.4rem;padding:0.45rem 1rem">
+        🔧 Mechanical Section (${MECHANICAL_RACK_GROUPS.reduce((acc, g) => acc + g.racks.reduce((a, r) => a + r.shelves.length, 0), 0)} Shelves)
+      </button>
+      <button class="btn ${currentZone === 'consumables' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('consumables')" style="gap:0.4rem;padding:0.45rem 1rem">
+        📦 Consumables Section (${CONSUMABLES_RACK_GROUPS.reduce((acc, g) => acc + g.racks.reduce((a, r) => a + r.shelves.length, 0), 0)} Shelves)
+      </button>
+    </div>
+
+    <!-- Stats Summary Cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:0.875rem;margin-bottom:1.5rem">
+      <div class="stat-card" style="padding:0.875rem 1rem">
+        <div class="stat-label">TOTAL SHELVES</div>
+        <div class="stat-value" style="color:var(--text-primary)">${allShelves.length}</div>
+        <div class="stat-meta">${currentZone.toUpperCase()} ZONE</div>
       </div>
+      <div class="stat-card" style="padding:0.875rem 1rem">
+        <div class="stat-label">OCCUPIED SHELVES</div>
+        <div class="stat-value" style="color:var(--accent-emerald)">${occupiedCount}</div>
+        <div class="stat-meta">${Math.round((occupiedCount / (allShelves.length || 1)) * 100)}% Capacity Used</div>
+      </div>
+      <div class="stat-card" style="padding:0.875rem 1rem">
+        <div class="stat-label">AVAILABLE / EMPTY</div>
+        <div class="stat-value" style="color:var(--text-tertiary)">${emptyCount}</div>
+        <div class="stat-meta">Ready for Inward Stock</div>
+      </div>
+      <div class="stat-card" style="padding:0.875rem 1rem">
+        <div class="stat-label">STORED MATERIALS</div>
+        <div class="stat-value" style="color:var(--goose)">${totalStoredItems}</div>
+        <div class="stat-meta">Total Catalog Items</div>
+      </div>
+    </div>
+
+    <!-- Rack Groups -->
+    <div style="display:flex;flex-direction:column;gap:1.5rem">
+      ${activeGroups.map(group => {
+        const visibleRacks = group.racks.filter(r => {
+          if (!searchQuery) return true;
+          return r.name.toLowerCase().includes(searchQuery) || r.shelves.some(s => s.toLowerCase().includes(searchQuery));
+        });
+
+        if (visibleRacks.length === 0) return '';
+
+        return `
+          <div class="card" style="padding:1.25rem;background:var(--bg-raised)">
+            <div style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <h3 style="margin:0 0 0.2rem 0;font-size:1.05rem;font-weight:700;color:var(--text-primary)">${group.groupTitle}</h3>
+                <div style="font-size:0.78rem;color:var(--text-tertiary)">${group.description}</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:1rem">
+              ${visibleRacks.map(rack => `
+                <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.875rem">
+                  <div style="font-family:var(--font-mono);font-size:0.75rem;font-weight:800;color:var(--goose);margin-bottom:0.6rem;letter-spacing:0.05em">
+                    ${rack.name.toUpperCase()}
+                  </div>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(62px, 1fr));gap:0.45rem">
+                    ${rack.shelves.map(shelf => {
+                      const items = getItemsForShelf(shelf);
+                      const isOccupied = items.length > 0;
+                      const hasLowStock = items.some(i => (i.quantity || 0) <= (i.minStock || 0));
+
+                      let badgeStyle = 'background:var(--bg-elevated);border-color:var(--border-subtle);color:var(--text-secondary)';
+                      let indicatorDot = `<span style="width:6px;height:6px;border-radius:50%;background:var(--border-muted)"></span>`;
+
+                      if (isOccupied) {
+                        badgeStyle = 'background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:var(--accent-emerald)';
+                        indicatorDot = `<span style="width:6px;height:6px;border-radius:50%;background:var(--accent-emerald)"></span>`;
+                      }
+                      if (hasLowStock) {
+                        badgeStyle = 'background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.4);color:#f59e0b';
+                        indicatorDot = `<span style="width:6px;height:6px;border-radius:50%;background:#f59e0b"></span>`;
+                      }
+
+                      return `
+                        <button type="button" 
+                                onclick="openShelfDetailModal('${shelf}')"
+                                style="${badgeStyle};border:1px solid;border-radius:6px;padding:0.45rem 0.25rem;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s ease, border-color 0.15s ease"
+                                title="${shelf}: ${items.length} materials stored">
+                          <div style="display:flex;align-items:center;gap:0.25rem;font-family:var(--font-mono);font-size:0.85rem;font-weight:800">
+                            ${indicatorDot}
+                            ${shelf}
+                          </div>
+                          <div style="font-size:0.65rem;margin-top:0.15rem;opacity:0.8">
+                            ${items.length === 0 ? 'Empty' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`}
+                          </div>
+                        </button>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('')}
     </div>
   `;
+}
+
+function openShelfDetailModal(shelfCode) {
+  currentInspectedShelf = shelfCode;
+  const items = getItemsForShelf(shelfCode);
+  
+  const titleEl = document.getElementById('shelf-detail-title');
+  if (titleEl) titleEl.textContent = `Shelf Location: ${shelfCode}`;
+
+  const contentEl = document.getElementById('shelf-detail-content');
+  if (contentEl) {
+    if (items.length === 0) {
+      contentEl.innerHTML = `
+        <div style="text-align:center;padding:2.5rem 1rem;color:var(--text-tertiary)">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:0.5rem;opacity:0.6"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          <div style="font-weight:700;font-size:1rem;color:var(--text-primary);margin-bottom:0.25rem">Shelf ${shelfCode} is Currently Empty</div>
+          <div style="font-size:0.8rem;color:var(--text-secondary)">No material items are registered under location "${shelfCode}".</div>
+        </div>
+      `;
+    } else {
+      contentEl.innerHTML = `
+        <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.875rem">
+          Found <strong>${items.length}</strong> ${items.length === 1 ? 'material item' : 'material items'} assigned to shelf <strong>${shelfCode}</strong>:
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;max-height:300px;overflow-y:auto;padding-right:0.25rem">
+          ${items.map(item => `
+            <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.75rem;display:flex;align-items:center;justify-content:space-between;gap:0.75rem">
+              <div style="display:flex;align-items:center;gap:0.65rem">
+                ${getItemImageHtml(item)}
+                <div>
+                  <div style="font-weight:700;font-size:0.88rem;color:var(--text-primary)">${escHtml(item.name)}</div>
+                  <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--goose)">SKU: ${escHtml(item.sku)}</div>
+                </div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-family:var(--font-mono);font-weight:800;font-size:0.9rem;color:var(--text-primary)">${item.quantity} ${item.unit}</div>
+                <div>${stockTag(item)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+  }
+
+  document.getElementById('modal-shelf-detail-overlay')?.classList.remove('hidden');
+}
+
+function closeShelfDetailModal(e) {
+  if (e && e.target !== document.getElementById('modal-shelf-detail-overlay')) return;
+  document.getElementById('modal-shelf-detail-overlay')?.classList.add('hidden');
+}
+
+function addItemToCurrentShelf() {
+  closeShelfDetailModal();
+  openAddItemModal();
+  const locEl = document.getElementById('item-location');
+  if (locEl) locEl.value = currentInspectedShelf;
+}
+
+function filterTableByCurrentShelf() {
+  closeShelfDetailModal();
+  state.searchQuery = currentInspectedShelf;
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) searchInput.value = currentInspectedShelf;
+  navigateTo('inventory');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
