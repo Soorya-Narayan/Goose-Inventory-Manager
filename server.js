@@ -185,6 +185,14 @@ app.post('/api/auth/verify-otp', (req, res) => {
   });
 });
 
+app.get('/api/auth/send-otp', (req, res) => {
+  res.json({ error: 'Use POST /api/auth/send-otp with JSON body { email }' });
+});
+
+app.get('/api/auth/verify-otp', (req, res) => {
+  res.json({ error: 'Use POST /api/auth/verify-otp with JSON body { email, otp }' });
+});
+
 // ─── Items API ───────────────────────────────────────────────────────────────
 app.get('/api/items', (req, res) => {
   const data = readData();
@@ -621,6 +629,12 @@ app.get('/health', (req, res) => {
 });
 
 app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: `API route '${req.path}' not found` });
+  }
+  if (req.path.includes('.') || req.path.startsWith('/css') || req.path.startsWith('/js') || req.path.startsWith('/uploads')) {
+    return res.status(404).send('Asset not found');
+  }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

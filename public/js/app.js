@@ -24,12 +24,31 @@ const state = {
 };
 
 // ─── API Helpers ─────────────────────────────────────────────────────────────
+async function safeFetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || data.message || `Server error (${res.status})`);
+    return data;
+  }
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(res.status === 404 ? 'Endpoint not found on server' : `Server error (${res.status})`);
+  }
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error('Server returned non-JSON response');
+  }
+}
+
 const api = {
-  get:    async (url) => (await fetch(url)).json(),
-  post:   async (url, data) => (await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })).json(),
-  put:    async (url, data) => (await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })).json(),
-  del:    async (url) => (await fetch(url, { method: 'DELETE' })).json(),
-  delete: async (url) => (await fetch(url, { method: 'DELETE' })).json(),
+  get:    async (url) => safeFetchJson(url),
+  post:   async (url, data) => safeFetchJson(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }),
+  put:    async (url, data) => safeFetchJson(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }),
+  del:    async (url) => safeFetchJson(url, { method: 'DELETE' }),
+  delete: async (url) => safeFetchJson(url, { method: 'DELETE' }),
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
