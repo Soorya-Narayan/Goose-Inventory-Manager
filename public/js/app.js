@@ -705,8 +705,98 @@ async function triggerTejC15Print() {
 function selectRole(role) {
   document.getElementById('role-btn-manager').classList.toggle('selected', role === 'manager');
   document.getElementById('role-btn-engineer').classList.toggle('selected', role === 'engineer');
-  document.getElementById('manager-pin-group').classList.toggle('hidden', role !== 'manager');
-  document.getElementById('engineer-name-group').classList.toggle('hidden', role !== 'engineer');
+  
+  const mgrGroup = document.getElementById('manager-pin-group');
+  const engEmailGroup = document.getElementById('engineer-email-group');
+  const engOtpGroup = document.getElementById('engineer-otp-group');
+  const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.classList.add('hidden');
+
+  if (mgrGroup) mgrGroup.classList.toggle('hidden', role !== 'manager');
+  if (engEmailGroup) engEmailGroup.classList.toggle('hidden', role !== 'engineer');
+  if (engOtpGroup && role !== 'engineer') engOtpGroup.classList.add('hidden');
+}
+
+async function sendEngineerOTP() {
+  const emailInput = document.getElementById('engineer-email');
+  const statusEl = document.getElementById('otp-sent-status');
+  const otpGroup = document.getElementById('engineer-otp-group');
+  const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.classList.add('hidden');
+
+  const email = emailInput?.value.trim();
+  if (!email || !email.includes('@')) {
+    showToast('Please enter a valid Zoho / Company email address', 'warning');
+    if (emailInput) emailInput.focus();
+    return;
+  }
+
+  showToast(`Sending 6-digit OTP to ${email}...`, 'info');
+
+  try {
+    const res = await api.post('/api/auth/send-otp', { email, role: 'engineer' });
+    if (res.success) {
+      if (otpGroup) otpGroup.classList.remove('hidden');
+      if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.color = 'var(--goose)';
+        statusEl.innerHTML = `✓ OTP sent to <strong>${escHtml(email)}</strong>. Check your inbox.`;
+      }
+      showToast(res.message || 'OTP sent successfully!', 'success');
+      
+      if (res.demoOtp) {
+        const otpInput = document.getElementById('engineer-otp');
+        if (otpInput) {
+          otpInput.value = res.demoOtp;
+          setTimeout(() => otpInput.focus(), 100);
+        }
+      }
+    } else {
+      showToast(res.error || 'Failed to send OTP', 'error');
+    }
+  } catch (err) {
+    showToast(err.message || 'Failed to send OTP to mail', 'error');
+  }
+}
+
+async function verifyEngineerOTP() {
+  const email = document.getElementById('engineer-email')?.value.trim();
+  const otp = document.getElementById('engineer-otp')?.value.trim();
+  const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.classList.add('hidden');
+
+  if (!email || !email.includes('@')) {
+    showToast('Please enter your Zoho email address', 'warning');
+    return;
+  }
+
+  if (!otp || otp.length !== 6) {
+    showToast('Please enter the full 6-digit OTP code', 'warning');
+    const otpInput = document.getElementById('engineer-otp');
+    if (otpInput) otpInput.focus();
+    return;
+  }
+
+  showToast('Verifying 6-digit OTP...', 'info');
+
+  try {
+    const res = await api.post('/api/auth/verify-otp', { email, otp });
+    if (res.success && res.user) {
+      setUser(res.user);
+    } else {
+      if (errorEl) {
+        errorEl.textContent = res.error || 'Invalid 6-digit OTP code.';
+        errorEl.classList.remove('hidden');
+      }
+      showToast(res.error || 'Invalid OTP code', 'error');
+    }
+  } catch (err) {
+    if (errorEl) {
+      errorEl.textContent = err.message || 'Invalid or expired OTP PIN.';
+      errorEl.classList.remove('hidden');
+    }
+    showToast(err.message || 'OTP verification failed', 'error');
+  }
 }
 
 function handleLogin(e) {
@@ -718,13 +808,20 @@ function handleLogin(e) {
     const pin = document.getElementById('manager-pin').value;
     const requiredPin = localStorage.getItem('ims_manager_pin') || state.managerPin || '1234';
     if (pin !== requiredPin) {
-      errorEl.classList.remove('hidden');
+      if (errorEl) {
+        errorEl.textContent = 'Invalid Manager PIN. Default manager PIN is 1234';
+        errorEl.classList.remove('hidden');
+      }
       return;
     }
     setUser({ role: 'manager', name: 'Store Manager' });
   } else {
-    const name = document.getElementById('engineer-name').value.trim() || 'Engineer';
-    setUser({ role: 'engineer', name });
+    const otpGroup = document.getElementById('engineer-otp-group');
+    if (otpGroup && !otpGroup.classList.contains('hidden')) {
+      verifyEngineerOTP();
+    } else {
+      sendEngineerOTP();
+    }
   }
 }
 

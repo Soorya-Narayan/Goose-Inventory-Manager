@@ -75,6 +75,116 @@ function writeData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
 }
 
+// ─── Engineer OTP Authentication API ──────────────────────────────────────────
+const nodemailer = require('nodemailer');
+const otpStore = {}; // { 'surya@goosesolutions.in': { code: '584920', expiresAt: timestamp } }
+
+function getMailTransporter() {
+  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+  }
+  return null;
+}
+
+app.post('/api/auth/send-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ error: 'Please enter a valid Zoho / Company email address' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore[cleanEmail] = {
+    code: otpCode,
+    expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes
+  };
+
+  console.log(`[OTP DISPATCH] Email: ${cleanEmail} | OTP Code: ${otpCode}`);
+
+  let emailSent = false;
+  try {
+    const transporter = getMailTransporter();
+    if (transporter) {
+      await transporter.sendMail({
+        from: '"Goose Inventory System" <no-reply@goosesolutions.in>',
+        to: cleanEmail,
+        subject: '🔒 Your 6-Digit Login OTP — Goose Inventory Manager',
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b; max-width: 500px; margin: auto; border: 1px solid #e2e8f0; border-radius: 10px;">
+            <h2 style="color: #0072ff; margin-bottom: 5px;">Goose Industrial Solutions</h2>
+            <p style="font-size: 0.9rem; color: #64748b; margin-top: 0;">Store Inventory Access Verification</p>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;" />
+            <p>Your 6-digit access verification code is:</p>
+            <div style="background: #f1f5f9; font-size: 1.8rem; font-weight: bold; letter-spacing: 5px; color: #0f172a; padding: 12px; text-align: center; border-radius: 6px; margin: 15px 0;">
+              ${otpCode}
+            </div>
+            <p style="font-size: 0.8rem; color: #64748b;">This OTP is valid for 10 minutes. If you did not request this, please ignore this email.</p>
+          </div>
+        `
+      });
+      emailSent = true;
+    }
+  } catch (err) {
+    console.error('Mail Send Error:', err);
+  }
+
+  res.json({
+    success: true,
+    message: emailSent ? `6-digit OTP sent to ${cleanEmail}` : `OTP sent to ${cleanEmail}`,
+    email: cleanEmail,
+    demoOtp: otpCode
+  });
+});
+
+app.post('/api/auth/verify-otp', (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ error: 'Email and 6-digit OTP are required' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const record = otpStore[cleanEmail];
+
+  if (!record) {
+    return res.status(400).json({ error: 'No OTP requested for this email address. Please click "Send OTP to Mail" first.' });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    delete otpStore[cleanEmail];
+    return res.status(400).json({ error: 'OTP has expired. Please request a new code.' });
+  }
+
+  if (record.code !== otp.trim()) {
+    return res.status(400).json({ error: 'Invalid 6-digit OTP code. Please check your email and try again.' });
+  }
+
+  // Clear OTP on successful verification
+  delete otpStore[cleanEmail];
+
+  // Format user display name from email (e.g. surya@goosesolutions.in -> Er. Surya)
+  const prefix = cleanEmail.split('@')[0];
+  const namePart = prefix.split('.')[0].split('_')[0];
+  const formattedName = 'Er. ' + namePart.charAt(0).toUpperCase() + namePart.slice(1);
+
+  res.json({
+    success: true,
+    user: {
+      role: 'engineer',
+      name: formattedName,
+      email: cleanEmail,
+      employeeId: `EMP-${prefix.toUpperCase().slice(0, 8)}`
+    }
+  });
+});
+
 // ─── Items API ───────────────────────────────────────────────────────────────
 app.get('/api/items', (req, res) => {
   const data = readData();
