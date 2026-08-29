@@ -1568,65 +1568,85 @@ function renderStoreMap() {
     });
 
     viewContainer.innerHTML = `
-      <div style="display:flex;flex-direction:column;max-height:calc(100vh - 100px);gap:0.75rem">
-        <!-- Compact Control Top Bar -->
-        <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.6rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
-          <div style="display:flex;align-items:center;gap:1rem">
-            <h1 class="page-title" style="margin:0;font-size:1.15rem">Store Layout</h1>
-            <!-- Zone Selector Buttons -->
-            <div style="display:flex;gap:0.35rem">
-              <button class="btn btn-ghost btn-sm" onclick="selectStoreMapZone('electrical')">Electrical (95 Shelves)</button>
-              <button class="btn btn-ghost btn-sm" onclick="selectStoreMapZone('mechanical')">Mechanical (60 Shelves)</button>
-              <button class="btn btn-primary btn-sm" onclick="selectStoreMapZone('consumables')">Consumables (Unified Zone)</button>
-            </div>
-          </div>
+      <div class="page-hdr" style="margin-bottom:1rem">
+        <div>
+          <div style="font-size:0.7rem;font-weight:700;color:var(--goose);letter-spacing:0.08em;margin-bottom:0.15rem">CENTRAL UNIFIED STORAGE</div>
+          <h1 class="page-title">Store Layout — Consumables Section</h1>
+        </div>
+        <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+          <input type="text" class="field-input mono" placeholder="Search consumables..." 
+                 value="${escHtml(searchQuery)}" 
+                 oninput="filterStoreMapShelves(this.value)" 
+                 style="width:260px;font-size:0.82rem;padding:0.45rem 0.75rem;background:var(--bg-surface)" />
+        </div>
+      </div>
 
-          <div style="display:flex;align-items:center;gap:1.25rem">
-            <div style="display:flex;gap:1rem;font-size:0.78rem;font-weight:700">
-              <span style="color:var(--text-secondary)">ZONE: <strong style="color:var(--text-primary)">Consumables</strong></span>
-              <span style="color:var(--text-secondary)">ITEMS: <strong style="color:var(--accent-emerald)">${consumablesItems.length}</strong></span>
-              <span style="color:var(--text-secondary)">TOTAL UNITS: <strong style="color:var(--goose)">${consumablesItems.reduce((sum, i) => sum + (parseInt(i.quantity) || 0), 0)}</strong></span>
-            </div>
-            <input type="text" class="field-input mono" placeholder="Search consumables..." 
-                   value="${escHtml(searchQuery)}" 
-                   oninput="filterStoreMapShelves(this.value)" 
-                   style="width:220px;font-size:0.8rem;padding:0.35rem 0.65rem;background:var(--bg-surface)" />
+      <!-- Zone Selector Tabs -->
+      <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border-subtle);padding-bottom:0.75rem">
+        <button class="btn btn-ghost" onclick="selectStoreMapZone('electrical')" style="gap:0.4rem;padding:0.45rem 1rem">
+          Electrical Section (95 Shelves)
+        </button>
+        <button class="btn btn-ghost" onclick="selectStoreMapZone('mechanical')" style="gap:0.4rem;padding:0.45rem 1rem">
+          Mechanical Section (60 Shelves)
+        </button>
+        <button class="btn btn-primary" onclick="selectStoreMapZone('consumables')" style="gap:0.4rem;padding:0.45rem 1rem">
+          Consumables Section (Unified Single Zone)
+        </button>
+      </div>
+
+      <!-- Consumables Overview Cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:0.875rem;margin-bottom:1.5rem">
+        <div class="stat-card" style="padding:0.875rem 1rem">
+          <div class="stat-label">STORAGE ZONE</div>
+          <div class="stat-value" style="color:var(--text-primary)">Consumables</div>
+          <div class="stat-meta">Single Unified Open Section</div>
+        </div>
+        <div class="stat-card" style="padding:0.875rem 1rem">
+          <div class="stat-label">TOTAL CONSUMABLE ITEMS</div>
+          <div class="stat-value" style="color:var(--accent-emerald)">${consumablesItems.length}</div>
+          <div class="stat-meta">Cataloged Materials</div>
+        </div>
+        <div class="stat-card" style="padding:0.875rem 1rem">
+          <div class="stat-label">TOTAL IN-STOCK QUANTITY</div>
+          <div class="stat-value" style="color:var(--goose)">${consumablesItems.reduce((sum, i) => sum + (parseInt(i.quantity) || 0), 0)}</div>
+          <div class="stat-meta">In Store Units</div>
+        </div>
+      </div>
+
+      <!-- Consumables Unified Section Card -->
+      <div class="card" style="padding:1.5rem;background:var(--bg-raised)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+          <div>
+            <h3 style="margin:0 0 0.2rem 0;font-size:1.1rem;font-weight:700;color:var(--text-primary)">Consumables Central Storage Area</h3>
+            <div style="font-size:0.8rem;color:var(--text-tertiary)">General open storage section for all factory consumables, adhesives, tapes, lubricants, and safety equipment.</div>
           </div>
         </div>
 
-        <!-- Consumables Items Container -->
-        <div class="card" style="flex:1;overflow-y:auto;padding:1rem;background:var(--bg-raised);margin:0">
-          <div style="margin-bottom:0.75rem">
-            <h3 style="margin:0 0 0.15rem 0;font-size:1rem;font-weight:700;color:var(--text-primary)">Consumables Central Storage Area</h3>
-            <div style="font-size:0.75rem;color:var(--text-tertiary)">General open storage area for all factory consumables, adhesives, tapes, lubricants, and safety equipment.</div>
+        ${filteredConsumables.length === 0 ? `
+          <div style="text-align:center;padding:3rem 1rem;color:var(--text-tertiary)">
+            <div style="font-weight:700;font-size:1rem;color:var(--text-primary);margin-bottom:0.25rem">No Consumable Materials Found</div>
+            <div style="font-size:0.82rem;color:var(--text-secondary)">No items found under zone "Consumables".</div>
           </div>
-
-          ${filteredConsumables.length === 0 ? `
-            <div style="text-align:center;padding:2.5rem 1rem;color:var(--text-tertiary)">
-              <div style="font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:0.25rem">No Consumable Materials Found</div>
-              <div style="font-size:0.8rem;color:var(--text-secondary)">No items found under zone "Consumables".</div>
-            </div>
-          ` : `
-            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:0.75rem">
-              ${filteredConsumables.map(item => `
-                <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.75rem;display:flex;flex-direction:column;justify-content:space-between;gap:0.5rem">
-                  <div style="display:flex;align-items:center;gap:0.65rem">
-                    ${getItemImageHtml(item)}
-                    <div>
-                      <div style="font-weight:700;font-size:0.85rem;color:var(--text-primary);line-height:1.2">${escHtml(item.name)}</div>
-                      <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--goose)">SKU: ${escHtml(item.sku)}</div>
-                      ${item.location ? `<div style="font-size:0.68rem;color:var(--text-tertiary)">Location: ${escHtml(item.location)}</div>` : ''}
-                    </div>
-                  </div>
-                  <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-subtle);padding-top:0.5rem">
-                    <div style="font-family:var(--font-mono);font-weight:800;font-size:0.88rem">${item.quantity} ${item.unit}</div>
-                    <div>${stockTag(item)}</div>
+        ` : `
+          <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:0.875rem">
+            ${filteredConsumables.map(item => `
+              <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.875rem;display:flex;flex-direction:column;justify-content:space-between;gap:0.75rem">
+                <div style="display:flex;align-items:center;gap:0.75rem">
+                  ${getItemImageHtml(item)}
+                  <div>
+                    <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);line-height:1.3">${escHtml(item.name)}</div>
+                    <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--goose)">SKU: ${escHtml(item.sku)}</div>
+                    ${item.location ? `<div style="font-size:0.7rem;color:var(--text-tertiary)">Location: ${escHtml(item.location)}</div>` : ''}
                   </div>
                 </div>
-              `).join('')}
-            </div>
-          `}
-        </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-subtle);padding-top:0.6rem">
+                  <div style="font-family:var(--font-mono);font-weight:800;font-size:0.92rem">${item.quantity} ${item.unit}</div>
+                  <div>${stockTag(item)}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
       </div>
     `;
     return;
@@ -1655,99 +1675,121 @@ function renderStoreMap() {
   const emptyCount = allShelves.length - occupiedCount;
 
   viewContainer.innerHTML = `
-    <div style="display:flex;flex-direction:column;max-height:calc(100vh - 100px);gap:0.75rem">
-      <!-- Compact Control Top Bar -->
-      <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.6rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
-        <div style="display:flex;align-items:center;gap:1rem">
-          <h1 class="page-title" style="margin:0;font-size:1.15rem">Store Layout</h1>
-          <!-- Zone Selector Buttons -->
-          <div style="display:flex;gap:0.35rem">
-            <button class="btn ${currentZone === 'electrical' ? 'btn-primary' : 'btn-ghost'} btn-sm" onclick="selectStoreMapZone('electrical')">Electrical (95 Shelves)</button>
-            <button class="btn ${currentZone === 'mechanical' ? 'btn-primary' : 'btn-ghost'} btn-sm" onclick="selectStoreMapZone('mechanical')">Mechanical (60 Shelves)</button>
-            <button class="btn ${currentZone === 'consumables' ? 'btn-primary' : 'btn-ghost'} btn-sm" onclick="selectStoreMapZone('consumables')">Consumables (Unified Zone)</button>
-          </div>
-        </div>
-
-        <div style="display:flex;align-items:center;gap:1.25rem">
-          <div style="display:flex;gap:1rem;font-size:0.78rem;font-weight:700">
-            <span style="color:var(--text-secondary)">TOTAL: <strong style="color:var(--text-primary)">${allShelves.length} Shelves</strong></span>
-            <span style="color:var(--text-secondary)">OCCUPIED: <strong style="color:var(--accent-emerald)">${occupiedCount}</strong></span>
-            <span style="color:var(--text-secondary)">EMPTY: <strong style="color:var(--text-tertiary)">${emptyCount}</strong></span>
-            <span style="color:var(--text-secondary)">ITEMS: <strong style="color:var(--goose)">${totalStoredItems}</strong></span>
-          </div>
-          <input type="text" class="field-input mono" placeholder="Search shelf code (e.g. F3, XX, A1)..." 
-                 value="${escHtml(searchQuery)}" 
-                 oninput="filterStoreMapShelves(this.value)" 
-                 style="width:230px;font-size:0.8rem;padding:0.35rem 0.65rem;background:var(--bg-surface)" />
-        </div>
+    <div class="page-hdr" style="margin-bottom:1rem">
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;color:var(--goose);letter-spacing:0.08em;margin-bottom:0.15rem">PHYSICAL STORE LOCATION MATRIX</div>
+        <h1 class="page-title">Store Layout & Shelf Directory</h1>
       </div>
+      <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+        <input type="text" class="field-input mono" placeholder="Search shelf code (e.g. F3, XX, A1)..." 
+               value="${escHtml(searchQuery)}" 
+               oninput="filterStoreMapShelves(this.value)" 
+               style="width:260px;font-size:0.82rem;padding:0.45rem 0.75rem;background:var(--bg-surface)" />
+      </div>
+    </div>
 
-      <!-- Scrollable Matrix Area (Zero Page Scroll) -->
-      <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.875rem;padding-right:0.25rem">
-        ${activeGroups.map(group => {
-          const visibleRacks = group.racks.filter(r => {
-            if (!searchQuery) return true;
-            return r.name.toLowerCase().includes(searchQuery) || r.shelves.some(s => s.toLowerCase().includes(searchQuery));
-          });
+    <!-- Zone Selector Tabs -->
+    <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border-subtle);padding-bottom:0.75rem">
+      <button class="btn ${currentZone === 'electrical' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('electrical')" style="gap:0.4rem;padding:0.45rem 1rem">
+        Electrical Section (${ELECTRICAL_RACK_GROUPS.reduce((acc, g) => acc + g.racks.reduce((a, r) => a + r.shelves.length, 0), 0)} Shelves)
+      </button>
+      <button class="btn ${currentZone === 'mechanical' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('mechanical')" style="gap:0.4rem;padding:0.45rem 1rem">
+        Mechanical Section (${MECHANICAL_RACK_GROUPS.reduce((acc, g) => acc + g.racks.reduce((a, r) => a + r.shelves.length, 0), 0)} Shelves)
+      </button>
+      <button class="btn ${currentZone === 'consumables' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('consumables')" style="gap:0.4rem;padding:0.45rem 1rem">
+        Consumables Section (Unified Single Zone)
+      </button>
+    </div>
 
-          if (visibleRacks.length === 0) return '';
+    <!-- Stats Summary Cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:0.875rem;margin-bottom:1.5rem">
+      <div class="stat-card" style="padding:0.875rem 1rem">
+        <div class="stat-label">TOTAL SHELVES</div>
+        <div class="stat-value" style="color:var(--text-primary)">${allShelves.length}</div>
+        <div class="stat-meta">${currentZone.toUpperCase()} ZONE</div>
+      </div>
+      <div class="stat-card" style="padding:0.875rem 1rem">
+        <div class="stat-label">OCCUPIED SHELVES</div>
+        <div class="stat-value" style="color:var(--accent-emerald)">${occupiedCount}</div>
+        <div class="stat-meta">${Math.round((occupiedCount / (allShelves.length || 1)) * 100)}% Capacity Used</div>
+      </div>
+      <div class="stat-card" style="padding:0.875rem 1rem">
+        <div class="stat-label">AVAILABLE / EMPTY</div>
+        <div class="stat-value" style="color:var(--text-tertiary)">${emptyCount}</div>
+        <div class="stat-meta">Ready for Inward Stock</div>
+      </div>
+      <div class="stat-card" style="padding:0.875rem 1rem">
+        <div class="stat-label">STORED MATERIALS</div>
+        <div class="stat-value" style="color:var(--goose)">${totalStoredItems}</div>
+        <div class="stat-meta">Total Catalog Items</div>
+      </div>
+    </div>
 
-          return `
-            <div class="card" style="padding:0.875rem 1rem;background:var(--bg-raised);margin:0">
-              <div style="margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center">
-                <div>
-                  <h3 style="margin:0;font-size:0.92rem;font-weight:700;color:var(--text-primary)">${group.groupTitle}</h3>
-                  <div style="font-size:0.72rem;color:var(--text-tertiary)">${group.description}</div>
-                </div>
-              </div>
+    <!-- Rack Groups -->
+    <div style="display:flex;flex-direction:column;gap:1.5rem">
+      ${activeGroups.map(group => {
+        const visibleRacks = group.racks.filter(r => {
+          if (!searchQuery) return true;
+          return r.name.toLowerCase().includes(searchQuery) || r.shelves.some(s => s.toLowerCase().includes(searchQuery));
+        });
 
-              <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:0.6rem">
-                ${visibleRacks.map(rack => `
-                  <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.6rem">
-                    <div style="font-family:var(--font-mono);font-size:0.7rem;font-weight:800;color:var(--goose);margin-bottom:0.4rem;letter-spacing:0.05em">
-                      ${rack.name.toUpperCase()}
-                    </div>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(52px, 1fr));gap:0.35rem">
-                      ${rack.shelves.map(shelf => {
-                        const items = getItemsForShelf(shelf, currentZone);
-                        const isOccupied = items.length > 0;
-                        const hasLowStock = items.some(i => (i.quantity || 0) <= (i.minStock || 0));
+        if (visibleRacks.length === 0) return '';
 
-                        let badgeStyle = 'background:var(--bg-elevated);border-color:var(--border-subtle);color:var(--text-secondary)';
-                        let indicatorDot = `<span style="width:5px;height:5px;border-radius:50%;background:var(--border-muted)"></span>`;
-
-                        if (isOccupied) {
-                          badgeStyle = 'background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:var(--accent-emerald)';
-                          indicatorDot = `<span style="width:5px;height:5px;border-radius:50%;background:var(--accent-emerald)"></span>`;
-                        }
-                        if (hasLowStock) {
-                          badgeStyle = 'background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.4);color:#f59e0b';
-                          indicatorDot = `<span style="width:5px;height:5px;border-radius:50%;background:#f59e0b"></span>`;
-                        }
-
-                        return `
-                          <button type="button" 
-                                  onclick="openShelfDetailModal('${shelf}')"
-                                  style="${badgeStyle};border:1px solid;border-radius:5px;padding:0.35rem 0.2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s ease"
-                                  title="${shelf}: ${items.length} materials stored">
-                            <div style="display:flex;align-items:center;gap:0.2rem;font-family:var(--font-mono);font-size:0.78rem;font-weight:800">
-                              ${indicatorDot}
-                              ${shelf}
-                            </div>
-                            <div style="font-size:0.6rem;margin-top:0.1rem;opacity:0.8">
-                              ${items.length === 0 ? 'Empty' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`}
-                            </div>
-                          </button>
-                        `;
-                      }).join('')}
-                    </div>
-                  </div>
-                `).join('')}
+        return `
+          <div class="card" style="padding:1.25rem;background:var(--bg-raised)">
+            <div style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <h3 style="margin:0 0 0.2rem 0;font-size:1.05rem;font-weight:700;color:var(--text-primary)">${group.groupTitle}</h3>
+                <div style="font-size:0.78rem;color:var(--text-tertiary)">${group.description}</div>
               </div>
             </div>
-          `;
-        }).join('')}
-      </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:1rem">
+              ${visibleRacks.map(rack => `
+                <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.875rem">
+                  <div style="font-family:var(--font-mono);font-size:0.75rem;font-weight:800;color:var(--goose);margin-bottom:0.6rem;letter-spacing:0.05em">
+                    ${rack.name.toUpperCase()}
+                  </div>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(62px, 1fr));gap:0.45rem">
+                    ${rack.shelves.map(shelf => {
+                      const items = getItemsForShelf(shelf, currentZone);
+                      const isOccupied = items.length > 0;
+                      const hasLowStock = items.some(i => (i.quantity || 0) <= (i.minStock || 0));
+
+                      let badgeStyle = 'background:var(--bg-elevated);border-color:var(--border-subtle);color:var(--text-secondary)';
+                      let indicatorDot = `<span style="width:6px;height:6px;border-radius:50%;background:var(--border-muted)"></span>`;
+
+                      if (isOccupied) {
+                        badgeStyle = 'background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:var(--accent-emerald)';
+                        indicatorDot = `<span style="width:6px;height:6px;border-radius:50%;background:var(--accent-emerald)"></span>`;
+                      }
+                      if (hasLowStock) {
+                        badgeStyle = 'background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.4);color:#f59e0b';
+                        indicatorDot = `<span style="width:6px;height:6px;border-radius:50%;background:#f59e0b"></span>`;
+                      }
+
+                      return `
+                        <button type="button" 
+                                onclick="openShelfDetailModal('${shelf}')"
+                                style="${badgeStyle};border:1px solid;border-radius:6px;padding:0.45rem 0.25rem;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s ease, border-color 0.15s ease"
+                                title="${shelf}: ${items.length} materials stored">
+                          <div style="display:flex;align-items:center;gap:0.25rem;font-family:var(--font-mono);font-size:0.85rem;font-weight:800">
+                            ${indicatorDot}
+                            ${shelf}
+                          </div>
+                          <div style="font-size:0.65rem;margin-top:0.15rem;opacity:0.8">
+                            ${items.length === 0 ? 'Empty' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`}
+                          </div>
+                        </button>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('')}
     </div>
   `;
 }
@@ -2438,14 +2480,14 @@ function processChecklistBarcodeScan() {
     if (feedbackEl) {
       feedbackEl.style.display = 'block';
       feedbackEl.style.color = '#10b981';
-      feedbackEl.innerHTML = `Verified &amp; Scanned: <strong>${escHtml(item.itemName)}</strong> (${item.quantity} ${item.unit})`;
+      feedbackEl.innerHTML = `✓ Verified &amp; Scanned: <strong>${escHtml(item.itemName)}</strong> (${item.quantity} ${item.unit})`;
     }
     showToast(`Scanned & Verified: ${item.itemName}`, 'success');
   } else {
     if (feedbackEl) {
       feedbackEl.style.display = 'block';
       feedbackEl.style.color = '#ef4444';
-      feedbackEl.innerHTML = `Barcode <strong>"${escHtml(rawCode)}"</strong> not found in this request order.`;
+      feedbackEl.innerHTML = `✗ Barcode <strong>"${escHtml(rawCode)}"</strong> not found in this request order.`;
     }
     showToast(`Barcode "${rawCode}" not in request list`, 'error');
   }
@@ -2871,7 +2913,7 @@ function getItemImageHtml(item) {
   if (item.imageUrl) {
     return `<img src="${item.imageUrl}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;cursor:pointer" onclick="openLightboxModal('${item.imageUrl}', '${escHtml(item.name)}')" />`;
   }
-  return `<div style="width:36px;height:36px;border-radius:4px;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>`;
+  return `<div style="width:36px;height:36px;border-radius:4px;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>`;
 }
 
 function stockTag(item) {
@@ -3419,8 +3461,8 @@ async function renderEngineerHistory() {
       <div style="display:flex;gap:0.75rem;align-items:center">
         ${isManager ? `
           <select id="engineer-filter-select" class="field-input" onchange="_selectedEngineerEmail=this.value;renderEngineerHistory()" style="width:auto;font-size:0.85rem;padding:0.5rem 0.85rem">
-            <option value="all" ${_selectedEngineerEmail === 'all' ? 'selected' : ''}>All Engineers Activity</option>
-            ${engineersList.map(e => `<option value="${e.email}" ${_selectedEngineerEmail === e.email ? 'selected' : ''}>${escHtml(e.name)} (${escHtml(e.email)})</option>`).join('')}
+            <option value="all" ${_selectedEngineerEmail === 'all' ? 'selected' : ''}>📋 All Engineers Activity</option>
+            ${engineersList.map(e => `<option value="${e.email}" ${_selectedEngineerEmail === e.email ? 'selected' : ''}>👤 ${escHtml(e.name)} (${escHtml(e.email)})</option>`).join('')}
           </select>
         ` : ''}
         <button class="btn btn-primary" onclick="exportEngineerActivityPDF('${_selectedEngineerEmail}')" style="display:inline-flex;align-items:center;gap:0.4rem">

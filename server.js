@@ -60,6 +60,73 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Data Helpers ───────────────────────────────────────────────────────────
+function mergeDuplicateZohoItems(data) {
+  if (!data || !Array.isArray(data.items)) return false;
+
+  let modified = false;
+  const map = new Map(); // zohoCode (lowercase trimmed) -> primaryItem
+  const removeIds = new Set();
+  const idRemap = new Map(); // deletedItemId -> primaryItemId
+
+  data.items.forEach(item => {
+    const code = (item.zohoCode || '').trim().toLowerCase();
+    if (!code) return; // Skip empty zoho codes
+
+    if (!map.has(code)) {
+      map.set(code, item);
+    } else {
+      const primary = map.get(code);
+
+      // Sum quantities
+      const primaryQty = parseInt(primary.quantity) || 0;
+      const itemQty = parseInt(item.quantity) || 0;
+      primary.quantity = primaryQty + itemQty;
+
+      // Merge unique notes
+      if (item.notes && item.notes.trim()) {
+        const pNotes = (primary.notes || '').trim();
+        const newNotes = item.notes.trim();
+        if (!pNotes.includes(newNotes)) {
+          primary.notes = pNotes ? `${pNotes} | ${newNotes}` : newNotes;
+        }
+      }
+
+      // Merge SO & PO numbers if primary was missing them
+      if (!primary.soNumber && (item.soNumber || item.so)) primary.soNumber = item.soNumber || item.so;
+      if (!primary.poNumber && (item.poNumber || item.po)) primary.poNumber = item.poNumber || item.po;
+
+      primary.updatedAt = new Date().toISOString();
+
+      removeIds.add(item.id);
+      idRemap.set(item.id, primary.id);
+      modified = true;
+    }
+  });
+
+  if (modified) {
+    // Keep only non-duplicate items
+    data.items = data.items.filter(item => !removeIds.has(item.id));
+
+    // Remap transactions & requests to primary.id
+    if (Array.isArray(data.transactions)) {
+      data.transactions.forEach(t => {
+        if (t.itemId && idRemap.has(t.itemId)) {
+          t.itemId = idRemap.get(t.itemId);
+        }
+      });
+    }
+    if (Array.isArray(data.requests)) {
+      data.requests.forEach(r => {
+        if (r.itemId && idRemap.has(r.itemId)) {
+          r.itemId = idRemap.get(r.itemId);
+        }
+      });
+    }
+  }
+
+  return modified;
+}
+
 function readData() {
   try {
     if (!fs.existsSync(DATA_FILE)) return { items: [], requests: [], transactions: [] };
@@ -68,6 +135,12 @@ function readData() {
     if (!Array.isArray(data.items)) data.items = [];
     if (!Array.isArray(data.requests)) data.requests = [];
     if (!Array.isArray(data.transactions)) data.transactions = [];
+
+    // Automatically merge items sharing the same non-empty zohoCode
+    if (mergeDuplicateZohoItems(data)) {
+      writeData(data);
+    }
+
     return data;
   } catch (e) {
     return { items: [], requests: [], transactions: [] };
@@ -254,6 +327,24 @@ app.get('/api/items', (req, res) => {
 
 app.post('/api/items', (req, res) => {
   const data = readData();
+  const newZoho = (req.body.zohoCode || req.body.zoho || '').trim();
+
+  // If item with same zohoCode exists, merge quantities into it
+  if (newZoho) {
+    const existing = data.items.find(i => (i.zohoCode || '').trim().toLowerCase() === newZoho.toLowerCase());
+    if (existing) {
+      existing.quantity = (parseInt(existing.quantity) || 0) + (parseInt(req.body.quantity) || 0);
+      if (req.body.notes && req.body.notes.trim() && !existing.notes.includes(req.body.notes.trim())) {
+        existing.notes = existing.notes ? `${existing.notes} | ${req.body.notes.trim()}` : req.body.notes.trim();
+      }
+      if (req.body.soNumber && !existing.soNumber) existing.soNumber = req.body.soNumber;
+      if (req.body.poNumber && !existing.poNumber) existing.poNumber = req.body.poNumber;
+      existing.updatedAt = new Date().toISOString();
+      writeData(data);
+      return res.status(200).json(existing);
+    }
+  }
+
   const item = {
     id: req.body.id || req.body.barcode || uuidv4(),
     name: req.body.name || 'Unnamed Material',
@@ -270,7 +361,7 @@ app.post('/api/items', (req, res) => {
     hsn: req.body.hsn || '',
     notes: req.body.notes || '',
     imageUrl: req.body.imageUrl || '',
-    zohoCode: req.body.zohoCode || '',
+    zohoCode: newZoho,
     soNumber: req.body.soNumber || req.body.so || '',
     poNumber: req.body.poNumber || req.body.po || '',
     addedAt: new Date().toISOString(),
@@ -285,7 +376,36 @@ app.put('/api/items/:id', (req, res) => {
   const data = readData();
   const idx = data.items.findIndex(i => i.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Item not found' });
-  
+
+  const newZoho = (req.body.zohoCode || req.body.zoho || '').trim();
+
+  // If updating zohoCode matches another existing item, merge current item into that item
+  if (newZoho) {
+    const existingOther = data.items.find(i => i.id !== req.params.id && (i.zohoCode || '').trim().toLowerCase() === newZoho.toLowerCase());
+    if (existingOther) {
+      const currentItem = data.items[idx];
+      existingOther.quantity = (parseInt(existingOther.quantity) || 0) + (parseInt(req.body.quantity ?? currentItem.quantity) || 0);
+      if (req.body.notes && req.body.notes.trim() && !existingOther.notes.includes(req.body.notes.trim())) {
+        existingOther.notes = existingOther.notes ? `${existingOther.notes} | ${req.body.notes.trim()}` : req.body.notes.trim();
+      }
+      existingOther.updatedAt = new Date().toISOString();
+
+      // Remove current item since merged
+      data.items.splice(idx, 1);
+
+      // Remap history
+      if (data.transactions) {
+        data.transactions.forEach(t => { if (t.itemId === req.params.id) t.itemId = existingOther.id; });
+      }
+      if (data.requests) {
+        data.requests.forEach(r => { if (r.itemId === req.params.id) r.itemId = existingOther.id; });
+      }
+
+      writeData(data);
+      return res.json(existingOther);
+    }
+  }
+
   data.items[idx] = {
     ...data.items[idx],
     ...req.body,
