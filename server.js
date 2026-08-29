@@ -52,9 +52,26 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+const nodemailer = require('nodemailer');
+
+// ─── OTP Memory Store ────────────────────────────────────────────────────────
+const otpStore = new Map(); // email => { code, expiresAt }
+
+function createEmailTransporter() {
+  const host = process.env.SMTP_HOST || 'smtp.zoho.in';
+  const port = parseInt(process.env.SMTP_PORT) || 465;
+  const user = process.env.SMTP_USER || '';
+  const pass = process.env.SMTP_PASS || '';
+
+  if (!user || !pass) return null;
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass }
+  });
+}
 
 // ─── Data Helpers ───────────────────────────────────────────────────────────
 function readData() {
@@ -503,6 +520,101 @@ app.delete('/api/transactions', (req, res) => {
   data.transactions = [];
   writeData(data);
   res.json({ success: true, message: 'All transactions cleared' });
+});
+
+// ─── Engineer Email OTP Authentication APIs ─────────────────────────────────
+app.post('/api/auth/send-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email || !email.includes('@') || !email.includes('.')) {
+    return res.status(400).json({ error: 'Valid Zoho / Company email address is required' });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes validity
+
+  otpStore.set(normalizedEmail, { code: otpCode, expiresAt });
+
+  console.log(`
+  ═════════════════════════════════════════════════════════════════════
+  🔐 ENGINEER AUTH OTP GENERATED
+  Email: ${normalizedEmail}
+  OTP PIN: ${otpCode}
+  Valid for: 5 Minutes
+  ═════════════════════════════════════════════════════════════════════
+  `);
+
+  let emailSent = false;
+  const transporter = createEmailTransporter();
+
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: `"Goose Inventory" <${process.env.SMTP_USER}>`,
+        to: normalizedEmail,
+        subject: `Your Goose Inventory Login OTP: ${otpCode}`,
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:20px;border:1px solid #e2e8f0;border-radius:8px">
+            <h2 style="color:#0072ff;margin-top:0">Goose Industrial Solutions</h2>
+            <p style="font-size:15px;color:#334155">Hello Engineer,</p>
+            <p style="font-size:14px;color:#475569">Use the 6-digit OTP PIN below to log in to the Goose Store Inventory System:</p>
+            <div style="background:#f1f5f9;padding:15px;text-align:center;border-radius:6px;margin:20px 0">
+              <span style="font-family:monospace;font-size:32px;font-weight:bold;letter-spacing:6px;color:#0f172a">${otpCode}</span>
+            </div>
+            <p style="font-size:12px;color:#94a3b8">This PIN is valid for 5 minutes. If you did not request this OTP, please ignore this email.</p>
+          </div>
+        `
+      });
+      emailSent = true;
+    } catch (err) {
+      console.error('Nodemailer Error:', err.message);
+    }
+  }
+
+  res.json({
+    success: true,
+    message: emailSent
+      ? `OTP PIN sent to ${normalizedEmail}`
+      : `OTP generated for ${normalizedEmail}`,
+    demoOtp: emailSent ? undefined : otpCode
+  });
+});
+
+app.post('/api/auth/verify-otp', (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ error: 'Email and OTP PIN are required' });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const record = otpStore.get(normalizedEmail);
+
+  if (!record) {
+    return res.status(400).json({ error: 'No active OTP found. Please click "Send OTP" first.' });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    otpStore.delete(normalizedEmail);
+    return res.status(400).json({ error: 'OTP has expired. Please request a new OTP.' });
+  }
+
+  if (record.code !== otp.trim()) {
+    return res.status(400).json({ error: 'Invalid OTP PIN. Please check and try again.' });
+  }
+
+  otpStore.delete(normalizedEmail);
+
+  const prefix = normalizedEmail.split('@')[0];
+  const name = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+
+  res.json({
+    success: true,
+    user: {
+      role: 'engineer',
+      email: normalizedEmail,
+      name: `Er. ${name}`
+    }
+  });
 });
 
 // ─── Health Check & SPA Wildcard Fallback ────────────────────────────────────

@@ -706,25 +706,109 @@ function selectRole(role) {
   document.getElementById('role-btn-manager').classList.toggle('selected', role === 'manager');
   document.getElementById('role-btn-engineer').classList.toggle('selected', role === 'engineer');
   document.getElementById('manager-pin-group').classList.toggle('hidden', role !== 'manager');
-  document.getElementById('engineer-name-group').classList.toggle('hidden', role !== 'engineer');
+  document.getElementById('engineer-otp-group').classList.toggle('hidden', role !== 'engineer');
+  
+  const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.classList.add('hidden');
 }
 
-function handleLogin(e) {
+function resetEngineerEmailStep(e) {
+  if (e) e.preventDefault();
+  document.getElementById('engineer-step-email')?.classList.remove('hidden');
+  document.getElementById('engineer-step-otp')?.classList.add('hidden');
+  const otpInput = document.getElementById('engineer-otp-input');
+  if (otpInput) otpInput.value = '';
+}
+
+async function sendEngineerOtp() {
+  const emailInput = document.getElementById('engineer-email');
+  const email = emailInput?.value.trim();
+  const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.classList.add('hidden');
+
+  if (!email || !email.includes('@') || !email.includes('.')) {
+    if (errorEl) {
+      errorEl.textContent = 'Please enter a valid Zoho / Company email address (e.g. surya@goosesolutions.in)';
+      errorEl.classList.remove('hidden');
+    }
+    showToast('Please enter a valid email address', 'error');
+    return;
+  }
+
+  showToast('Sending OTP to your email...', 'info');
+
+  try {
+    const res = await api.post('/api/auth/send-otp', { email });
+    document.getElementById('engineer-step-email')?.classList.add('hidden');
+    document.getElementById('engineer-step-otp')?.classList.remove('hidden');
+    
+    const displayEl = document.getElementById('sent-otp-email-display');
+    if (displayEl) displayEl.textContent = email;
+
+    const otpInput = document.getElementById('engineer-otp-input');
+    if (otpInput) {
+      otpInput.value = '';
+      setTimeout(() => otpInput.focus(), 150);
+    }
+
+    if (res.demoOtp) {
+      showToast(`OTP PIN generated: ${res.demoOtp}`, 'success');
+    } else {
+      showToast(res.message || `OTP PIN sent to ${email}! Check your inbox.`, 'success');
+    }
+  } catch (err) {
+    if (errorEl) {
+      errorEl.textContent = err.error || 'Failed to send OTP. Please check your email.';
+      errorEl.classList.remove('hidden');
+    }
+    showToast(err.error || 'Failed to send OTP', 'error');
+  }
+}
+
+async function handleLogin(e) {
   e.preventDefault();
   const isManager = document.getElementById('role-btn-manager').classList.contains('selected');
   const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.classList.add('hidden');
 
   if (isManager) {
     const pin = document.getElementById('manager-pin').value;
     const requiredPin = localStorage.getItem('ims_manager_pin') || state.managerPin || '1234';
     if (pin !== requiredPin) {
-      errorEl.classList.remove('hidden');
+      if (errorEl) {
+        errorEl.textContent = 'Invalid Manager PIN. Default PIN is 1234';
+        errorEl.classList.remove('hidden');
+      }
       return;
     }
     setUser({ role: 'manager', name: 'Store Manager' });
   } else {
-    const name = document.getElementById('engineer-name').value.trim() || 'Engineer';
-    setUser({ role: 'engineer', name });
+    const email = document.getElementById('engineer-email')?.value.trim();
+    const otp = document.getElementById('engineer-otp-input')?.value.trim();
+
+    if (!email || !otp) {
+      if (errorEl) {
+        errorEl.textContent = 'Please enter your email and click "Send OTP to Mail" first.';
+        errorEl.classList.remove('hidden');
+      }
+      return;
+    }
+
+    showToast('Verifying OTP PIN...', 'info');
+
+    try {
+      const res = await api.post('/api/auth/verify-otp', { email, otp });
+      if (res.user) {
+        showToast(`OTP Verified! Welcome ${res.user.name}`, 'success');
+        setUser(res.user);
+      }
+    } catch (err) {
+      if (errorEl) {
+        errorEl.textContent = err.error || 'Invalid OTP PIN. Please check your email and try again.';
+        errorEl.classList.remove('hidden');
+      }
+      showToast(err.error || 'Invalid OTP PIN', 'error');
+    }
   }
 }
 
