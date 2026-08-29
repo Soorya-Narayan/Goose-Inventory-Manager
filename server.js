@@ -178,7 +178,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
   `;
 
   // Attempt live SMTP mail delivery
-  const result = await sendMailWithFallback(cleanEmail, '🔒 Your 6-Digit Login OTP — Goose Inventory Manager', htmlContent);
+  const result = await sendMailWithFallback(cleanEmail, 'Your 6-Digit Login OTP — Goose Inventory Manager', htmlContent);
 
   if (!result.success) {
     console.warn(`[OTP RESCUE] Cloud mail delivery unavailable. Returning fallback OTP for ${cleanEmail}`);
@@ -713,10 +713,10 @@ app.listen(PORT, '0.0.0.0', () => {
   const localIp = getLocalIpAddress();
   console.log(`
   ═════════════════════════════════════════════════════════════════════
-   🏭 Goose Store Inventory System — Online
+   Goose Store Inventory System — Online
    
-   💻 Local Access (This PC):    http://localhost:${PORT}
-   📱 Office Wi-Fi (Employees):  http://${localIp}:${PORT}
+   Local Access (This PC):    http://localhost:${PORT}
+   Office Wi-Fi (Employees):  http://${localIp}:${PORT}
    
    Manager PIN: 1234
    Hardware Ready: Helett HT20 Scanner & Tej C15 Label Printer
