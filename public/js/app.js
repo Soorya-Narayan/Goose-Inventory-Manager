@@ -880,6 +880,30 @@ function toggleZohoIntegrationSetting() {
   showToast(`Zoho Books Integration ${state.zohoEnabled ? 'enabled' : 'disabled'}`, 'info');
 }
 
+function applyRoleNavigationVisibility() {
+  const isManager = state.user?.role === 'manager';
+
+  // Left Nav (Desktop Sidebar)
+  const reqLink = document.getElementById('nav-requests-link');
+  if (reqLink) reqLink.style.display = isManager ? 'flex' : 'none';
+
+  const txLink = document.getElementById('nav-transactions-link');
+  if (txLink) txLink.style.display = isManager ? 'flex' : 'none';
+
+  const engLink = document.getElementById('nav-engineer-history-link');
+  if (engLink) engLink.style.display = isManager ? 'flex' : 'none';
+
+  const labelLink = document.getElementById('nav-labeldesigner-link');
+  if (labelLink) labelLink.style.display = isManager ? 'flex' : 'none';
+
+  // Bottom Nav (Mobile)
+  const bnavReq = document.getElementById('bnav-requests-btn');
+  if (bnavReq) bnavReq.style.display = isManager ? 'flex' : 'none';
+
+  const bnavTx = document.getElementById('bnav-transactions-btn');
+  if (bnavTx) bnavTx.style.display = isManager ? 'flex' : 'none';
+}
+
 function setUser(user) {
   state.user = user;
   sessionStorage.setItem('ims_user', JSON.stringify(user));
@@ -898,10 +922,11 @@ function setUser(user) {
     document.getElementById('menu-avatar').textContent = user.name.charAt(0).toUpperCase();
   }
 
-  // Restrict Settings to Manager, and Zoho to Manager + Enabled state
+  // Restrict Settings & navigation tabs to Manager
   const settingsBtn = document.getElementById('menu-item-settings');
   if (settingsBtn) settingsBtn.style.display = isManager ? 'flex' : 'none';
   applyZohoVisibility();
+  applyRoleNavigationVisibility();
 
   setTimeout(() => {
     document.getElementById('login-overlay').classList.add('hidden');
@@ -946,6 +971,12 @@ function logout() {
 //  NAVIGATION
 // ═══════════════════════════════════════════════════════════════════════════════
 function navigateTo(view) {
+  const isManager = state.user?.role === 'manager';
+  // Engineers can only view Overview (dashboard), Store Inventory (inventory), and Store Layout (storemap)
+  if (!isManager && ['requests', 'transactions', 'engineer-history', 'labeldesigner'].includes(view)) {
+    view = 'dashboard';
+  }
+
   state.currentView = view;
   document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
   document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
