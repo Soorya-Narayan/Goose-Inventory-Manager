@@ -54,6 +54,9 @@ Quick options menu for updating manager credentials, toggling Dark/Light themes,
 
 - **⚡ Hardware Barcode Scanner Support**: Instant HID mode barcode scanning via **Helett HT20** (2.4G wireless USB dongle).
 - **🏷️ Auto-Generated Barcode IDs**: Auto-generates unique Product IDs (`GIS-YYMM-XXXX`) for new materials with 1-click copy for **FlashLabel Pro** label printing.
+- **🔒 Engineer Zoho Email 6-Digit OTP Auth**: Secure two-factor login workflow requiring Engineers to enter their Zoho/Company Email ID (`surya@goosesolutions.in`) and verify a 6-digit OTP sent via Zoho SMTP.
+- **📊 Engineer Activity & Audit History Log**: Dedicated activity dashboard tracking all material requests and stock dispatches linked to engineer email addresses.
+- **📄 1-Click PDF Report Export**: Export comprehensive individual or company-wide engineer activity reports as formatted PDF audit documents (`jsPDF` + `jsPDF-AutoTable`).
 - **🔍 Live Database Verification**: Scanning a barcode instantly cross-checks the inventory database, displaying material specs, photo, zone, shelf location, rate, and recent logs.
 - **🏗️ Project, Client & Vendor Allocation**: Allocate outward stock to specific project names (e.g. *Project HeatWatch Phase 3*) and recipient engineers (e.g. *Rajesh Kumar*).
 - **📜 Complete Audit Log**: Real-time transaction logging for all stock movements with timestamped recipient notes and delta history.
@@ -123,9 +126,17 @@ Quick options menu for updating manager credentials, toggling Dark/Light themes,
    npm start
    ```
 
-4. **Access the Web App**:
+4. **Environment Configuration (`.env`)**:
+   Create a `.env` file in the root directory to enable Zoho Mail SMTP OTP email dispatching:
+   ```env
+   ZOHO_EMAIL=surya@goosesolutions.in
+   ZOHO_PASSWORD=your_zoho_app_password
+   ```
+
+5. **Access the Web App**:
    Open your browser and navigate to `http://localhost:3000`
    - **Default Store Manager PIN**: `1234`
+   - **Engineer Login**: Requires valid Zoho/Company Email ID & 6-digit OTP
 
 ---
 
@@ -133,10 +144,14 @@ Quick options menu for updating manager credentials, toggling Dark/Light themes,
 
 | Endpoint | Method | Description |
 |---|---|---|
+| `/api/auth/send-otp` | `POST` | Dispatch 6-digit verification OTP code to specified Zoho/company email |
+| `/api/auth/verify-otp` | `POST` | Validate 6-digit OTP code and return authenticated engineer session profile |
 | `/api/items` | `GET` | Retrieve complete inventory material catalog |
 | `/api/items` | `POST` | Add a new material item with auto-generated SKU |
 | `/api/items/:id` | `PUT` / `DELETE` | Edit or delete a material item |
 | `/api/items/:id/adjust-stock` | `POST` | Process stock inward/outward allocation with recipient info |
+| `/api/requests` | `GET` / `POST` | Submit or retrieve material requests linked to engineer mail IDs |
+| `/api/requests/:id` | `PUT` | Update request status (`pending`, `approved`, `issued`, `rejected`) |
 | `/api/transactions` | `GET` / `DELETE` | Retrieve or clear stock movement audit logs |
 | `/api/zoho/sync-live` | `POST` | Trigger live sync with Zoho Books REST API |
 
