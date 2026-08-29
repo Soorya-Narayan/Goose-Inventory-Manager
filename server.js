@@ -177,12 +177,17 @@ app.post('/api/auth/send-otp', async (req, res) => {
     </div>
   `;
 
-  // Dispatch email asynchronously so UI responds fast and handles cloud timeouts gracefully
-  sendMailWithFallback(cleanEmail, '🔒 Your 6-Digit Login OTP — Goose Inventory Manager', htmlContent);
+  // Await sendMailWithFallback to guarantee TCP socket completion before sending JSON response
+  const result = await sendMailWithFallback(cleanEmail, '🔒 Your 6-Digit Login OTP — Goose Inventory Manager', htmlContent);
+
+  if (!result.success) {
+    console.error(`[OTP DISPATCH FAILED] ${result.error}`);
+    return res.status(500).json({ error: `Failed to deliver email to ${cleanEmail}: ${result.error || 'SMTP Connection Failed'}` });
+  }
 
   res.json({
     success: true,
-    message: `6-digit OTP sent to ${cleanEmail}`,
+    message: `6-digit OTP sent to ${cleanEmail}. Check your email inbox.`,
     email: cleanEmail
   });
 });
