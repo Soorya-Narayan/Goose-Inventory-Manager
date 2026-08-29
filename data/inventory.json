@@ -263,11 +263,12 @@
           "unit": "pairs"
         }
       ],
-      "status": "pending",
+      "status": "rejected",
       "requestedAt": "2026-08-29T07:55:26.524Z",
-      "processedAt": null,
-      "processedBy": null,
-      "managerNotes": ""
+      "processedAt": "2026-08-29T08:01:32.058Z",
+      "processedBy": "Store Manager",
+      "managerNotes": "",
+      "checklist": []
     }
   ],
   "transactions": []
