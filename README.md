@@ -129,7 +129,7 @@ Quick options menu for updating manager credentials, toggling Dark/Light themes,
 4. **Environment Configuration (`.env`)**:
    Create a `.env` file in the root directory to enable Zoho Mail SMTP OTP email dispatching:
    ```env
-   ZOHO_EMAIL=surya@goosesolutions.in
+   ZOHO_EMAIL=johndoe@gmail.com
    ZOHO_PASSWORD=your_zoho_app_password
    ```
 
