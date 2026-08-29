@@ -24,12 +24,31 @@ const state = {
 };
 
 // ─── API Helpers ─────────────────────────────────────────────────────────────
+async function safeFetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || data.message || `Server error (${res.status})`);
+    return data;
+  }
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(res.status === 404 ? 'Endpoint not found on server' : `Server error (${res.status})`);
+  }
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error('Server returned non-JSON response');
+  }
+}
+
 const api = {
-  get:    async (url) => (await fetch(url)).json(),
-  post:   async (url, data) => (await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })).json(),
-  put:    async (url, data) => (await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })).json(),
-  del:    async (url) => (await fetch(url, { method: 'DELETE' })).json(),
-  delete: async (url) => (await fetch(url, { method: 'DELETE' })).json(),
+  get:    async (url) => safeFetchJson(url),
+  post:   async (url, data) => safeFetchJson(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }),
+  put:    async (url, data) => safeFetchJson(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }),
+  del:    async (url) => safeFetchJson(url, { method: 'DELETE' }),
+  delete: async (url) => safeFetchJson(url, { method: 'DELETE' }),
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -705,8 +724,100 @@ async function triggerTejC15Print() {
 function selectRole(role) {
   document.getElementById('role-btn-manager').classList.toggle('selected', role === 'manager');
   document.getElementById('role-btn-engineer').classList.toggle('selected', role === 'engineer');
-  document.getElementById('manager-pin-group').classList.toggle('hidden', role !== 'manager');
-  document.getElementById('engineer-name-group').classList.toggle('hidden', role !== 'engineer');
+  
+  const mgrGroup = document.getElementById('manager-pin-group');
+  const engEmailGroup = document.getElementById('engineer-email-group');
+  const engOtpGroup = document.getElementById('engineer-otp-group');
+  const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.classList.add('hidden');
+
+  if (mgrGroup) mgrGroup.classList.toggle('hidden', role !== 'manager');
+  if (engEmailGroup) engEmailGroup.classList.toggle('hidden', role !== 'engineer');
+  if (engOtpGroup && role !== 'engineer') engOtpGroup.classList.add('hidden');
+}
+
+async function sendEngineerOTP() {
+  const emailInput = document.getElementById('engineer-email');
+  const statusEl = document.getElementById('otp-sent-status');
+  const otpGroup = document.getElementById('engineer-otp-group');
+  const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.classList.add('hidden');
+
+  const email = emailInput?.value.trim();
+  if (!email || !email.includes('@')) {
+    showToast('Please enter a valid Zoho / Company email address', 'warning');
+    if (emailInput) emailInput.focus();
+    return;
+  }
+
+  showToast(`Sending 6-digit OTP to ${email}...`, 'info');
+
+  try {
+    const res = await api.post('/api/auth/send-otp', { email, role: 'engineer' });
+    if (res.success) {
+      if (otpGroup) otpGroup.classList.remove('hidden');
+      if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.color = 'var(--goose)';
+        let statusHtml = `✓ 6-Digit OTP sent to <strong>${escHtml(email)}</strong>.`;
+        if (res.previewUrl) {
+          statusHtml += ` <a href="${res.previewUrl}" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;margin-left:0.25rem">View Test Mail Inbox ↗</a>`;
+        }
+        statusEl.innerHTML = statusHtml;
+      }
+      showToast(res.message || 'OTP sent successfully! Check your email inbox.', 'success');
+      
+      const otpInput = document.getElementById('engineer-otp');
+      if (otpInput) {
+        otpInput.value = '';
+        setTimeout(() => otpInput.focus(), 150);
+      }
+    } else {
+      showToast(res.error || 'Failed to send OTP', 'error');
+    }
+  } catch (err) {
+    showToast(err.message || 'Failed to send OTP to mail', 'error');
+  }
+}
+
+async function verifyEngineerOTP() {
+  const email = document.getElementById('engineer-email')?.value.trim();
+  const otp = document.getElementById('engineer-otp')?.value.trim();
+  const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.classList.add('hidden');
+
+  if (!email || !email.includes('@')) {
+    showToast('Please enter your Zoho email address', 'warning');
+    return;
+  }
+
+  if (!otp || otp.length !== 6) {
+    showToast('Please enter the full 6-digit OTP code', 'warning');
+    const otpInput = document.getElementById('engineer-otp');
+    if (otpInput) otpInput.focus();
+    return;
+  }
+
+  showToast('Verifying 6-digit OTP...', 'info');
+
+  try {
+    const res = await api.post('/api/auth/verify-otp', { email, otp });
+    if (res.success && res.user) {
+      setUser(res.user);
+    } else {
+      if (errorEl) {
+        errorEl.textContent = res.error || 'Invalid 6-digit OTP code.';
+        errorEl.classList.remove('hidden');
+      }
+      showToast(res.error || 'Invalid OTP code', 'error');
+    }
+  } catch (err) {
+    if (errorEl) {
+      errorEl.textContent = err.message || 'Invalid or expired OTP PIN.';
+      errorEl.classList.remove('hidden');
+    }
+    showToast(err.message || 'OTP verification failed', 'error');
+  }
 }
 
 function handleLogin(e) {
@@ -718,13 +829,20 @@ function handleLogin(e) {
     const pin = document.getElementById('manager-pin').value;
     const requiredPin = localStorage.getItem('ims_manager_pin') || state.managerPin || '1234';
     if (pin !== requiredPin) {
-      errorEl.classList.remove('hidden');
+      if (errorEl) {
+        errorEl.textContent = 'Invalid Manager PIN. Default manager PIN is 1234';
+        errorEl.classList.remove('hidden');
+      }
       return;
     }
     setUser({ role: 'manager', name: 'Store Manager' });
   } else {
-    const name = document.getElementById('engineer-name').value.trim() || 'Engineer';
-    setUser({ role: 'engineer', name });
+    const otpGroup = document.getElementById('engineer-otp-group');
+    if (otpGroup && !otpGroup.classList.contains('hidden')) {
+      verifyEngineerOTP();
+    } else {
+      sendEngineerOTP();
+    }
   }
 }
 
@@ -831,12 +949,13 @@ function navigateTo(view) {
 
 function renderView(view) {
   switch (view) {
-    case 'dashboard':     renderDashboard();     break;
-    case 'storemap':      renderStoreMap();      break;
-    case 'inventory':     renderInventory();     break;
-    case 'requests':      renderRequests();      break;
-    case 'transactions':  renderTransactions();  break;
-    case 'labeldesigner': renderLabelDesigner(); break;
+    case 'dashboard':        renderDashboard();       break;
+    case 'storemap':         renderStoreMap();        break;
+    case 'inventory':        renderInventory();       break;
+    case 'requests':         renderRequests();        break;
+    case 'transactions':     renderTransactions();    break;
+    case 'engineer-history': renderEngineerHistory(); break;
+    case 'labeldesigner':    renderLabelDesigner();   break;
   }
 }
 
@@ -2631,10 +2750,11 @@ async function handleRequestSubmit(e) {
   }
 
   const data = {
-    name:       document.getElementById('req-engineer').value.trim(),
-    employeeId: document.getElementById('req-employee-id').value.trim(),
-    projectName: document.getElementById('req-project').value.trim(),
-    purpose:    document.getElementById('req-purpose').value.trim(),
+    name:          document.getElementById('req-engineer').value.trim(),
+    employeeId:    document.getElementById('req-employee-id').value.trim(),
+    engineerEmail: state.user?.email || 'surya@goosesolutions.in',
+    projectName:   document.getElementById('req-project').value.trim(),
+    purpose:       document.getElementById('req-purpose').value.trim(),
     materials,
   };
 
@@ -2781,7 +2901,321 @@ function handleSaveSettings(e) {
     localStorage.setItem('ims_manager_pin', newPin);
   }
   showToast('Settings saved successfully', 'success');
-  closeSettingsModal();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ENGINEER ACTIVITY & AUDIT HISTORY LOG
+// ═══════════════════════════════════════════════════════════════════════════════
+let _selectedEngineerEmail = 'all';
+
+async function renderEngineerHistory() {
+  const container = document.getElementById('view-engineer-history');
+  if (!container) return;
+
+  const isManager = state.user?.role === 'manager';
+  const currentUserEmail = state.user?.email || '';
+
+  // Extract unique engineer accounts from requests & transactions
+  const engineersMap = new Map();
+
+  (state.requests || []).forEach(r => {
+    const email = (r.engineerEmail || r.email || '').toLowerCase().trim();
+    if (!email) return;
+    if (!engineersMap.has(email)) {
+      engineersMap.set(email, {
+        email,
+        name: r.name || r.engineerName || 'Engineer',
+        employeeId: r.employeeId || 'EMP-' + email.split('@')[0].toUpperCase(),
+        requestsCount: 0,
+        issuedCount: 0,
+        materialsCount: 0,
+        latestActivity: r.requestedAt
+      });
+    }
+    const eng = engineersMap.get(email);
+    eng.requestsCount++;
+    if (r.status === 'issued') eng.issuedCount++;
+    if (Array.isArray(r.materials)) {
+      eng.materialsCount += r.materials.reduce((sum, m) => sum + (parseInt(m.quantity) || 0), 0);
+    }
+    if (new Date(r.requestedAt) > new Date(eng.latestActivity)) {
+      eng.latestActivity = r.requestedAt;
+    }
+  });
+
+  const engineersList = Array.from(engineersMap.values());
+
+  // Default selection
+  if (!isManager && currentUserEmail) {
+    _selectedEngineerEmail = currentUserEmail;
+  } else if (_selectedEngineerEmail !== 'all' && !engineersMap.has(_selectedEngineerEmail)) {
+    _selectedEngineerEmail = engineersList[0]?.email || 'all';
+  }
+
+  // Filter requests for selected engineer or all engineers
+  let activeRequests = [...(state.requests || [])];
+  if (_selectedEngineerEmail !== 'all') {
+    activeRequests = activeRequests.filter(r => (r.engineerEmail || r.email || '').toLowerCase().trim() === _selectedEngineerEmail);
+  }
+
+  // Calculate summary metrics
+  const totalRequests = activeRequests.length;
+  const issuedRequests = activeRequests.filter(r => r.status === 'issued').length;
+  const pendingRequests = activeRequests.filter(r => r.status === 'pending').length;
+  const totalItemsCount = activeRequests.reduce((sum, r) => {
+    if (Array.isArray(r.materials)) {
+      return sum + r.materials.reduce((mSum, m) => mSum + (parseInt(m.quantity) || 0), 0);
+    }
+    return sum + (parseInt(r.quantityRequested) || 0);
+  }, 0);
+
+  const selectedEngInfo = engineersMap.get(_selectedEngineerEmail) || {
+    name: isManager ? 'All Engineers' : (state.user?.name || 'Engineer'),
+    email: _selectedEngineerEmail === 'all' ? 'All Activity' : _selectedEngineerEmail,
+    employeeId: state.user?.employeeId || 'EMP-SYSTEM'
+  };
+
+  container.innerHTML = `
+    <div class="page-hdr">
+      <div>
+        <h1 class="page-title">Engineer Activity &amp; Audit Log</h1>
+        <div class="page-subtitle">Historical material requests &amp; dispatch activity linked to engineer mail IDs</div>
+      </div>
+      <div style="display:flex;gap:0.75rem;align-items:center">
+        ${isManager ? `
+          <select id="engineer-filter-select" class="field-input" onchange="_selectedEngineerEmail=this.value;renderEngineerHistory()" style="width:auto;font-size:0.85rem;padding:0.5rem 0.85rem">
+            <option value="all" ${_selectedEngineerEmail === 'all' ? 'selected' : ''}>📋 All Engineers Activity</option>
+            ${engineersList.map(e => `<option value="${e.email}" ${_selectedEngineerEmail === e.email ? 'selected' : ''}>👤 ${escHtml(e.name)} (${escHtml(e.email)})</option>`).join('')}
+          </select>
+        ` : ''}
+        <button class="btn btn-primary" onclick="exportEngineerActivityPDF('${_selectedEngineerEmail}')" style="display:inline-flex;align-items:center;gap:0.4rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Export Activity PDF</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Metric Summary Grid -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:1rem;margin-bottom:1.5rem">
+      <div class="card" style="padding:1.1rem 1.25rem">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em">Selected Profile</div>
+        <div style="font-size:1.05rem;font-weight:700;color:var(--goose);margin-top:0.25rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${escHtml(selectedEngInfo.name)}
+        </div>
+        <div style="font-size:0.75rem;color:var(--text-secondary);font-family:var(--font-mono);margin-top:0.15rem">${escHtml(selectedEngInfo.email)}</div>
+      </div>
+
+      <div class="card" style="padding:1.1rem 1.25rem">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em">Material Requests</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--text-primary);margin-top:0.15rem">${totalRequests}</div>
+        <div style="font-size:0.72rem;color:var(--text-tertiary)">Total Submissions</div>
+      </div>
+
+      <div class="card" style="padding:1.1rem 1.25rem">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em">Issued Stock Dispatches</div>
+        <div style="font-size:1.5rem;font-weight:800;color:#10b981;margin-top:0.15rem">${issuedRequests}</div>
+        <div style="font-size:0.72rem;color:var(--text-tertiary)">${pendingRequests} Pending Approval</div>
+      </div>
+
+      <div class="card" style="padding:1.1rem 1.25rem">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.06em">Total Items Volume</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--accent-cyan);margin-top:0.15rem">${totalItemsCount} <span style="font-size:0.85rem;font-weight:500;color:var(--text-tertiary)">pcs</span></div>
+        <div style="font-size:0.72rem;color:var(--text-tertiary)">Across All Projects</div>
+      </div>
+    </div>
+
+    <!-- Request History Activity Table -->
+    <div class="card" style="overflow:hidden">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date &amp; Time</th>
+              <th>Engineer Name &amp; Mail ID</th>
+              <th>Target Project</th>
+              <th>Requested Materials</th>
+              <th>Status</th>
+              <th>Manager Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${activeRequests.length === 0 ? `
+              <tr>
+                <td colspan="6" style="text-align:center;padding:3rem;color:var(--text-tertiary)">
+                  No activity or material request history recorded for this profile yet.
+                </td>
+              </tr>
+            ` : activeRequests.map(r => {
+              const dt = new Date(r.requestedAt || r.date || Date.now());
+              const dateStr = dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+              let statusBadge = '';
+              if (r.status === 'issued') {
+                statusBadge = `<span style="background:rgba(16,185,129,0.15);color:#10b981;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.72rem;font-weight:700;letter-spacing:0.04em">ISSUED</span>`;
+              } else if (r.status === 'approved') {
+                statusBadge = `<span style="background:rgba(0,198,255,0.15);color:var(--accent-cyan);padding:0.2rem 0.5rem;border-radius:4px;font-size:0.72rem;font-weight:700;letter-spacing:0.04em">APPROVED</span>`;
+              } else if (r.status === 'rejected') {
+                statusBadge = `<span style="background:rgba(239,68,68,0.15);color:#ef4444;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.72rem;font-weight:700;letter-spacing:0.04em">REJECTED</span>`;
+              } else {
+                statusBadge = `<span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.72rem;font-weight:700;letter-spacing:0.04em">PENDING</span>`;
+              }
+
+              const matsSummary = Array.isArray(r.materials) && r.materials.length > 0
+                ? r.materials.map(m => `• <strong>${escHtml(m.itemName)}</strong> (${m.quantity} ${m.unit || 'pcs'})`).join('<br>')
+                : `• <strong>${escHtml(r.itemName || 'Material')}</strong> (${r.quantityRequested || 1} pcs)`;
+
+              return `
+                <tr>
+                  <td style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-secondary);white-space:nowrap">${dateStr}</td>
+                  <td>
+                    <div style="font-weight:600;color:var(--text-primary)">${escHtml(r.name || r.engineerName || 'Engineer')}</div>
+                    <div style="font-size:0.72rem;color:var(--text-tertiary);font-family:var(--font-mono)">${escHtml(r.engineerEmail || r.email || '—')}</div>
+                  </td>
+                  <td>
+                    <div style="font-weight:600;color:var(--goose)">${escHtml(r.projectName || '—')}</div>
+                    <div style="font-size:0.72rem;color:var(--text-tertiary)">${escHtml(r.purpose || '')}</div>
+                  </td>
+                  <td style="font-size:0.82rem;line-height:1.4">${matsSummary}</td>
+                  <td>${statusBadge}</td>
+                  <td style="font-size:0.8rem;color:var(--text-secondary)">${escHtml(r.managerNotes || '—')}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function exportEngineerActivityPDF(filterEmail = 'all') {
+  let activeRequests = [...(state.requests || [])];
+  if (filterEmail && filterEmail !== 'all') {
+    activeRequests = activeRequests.filter(r => (r.engineerEmail || r.email || '').toLowerCase().trim() === filterEmail.toLowerCase().trim());
+  }
+
+  if (activeRequests.length === 0) {
+    showToast('No activity records available to export for this engineer', 'warning');
+    return;
+  }
+
+  showToast('Generating Engineer Activity PDF Report...', 'info');
+
+  try {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      showToast('Opening print view...', 'info');
+      window.print();
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    const firstReq = activeRequests[0] || {};
+    const engName = firstReq.name || firstReq.engineerName || (state.user?.role === 'engineer' ? state.user.name : 'Engineer');
+    const engMail = filterEmail !== 'all' ? filterEmail : (firstReq.engineerEmail || 'All Engineers');
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+    const totalReqs = activeRequests.length;
+    const totalQty = activeRequests.reduce((sum, r) => {
+      if (Array.isArray(r.materials)) return sum + r.materials.reduce((mSum, m) => mSum + (parseInt(m.quantity) || 0), 0);
+      return sum + (parseInt(r.quantityRequested) || 0);
+    }, 0);
+
+    // Title Header
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, 297, 28, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(255, 255, 255);
+    doc.text('GOOSE INDUSTRIAL SOLUTIONS PVT LTD', 14, 12);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(56, 189, 248);
+    doc.text('ENGINEER MATERIAL REQUEST & ACTIVITY AUDIT REPORT', 14, 21);
+
+    doc.setFontSize(8);
+    doc.setTextColor(203, 213, 225);
+    doc.text(`Generated: ${dateStr}, ${timeStr}`, 220, 21);
+
+    // Profile Box
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(14, 32, 269, 16, 2, 2, 'FD');
+
+    doc.setFontSize(9);
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Engineer Name: ${engName}`, 18, 41);
+    doc.text(`Email ID: ${engMail}`, 100, 41);
+    doc.text(`Total Requests: ${totalReqs}`, 185, 41);
+    doc.text(`Items Volume: ${totalQty} pcs`, 235, 41);
+
+    // Data Table
+    const tableData = activeRequests.map((r, index) => {
+      const dt = new Date(r.requestedAt || Date.now());
+      const formattedDate = dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+      const mats = Array.isArray(r.materials) && r.materials.length > 0
+        ? r.materials.map(m => `${m.itemName} (${m.quantity} ${m.unit || 'pcs'})`).join('; ')
+        : `${r.itemName || 'Material'} (${r.quantityRequested || 1} pcs)`;
+
+      return [
+        index + 1,
+        formattedDate,
+        r.projectName || '—',
+        mats,
+        (r.status || 'pending').toUpperCase(),
+        r.managerNotes || '—'
+      ];
+    });
+
+    doc.autoTable({
+      startY: 53,
+      head: [['#', 'Date & Time', 'Target Project', 'Requested Materials & Quantities', 'Status', 'Manager Remarks']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
+      bodyStyles: { fontSize: 8, textColor: [51, 65, 85] },
+      columnStyles: {
+        0: { cellWidth: 12 },
+        1: { cellWidth: 38 },
+        2: { cellWidth: 45 },
+        3: { cellWidth: 110 },
+        4: { cellWidth: 24, fontStyle: 'bold' },
+        5: { cellWidth: 40 }
+      },
+      didParseCell: function(data) {
+        if (data.section === 'body' && data.column.index === 4) {
+          const val = String(data.cell.raw).toUpperCase();
+          if (val === 'ISSUED') data.cell.styles.textColor = [16, 185, 129];
+          else if (val === 'APPROVED') data.cell.styles.textColor = [0, 198, 255];
+          else if (val === 'REJECTED') data.cell.styles.textColor = [239, 68, 68];
+          else data.cell.styles.textColor = [245, 158, 11];
+        }
+      }
+    });
+
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`Goose Inventory System · Engineer Activity Audit · Page ${i} of ${pageCount}`, 14, 203);
+    }
+
+    const cleanFilenameMail = engMail.replace(/[^a-zA-Z0-9]/g, '_');
+    doc.save(`Engineer_Activity_${cleanFilenameMail}_${dateStr.replace(/ /g, '_')}.pdf`);
+    showToast('Engineer Activity PDF Report downloaded!', 'success');
+  } catch (err) {
+    console.error('PDF Export Error:', err);
+    showToast('Failed to generate PDF report', 'error');
+  }
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────

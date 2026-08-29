@@ -241,23 +241,31 @@
       "managerNotes": ""
     },
     {
-      "id": "6c450c86-3bd3-4bc6-ab97-e4c0bbca0140",
-      "name": "Er. Rahul Sharma",
-      "employeeId": "EMP-1234",
-      "projectName": "Project Beta",
-      "purpose": "Dark mode testing request",
+      "id": "7b48f208-316c-4e83-977b-2455d37db0de",
+      "name": "Er. Surya Narayan",
+      "engineerEmail": "surya@goosesolutions.in",
+      "employeeId": "EMP-SURYA",
+      "projectName": "Solar Farm Alpha Phase 2",
+      "purpose": "Solar Inverter Wiring & Installation",
       "materials": [
         {
-          "itemId": "GIS-2608-1002",
-          "itemName": "SS Pipe Flange 2\"",
-          "itemSku": "GIS-2608-1002",
-          "unit": "pcs",
-          "quantity": 3
+          "itemId": "1",
+          "itemName": "4mm² Copper Armoured Cable",
+          "sku": "CBL-CU-4MM",
+          "quantity": 50,
+          "unit": "m"
+        },
+        {
+          "itemId": "2",
+          "itemName": "MC4 Solar Connectors Pair",
+          "sku": "CON-MC4-PAIR",
+          "quantity": 10,
+          "unit": "pairs"
         }
       ],
-      "status": "approved",
-      "requestedAt": "2026-08-29T05:25:43.740Z",
-      "processedAt": "2026-08-29T05:28:54.520Z",
+      "status": "rejected",
+      "requestedAt": "2026-08-29T07:55:26.524Z",
+      "processedAt": "2026-08-29T08:01:32.058Z",
       "processedBy": "Store Manager",
       "managerNotes": "",
       "checklist": []

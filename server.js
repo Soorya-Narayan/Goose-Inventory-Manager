@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -74,6 +75,166 @@ function readData() {
 function writeData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
 }
+
+// ─── Engineer OTP Authentication API ──────────────────────────────────────────
+const nodemailer = require('nodemailer');
+const otpStore = {}; // { 'surya@goosesolutions.in': { code: '584920', expiresAt: timestamp } }
+
+async function createMailTransporter() {
+  // 1. Configured SMTP via env variables (Zoho / Gmail / Custom SMTP)
+  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+    return {
+      transporter: nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT) || 587,
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      }),
+      fromEmail: process.env.SMTP_FROM || process.env.SMTP_USER
+    };
+  }
+
+  // 2. Zoho Quick Config via ZOHO_EMAIL & ZOHO_PASSWORD
+  if (process.env.ZOHO_EMAIL && process.env.ZOHO_PASSWORD) {
+    return {
+      transporter: nodemailer.createTransport({
+        host: 'smtp.zoho.in',
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.ZOHO_EMAIL,
+          pass: process.env.ZOHO_PASSWORD
+        }
+      }),
+      fromEmail: process.env.ZOHO_EMAIL
+    };
+  }
+
+  // 3. Fallback: Ethereal Mail for instant local testing without configuring SMTP
+  try {
+    const testAccount = await nodemailer.createTestAccount();
+    const testTransporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass
+      }
+    });
+    return { transporter: testTransporter, fromEmail: testAccount.user, isTest: true };
+  } catch (e) {
+    return { transporter: null, fromEmail: null };
+  }
+}
+
+app.post('/api/auth/send-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ error: 'Please enter a valid Zoho / Company email address' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore[cleanEmail] = {
+    code: otpCode,
+    expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes
+  };
+
+  console.log(`[OTP DISPATCH] Email: ${cleanEmail} | OTP Code: ${otpCode}`);
+
+  let emailSent = false;
+  let previewUrl = null;
+
+  try {
+    const mailSetup = await createMailTransporter();
+    if (mailSetup && mailSetup.transporter) {
+      const info = await mailSetup.transporter.sendMail({
+        from: `"Goose Inventory System" <${mailSetup.fromEmail || 'no-reply@goosesolutions.in'}>`,
+        to: cleanEmail,
+        subject: '🔒 Your 6-Digit Login OTP — Goose Inventory Manager',
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b; max-width: 500px; margin: auto; border: 1px solid #e2e8f0; border-radius: 10px;">
+            <h2 style="color: #0072ff; margin-bottom: 5px;">Goose Industrial Solutions</h2>
+            <p style="font-size: 0.9rem; color: #64748b; margin-top: 0;">Store Inventory Access Verification</p>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;" />
+            <p>Your 6-digit access verification code is:</p>
+            <div style="background: #f1f5f9; font-size: 1.8rem; font-weight: bold; letter-spacing: 5px; color: #0f172a; padding: 12px; text-align: center; border-radius: 6px; margin: 15px 0;">
+              ${otpCode}
+            </div>
+            <p style="font-size: 0.8rem; color: #64748b;">This OTP is valid for 10 minutes. If you did not request this, please ignore this email.</p>
+          </div>
+        `
+      });
+      emailSent = true;
+      if (mailSetup.isTest) {
+        previewUrl = nodemailer.getTestMessageUrl(info);
+        console.log(`[ETHEREAL PREVIEW URL]: ${previewUrl}`);
+      }
+    }
+  } catch (err) {
+    console.error('Mail Send Error:', err.message);
+  }
+
+  res.json({
+    success: true,
+    message: emailSent ? `6-digit OTP sent to ${cleanEmail}` : `OTP sent to ${cleanEmail}`,
+    email: cleanEmail,
+    previewUrl: previewUrl
+  });
+});
+
+app.post('/api/auth/verify-otp', (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ error: 'Email and 6-digit OTP are required' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const record = otpStore[cleanEmail];
+
+  if (!record) {
+    return res.status(400).json({ error: 'No OTP requested for this email address. Please click "Send OTP to Mail" first.' });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    delete otpStore[cleanEmail];
+    return res.status(400).json({ error: 'OTP has expired. Please request a new code.' });
+  }
+
+  if (record.code !== otp.trim()) {
+    return res.status(400).json({ error: 'Invalid 6-digit OTP code. Please check your email and try again.' });
+  }
+
+  // Clear OTP on successful verification
+  delete otpStore[cleanEmail];
+
+  // Format user display name from email (e.g. surya@goosesolutions.in -> Er. Surya)
+  const prefix = cleanEmail.split('@')[0];
+  const namePart = prefix.split('.')[0].split('_')[0];
+  const formattedName = 'Er. ' + namePart.charAt(0).toUpperCase() + namePart.slice(1);
+
+  res.json({
+    success: true,
+    user: {
+      role: 'engineer',
+      name: formattedName,
+      email: cleanEmail,
+      employeeId: `EMP-${prefix.toUpperCase().slice(0, 8)}`
+    }
+  });
+});
+
+app.get('/api/auth/send-otp', (req, res) => {
+  res.json({ error: 'Use POST /api/auth/send-otp with JSON body { email }' });
+});
+
+app.get('/api/auth/verify-otp', (req, res) => {
+  res.json({ error: 'Use POST /api/auth/verify-otp with JSON body { email, otp }' });
+});
 
 // ─── Items API ───────────────────────────────────────────────────────────────
 app.get('/api/items', (req, res) => {
@@ -511,8 +672,10 @@ app.get('/health', (req, res) => {
 });
 
 app.get('*', (req, res) => {
-  // Prevent serving index.html for missing files, API routes, or assets with extensions
-  if (req.path.includes('.') || req.path.startsWith('/api') || req.path.startsWith('/css') || req.path.startsWith('/js') || req.path.startsWith('/uploads')) {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: `API route '${req.path}' not found` });
+  }
+  if (req.path.includes('.') || req.path.startsWith('/css') || req.path.startsWith('/js') || req.path.startsWith('/uploads')) {
     return res.status(404).send('Asset not found');
   }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
