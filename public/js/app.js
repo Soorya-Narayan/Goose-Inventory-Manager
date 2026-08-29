@@ -1552,9 +1552,108 @@ function renderStoreMap() {
   const currentZone = state.storeMapZone || 'electrical';
   const searchQuery = state.storeMapSearch || '';
 
+  const viewContainer = document.getElementById('view-storemap');
+  if (!viewContainer) return;
+
+  // Single unified section layout for Consumables
+  if (currentZone === 'consumables') {
+    const consumablesItems = (state.items || []).filter(i => (i.zone || '').toLowerCase() === 'consumables');
+    const filteredConsumables = consumablesItems.filter(i => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (i.name || '').toLowerCase().includes(q) || 
+             (i.sku || '').toLowerCase().includes(q) || 
+             (i.category || '').toLowerCase().includes(q) ||
+             (i.location || '').toLowerCase().includes(q);
+    });
+
+    viewContainer.innerHTML = `
+      <div class="page-hdr" style="margin-bottom:1rem">
+        <div>
+          <div style="font-size:0.7rem;font-weight:700;color:var(--goose);letter-spacing:0.08em;margin-bottom:0.15rem">CENTRAL UNIFIED STORAGE</div>
+          <h1 class="page-title">Store Layout — Consumables Section</h1>
+        </div>
+        <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+          <input type="text" class="field-input mono" placeholder="🔍 Search consumables..." 
+                 value="${escHtml(searchQuery)}" 
+                 oninput="filterStoreMapShelves(this.value)" 
+                 style="width:260px;font-size:0.82rem;padding:0.45rem 0.75rem;background:var(--bg-surface)" />
+        </div>
+      </div>
+
+      <!-- Zone Selector Tabs -->
+      <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border-subtle);padding-bottom:0.75rem">
+        <button class="btn btn-ghost" onclick="selectStoreMapZone('electrical')" style="gap:0.4rem;padding:0.45rem 1rem">
+          ⚡ Electrical Section (95 Shelves)
+        </button>
+        <button class="btn btn-ghost" onclick="selectStoreMapZone('mechanical')" style="gap:0.4rem;padding:0.45rem 1rem">
+          🔧 Mechanical Section (60 Shelves)
+        </button>
+        <button class="btn btn-primary" onclick="selectStoreMapZone('consumables')" style="gap:0.4rem;padding:0.45rem 1rem">
+          📦 Consumables Section (Unified Single Zone)
+        </button>
+      </div>
+
+      <!-- Consumables Overview Cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:0.875rem;margin-bottom:1.5rem">
+        <div class="stat-card" style="padding:0.875rem 1rem">
+          <div class="stat-label">STORAGE ZONE</div>
+          <div class="stat-value" style="color:var(--text-primary)">Consumables</div>
+          <div class="stat-meta">Single Unified Open Section</div>
+        </div>
+        <div class="stat-card" style="padding:0.875rem 1rem">
+          <div class="stat-label">TOTAL CONSUMABLE ITEMS</div>
+          <div class="stat-value" style="color:var(--accent-emerald)">${consumablesItems.length}</div>
+          <div class="stat-meta">Cataloged Materials</div>
+        </div>
+        <div class="stat-card" style="padding:0.875rem 1rem">
+          <div class="stat-label">TOTAL IN-STOCK QUANTITY</div>
+          <div class="stat-value" style="color:var(--goose)">${consumablesItems.reduce((sum, i) => sum + (parseInt(i.quantity) || 0), 0)}</div>
+          <div class="stat-meta">In Store Units</div>
+        </div>
+      </div>
+
+      <!-- Consumables Unified Section Card -->
+      <div class="card" style="padding:1.5rem;background:var(--bg-raised)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+          <div>
+            <h3 style="margin:0 0 0.2rem 0;font-size:1.1rem;font-weight:700;color:var(--text-primary)">Consumables Central Storage Area</h3>
+            <div style="font-size:0.8rem;color:var(--text-tertiary)">General open storage section for all factory consumables, adhesives, tapes, lubricants, and safety equipment.</div>
+          </div>
+        </div>
+
+        ${filteredConsumables.length === 0 ? `
+          <div style="text-align:center;padding:3rem 1rem;color:var(--text-tertiary)">
+            <div style="font-weight:700;font-size:1rem;color:var(--text-primary);margin-bottom:0.25rem">No Consumable Materials Found</div>
+            <div style="font-size:0.82rem;color:var(--text-secondary)">No items found under zone "Consumables".</div>
+          </div>
+        ` : `
+          <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:0.875rem">
+            ${filteredConsumables.map(item => `
+              <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.875rem;display:flex;flex-direction:column;justify-content:space-between;gap:0.75rem">
+                <div style="display:flex;align-items:center;gap:0.75rem">
+                  ${getItemImageHtml(item)}
+                  <div>
+                    <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);line-height:1.3">${escHtml(item.name)}</div>
+                    <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--goose)">SKU: ${escHtml(item.sku)}</div>
+                    ${item.location ? `<div style="font-size:0.7rem;color:var(--text-tertiary)">Location: ${escHtml(item.location)}</div>` : ''}
+                  </div>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-subtle);padding-top:0.6rem">
+                  <div style="font-family:var(--font-mono);font-weight:800;font-size:0.92rem">${item.quantity} ${item.unit}</div>
+                  <div>${stockTag(item)}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      </div>
+    `;
+    return;
+  }
+
   let activeGroups = ELECTRICAL_RACK_GROUPS;
   if (currentZone === 'mechanical') activeGroups = MECHANICAL_RACK_GROUPS;
-  if (currentZone === 'consumables') activeGroups = CONSUMABLES_RACK_GROUPS;
 
   const allShelves = [];
   activeGroups.forEach(g => {
@@ -1574,9 +1673,6 @@ function renderStoreMap() {
   });
 
   const emptyCount = allShelves.length - occupiedCount;
-
-  const viewContainer = document.getElementById('view-storemap');
-  if (!viewContainer) return;
 
   viewContainer.innerHTML = `
     <div class="page-hdr" style="margin-bottom:1rem">
@@ -1601,7 +1697,7 @@ function renderStoreMap() {
         🔧 Mechanical Section (${MECHANICAL_RACK_GROUPS.reduce((acc, g) => acc + g.racks.reduce((a, r) => a + r.shelves.length, 0), 0)} Shelves)
       </button>
       <button class="btn ${currentZone === 'consumables' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('consumables')" style="gap:0.4rem;padding:0.45rem 1rem">
-        📦 Consumables Section (${CONSUMABLES_RACK_GROUPS.reduce((acc, g) => acc + g.racks.reduce((a, r) => a + r.shelves.length, 0), 0)} Shelves)
+        📦 Consumables Section (Unified Single Zone)
       </button>
     </div>
 
