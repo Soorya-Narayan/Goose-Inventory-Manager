@@ -110,12 +110,11 @@ async function sendMailWithFallback(toEmail, subject, htmlContent) {
     }
   }
 
-  // List of Zoho SMTP configs in order of cloud network reliability (Port 587 TLS priority)
+  // List of Zoho SMTP configs in order of cloud network reliability (.in domain priority)
   const configs = [
+    { host: 'smtppro.zoho.in', port: 587, secure: false, requireTLS: true },
     { host: 'smtp.zoho.in', port: 587, secure: false, requireTLS: true },
-    { host: 'smtp.zoho.com', port: 587, secure: false, requireTLS: true },
-    { host: 'smtp.zoho.in', port: 465, secure: true },
-    { host: 'smtp.zoho.com', port: 465, secure: true }
+    { host: 'smtp.zoho.in', port: 465, secure: true }
   ];
 
   for (const cfg of configs) {
