@@ -239,6 +239,35 @@
       "processedAt": "2026-08-28T15:27:25.992Z",
       "processedBy": "Store Manager",
       "managerNotes": ""
+    },
+    {
+      "id": "7b48f208-316c-4e83-977b-2455d37db0de",
+      "name": "Er. Surya Narayan",
+      "engineerEmail": "surya@goosesolutions.in",
+      "employeeId": "EMP-SURYA",
+      "projectName": "Solar Farm Alpha Phase 2",
+      "purpose": "Solar Inverter Wiring & Installation",
+      "materials": [
+        {
+          "itemId": "1",
+          "itemName": "4mm² Copper Armoured Cable",
+          "sku": "CBL-CU-4MM",
+          "quantity": 50,
+          "unit": "m"
+        },
+        {
+          "itemId": "2",
+          "itemName": "MC4 Solar Connectors Pair",
+          "sku": "CON-MC4-PAIR",
+          "quantity": 10,
+          "unit": "pairs"
+        }
+      ],
+      "status": "pending",
+      "requestedAt": "2026-08-29T07:55:26.524Z",
+      "processedAt": null,
+      "processedBy": null,
+      "managerNotes": ""
     }
   ],
   "transactions": []
