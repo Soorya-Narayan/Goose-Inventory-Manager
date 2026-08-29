@@ -25,6 +25,13 @@
   <!-- Chart.js CDN for Overview Stock Analytics Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    /* Critical Inline Safety Rules — Prevents SVG size explosions */
+    svg { max-width: 100%; height: auto; display: inline-block; }
+    .bg-silhouettes-wrap { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 1001; }
+    .bg-silhouette { position: absolute; max-width: 140px; max-height: 140px; opacity: 0.035; }
+    .loading-overlay { position: fixed; inset: 0; z-index: 3000; }
+  </style>
 </head>
 <body>
 
@@ -33,11 +40,11 @@
   ═══════════════════════════════════════════════════════════ -->
   <div class="bg-silhouettes-wrap" aria-hidden="true">
     <!-- Forklift -->
-    <svg class="bg-silhouette silhouette-forklift-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h12v-5l-3-4H8v4H3v5z"/><path d="M8 8V4h6l2 4"/><line x1="17" y1="2" x2="17" y2="20"/><path d="M17 18h5v-3"/><path d="M17 14h4"/><circle cx="6" cy="18" r="2"/><circle cx="14" cy="18" r="2"/></svg>
+    <svg class="bg-silhouette silhouette-forklift-1" width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h12v-5l-3-4H8v4H3v5z"/><path d="M8 8V4h6l2 4"/><line x1="17" y1="2" x2="17" y2="20"/><path d="M17 18h5v-3"/><path d="M17 14h4"/><circle cx="6" cy="18" r="2"/><circle cx="14" cy="18" r="2"/></svg>
     <!-- Cargo Box -->
-    <svg class="bg-silhouette silhouette-box-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 7v10"/><path d="M12 12v10"/><path d="M22 7v10"/><path d="M7 4.5l10 5"/></svg>
+    <svg class="bg-silhouette silhouette-box-1" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 7v10"/><path d="M12 12v10"/><path d="M22 7v10"/><path d="M7 4.5l10 5"/></svg>
     <!-- Wooden Crate / Box Unit -->
-    <svg class="bg-silhouette silhouette-crate-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1.5"/><line x1="3" y1="3" x2="21" y2="21"/><line x1="21" y1="3" x2="3" y2="21"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+    <svg class="bg-silhouette silhouette-crate-1" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1.5"/><line x1="3" y1="3" x2="21" y2="21"/><line x1="21" y1="3" x2="3" y2="21"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
   </div>
 
   <!-- Minimal Loading Overlay with Cargo Boxes, Forklift & Birds -->
@@ -116,51 +123,19 @@
       </div>
 
       <form id="login-form" onsubmit="handleLogin(event)" class="login-form">
-        <!-- Store Manager PIN Group -->
         <div id="manager-pin-group" class="field-group">
           <label class="field-label">ENTER MANAGER PIN</label>
           <input type="password" id="manager-pin" class="field-input mono" placeholder="" maxlength="6" autocomplete="current-password" />
-          <button type="submit" class="login-btn" style="margin-top:1rem">
-            <span>Access Inventory</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </button>
         </div>
-
-        <!-- Engineer Email & OTP Verification Group -->
-        <div id="engineer-otp-group" class="field-group hidden">
-          <!-- Step 1: Enter Email -->
-          <div id="engineer-step-email">
-            <label class="field-label">YOUR ZOHO / COMPANY MAIL ID</label>
-            <input type="email" id="engineer-email" class="field-input" placeholder="e.g. surya@goosesolutions.in" autocomplete="email" />
-            <button type="button" class="login-btn" onclick="sendEngineerOtp()" style="margin-top:1rem;background:linear-gradient(135deg,#0072ff 0%,#00c6ff 100%)">
-              <span>Send OTP to Mail</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
-          </div>
-
-          <!-- Step 2: Enter 6-Digit OTP PIN (Hidden initially) -->
-          <div id="engineer-step-otp" class="hidden" style="margin-top:0.5rem">
-            <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.75rem;display:flex;align-items:center;justify-content:space-between">
-              <span>OTP sent to <strong id="sent-otp-email-display" style="color:var(--goose)">email</strong></span>
-              <button type="button" onclick="resetEngineerEmailStep(event)" style="background:none;border:none;color:var(--accent-cyan);text-decoration:underline;font-size:0.75rem;cursor:pointer">Change Email</button>
-            </div>
-            <label class="field-label">ENTER 6-DIGIT OTP PIN</label>
-            <input type="text" id="engineer-otp-input" class="field-input mono" placeholder="6-Digit OTP" maxlength="6" style="letter-spacing:0.25em;font-weight:700;font-size:1.1rem;text-align:center" />
-            
-            <button type="submit" class="login-btn" style="margin-top:1rem">
-              <span>Verify OTP & Access Inventory</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </button>
-            
-            <div style="text-align:center;margin-top:0.75rem">
-              <button type="button" onclick="sendEngineerOtp()" style="background:none;border:none;color:var(--text-tertiary);font-size:0.75rem;cursor:pointer;text-decoration:underline">
-                Resend OTP PIN
-              </button>
-            </div>
-          </div>
+        <div id="engineer-name-group" class="field-group hidden">
+          <label class="field-label">YOUR NAME / ENGINEER ID</label>
+          <input type="text" id="engineer-name" class="field-input" placeholder="e.g. Er. Rahul Sharma" />
         </div>
-
-        <div id="login-error" class="login-error hidden">Invalid PIN or OTP credentials.</div>
+        <button type="submit" class="login-btn">
+          <span>Access Inventory</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+        <div id="login-error" class="login-error hidden">Invalid PIN. Default manager PIN is 1234</div>
       </form>
 
       <div class="login-footer">

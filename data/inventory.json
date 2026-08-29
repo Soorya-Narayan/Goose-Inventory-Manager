@@ -239,6 +239,28 @@
       "processedAt": "2026-08-28T15:27:25.992Z",
       "processedBy": "Store Manager",
       "managerNotes": ""
+    },
+    {
+      "id": "6c450c86-3bd3-4bc6-ab97-e4c0bbca0140",
+      "name": "Er. Rahul Sharma",
+      "employeeId": "EMP-1234",
+      "projectName": "Project Beta",
+      "purpose": "Dark mode testing request",
+      "materials": [
+        {
+          "itemId": "GIS-2608-1002",
+          "itemName": "SS Pipe Flange 2\"",
+          "itemSku": "GIS-2608-1002",
+          "unit": "pcs",
+          "quantity": 3
+        }
+      ],
+      "status": "approved",
+      "requestedAt": "2026-08-29T05:25:43.740Z",
+      "processedAt": "2026-08-29T05:28:54.520Z",
+      "processedBy": "Store Manager",
+      "managerNotes": "",
+      "checklist": []
     }
   ],
   "transactions": []
