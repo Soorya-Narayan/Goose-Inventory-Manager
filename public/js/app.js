@@ -1480,14 +1480,35 @@ const ELECTRICAL_RACK_GROUPS = [
 
 const MECHANICAL_RACK_GROUPS = [
   {
-    groupTitle: 'Mechanical Racks (M-A – M-E)',
-    description: 'Pipes, Valves, Fittings & Heavy Hardware',
+    groupTitle: 'Primary Hardware Bay (Racks A – F)',
+    description: '4-Tier Mechanical Fasteners, Bolts, & Bearings Shelving',
     racks: [
-      { name: 'Rack M-A', shelves: ['M-A1', 'M-A2', 'M-A3', 'M-A4', 'M-A5', 'M-A6'] },
-      { name: 'Rack M-B', shelves: ['M-B1', 'M-B2', 'M-B3', 'M-B4', 'M-B5', 'M-B6'] },
-      { name: 'Rack M-C', shelves: ['M-C1', 'M-C2', 'M-C3', 'M-C4', 'M-C5', 'M-C6'] },
-      { name: 'Rack M-D', shelves: ['M-D1', 'M-D2', 'M-D3', 'M-D4', 'M-D5', 'M-D6'] },
-      { name: 'Rack M-E', shelves: ['M-E1', 'M-E2', 'M-E3', 'M-E4', 'M-E5', 'M-E6'] }
+      { name: 'Rack A', shelves: ['A1', 'A2', 'A3', 'A4'] },
+      { name: 'Rack B', shelves: ['B1', 'B2', 'B3', 'B4'] },
+      { name: 'Rack C', shelves: ['C1', 'C2', 'C3', 'C4'] },
+      { name: 'Rack D', shelves: ['D1', 'D2', 'D3', 'D4'] },
+      { name: 'Rack E', shelves: ['E1', 'E2', 'E3', 'E4'] },
+      { name: 'Rack F', shelves: ['F1', 'F2', 'F3', 'F4'] }
+    ]
+  },
+  {
+    groupTitle: 'High-Capacity Mechanical Bay (Racks G – K)',
+    description: '5-Tier Valves, Flanges, Pumps & Motors Storage',
+    racks: [
+      { name: 'Rack G', shelves: ['G1', 'G2', 'G3', 'G4', 'G5'] },
+      { name: 'Rack H', shelves: ['H1', 'H2', 'H3', 'H4', 'H5'] },
+      { name: 'Rack J', shelves: ['J1', 'J2', 'J3', 'J4', 'J5'] },
+      { name: 'Rack K', shelves: ['K1', 'K2', 'K3', 'K4', 'K5'] }
+    ]
+  },
+  {
+    groupTitle: 'Piping & Heavy Structural Bay (Racks L – P)',
+    description: '4-Tier Heavy Pipes, Plates & Structural Steel Racks',
+    racks: [
+      { name: 'Rack L', shelves: ['L1', 'L2', 'L3', 'L4'] },
+      { name: 'Rack M', shelves: ['M1', 'M2', 'M3', 'M4'] },
+      { name: 'Rack N', shelves: ['N1', 'N2', 'N3', 'N4'] },
+      { name: 'Rack P', shelves: ['P1', 'P2', 'P3', 'P4'] }
     ]
   }
 ];
@@ -1507,12 +1528,13 @@ const CONSUMABLES_RACK_GROUPS = [
 
 let currentInspectedShelf = '';
 
-function getItemsForShelf(shelfCode) {
+function getItemsForShelf(shelfCode, targetZone = '') {
   const codeLower = shelfCode.toLowerCase().trim();
   return (state.items || []).filter(item => {
+    if (targetZone && item.zone && item.zone.toLowerCase() !== targetZone.toLowerCase()) return false;
     const loc = (item.location || '').toLowerCase().trim();
     if (!loc) return false;
-    return loc === codeLower || loc === `r-${codeLower}` || loc === `shelf-${codeLower}` || loc.split(/[\s,-]+/).includes(codeLower);
+    return loc === codeLower || loc === `r-${codeLower}` || loc === `m-${codeLower}` || loc === `shelf-${codeLower}` || loc.split(/[\s,-]+/).includes(codeLower);
   });
 }
 
@@ -1544,7 +1566,7 @@ function renderStoreMap() {
   let occupiedCount = 0;
   let totalStoredItems = 0;
   allShelves.forEach(s => {
-    const items = getItemsForShelf(s);
+    const items = getItemsForShelf(s, currentZone);
     if (items.length > 0) {
       occupiedCount++;
       totalStoredItems += items.length;
@@ -1634,7 +1656,7 @@ function renderStoreMap() {
                   </div>
                   <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(62px, 1fr));gap:0.45rem">
                     ${rack.shelves.map(shelf => {
-                      const items = getItemsForShelf(shelf);
+                      const items = getItemsForShelf(shelf, currentZone);
                       const isOccupied = items.length > 0;
                       const hasLowStock = items.some(i => (i.quantity || 0) <= (i.minStock || 0));
 
@@ -1678,7 +1700,7 @@ function renderStoreMap() {
 
 function openShelfDetailModal(shelfCode) {
   currentInspectedShelf = shelfCode;
-  const items = getItemsForShelf(shelfCode);
+  const items = getItemsForShelf(shelfCode, state.storeMapZone);
   
   const titleEl = document.getElementById('shelf-detail-title');
   if (titleEl) titleEl.textContent = `Shelf Location: ${shelfCode}`;
