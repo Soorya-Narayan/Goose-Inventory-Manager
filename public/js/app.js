@@ -1544,8 +1544,23 @@ function selectStoreMapZone(zone) {
 }
 
 function filterStoreMapShelves(query) {
-  state.storeMapSearch = query.trim().toLowerCase();
+  state.storeMapSearch = query;
+  
+  const activeInput = document.activeElement;
+  const isSearchInput = activeInput && (activeInput.id === 'storemap-search-input' || activeInput.tagName === 'INPUT');
+  const cursorPos = isSearchInput ? activeInput.selectionStart : null;
+
   renderStoreMap();
+
+  const restoredInput = document.getElementById('storemap-search-input');
+  if (restoredInput) {
+    restoredInput.focus();
+    if (cursorPos !== null) {
+      try {
+        restoredInput.setSelectionRange(cursorPos, cursorPos);
+      } catch (e) {}
+    }
+  }
 }
 
 function renderStoreMap() {
@@ -1574,7 +1589,7 @@ function renderStoreMap() {
           <h1 class="page-title">Store Layout — Consumables Section</h1>
         </div>
         <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
-          <input type="text" class="field-input mono" placeholder="Search consumables..." 
+          <input type="text" id="storemap-search-input" class="field-input mono" placeholder="Search consumables..." 
                  value="${escHtml(searchQuery)}" 
                  oninput="filterStoreMapShelves(this.value)" 
                  style="width:260px;font-size:0.82rem;padding:0.45rem 0.75rem;background:var(--bg-surface)" />
@@ -1681,7 +1696,7 @@ function renderStoreMap() {
         <h1 class="page-title">Store Layout & Shelf Directory</h1>
       </div>
       <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
-        <input type="text" class="field-input mono" placeholder="Search shelf code (e.g. F3, XX, A1)..." 
+        <input type="text" id="storemap-search-input" class="field-input mono" placeholder="Search shelf code (e.g. F3, XX, A1)..." 
                value="${escHtml(searchQuery)}" 
                oninput="filterStoreMapShelves(this.value)" 
                style="width:260px;font-size:0.82rem;padding:0.45rem 0.75rem;background:var(--bg-surface)" />
