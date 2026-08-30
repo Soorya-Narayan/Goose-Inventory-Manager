@@ -60,17 +60,28 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Data Helpers ───────────────────────────────────────────────────────────
+const IGNORED_ZOHO_CODES = new Set(['', 'n/a', 'na', 'none', '0', '-', '--', 'null', 'nil', 'temp', 'placeholder', 'default']);
+
+function isMergeableZohoCode(code) {
+  if (!code) return false;
+  const clean = String(code).trim().toLowerCase();
+  if (clean.length < 2) return false;
+  return !IGNORED_ZOHO_CODES.has(clean);
+}
+
 function mergeDuplicateZohoItems(data) {
   if (!data || !Array.isArray(data.items)) return false;
 
   let modified = false;
-  const map = new Map(); // zohoCode (lowercase trimmed) -> primaryItem
+  const map = new Map(); // clean zohoCode -> primaryItem
   const removeIds = new Set();
   const idRemap = new Map(); // deletedItemId -> primaryItemId
 
   data.items.forEach(item => {
-    const code = (item.zohoCode || '').trim().toLowerCase();
-    if (!code) return; // Skip empty zoho codes
+    const rawCode = (item.zohoCode || '').trim();
+    if (!isMergeableZohoCode(rawCode)) return; // Skip empty & placeholder zoho codes
+
+    const code = rawCode.toLowerCase();
 
     if (!map.has(code)) {
       map.set(code, item);
@@ -329,9 +340,9 @@ app.post('/api/items', (req, res) => {
   const data = readData();
   const newZoho = (req.body.zohoCode || req.body.zoho || '').trim();
 
-  // If item with same zohoCode exists, merge quantities into it
-  if (newZoho) {
-    const existing = data.items.find(i => (i.zohoCode || '').trim().toLowerCase() === newZoho.toLowerCase());
+  // If item with same valid non-placeholder zohoCode exists, merge quantities into it
+  if (isMergeableZohoCode(newZoho)) {
+    const existing = data.items.find(i => isMergeableZohoCode(i.zohoCode) && (i.zohoCode || '').trim().toLowerCase() === newZoho.toLowerCase());
     if (existing) {
       existing.quantity = (parseInt(existing.quantity) || 0) + (parseInt(req.body.quantity) || 0);
       if (req.body.notes && req.body.notes.trim() && !existing.notes.includes(req.body.notes.trim())) {
@@ -379,9 +390,9 @@ app.put('/api/items/:id', (req, res) => {
 
   const newZoho = (req.body.zohoCode || req.body.zoho || '').trim();
 
-  // If updating zohoCode matches another existing item, merge current item into that item
-  if (newZoho) {
-    const existingOther = data.items.find(i => i.id !== req.params.id && (i.zohoCode || '').trim().toLowerCase() === newZoho.toLowerCase());
+  // If updating zohoCode matches another existing item with valid non-placeholder zohoCode, merge
+  if (isMergeableZohoCode(newZoho)) {
+    const existingOther = data.items.find(i => i.id !== req.params.id && isMergeableZohoCode(i.zohoCode) && (i.zohoCode || '').trim().toLowerCase() === newZoho.toLowerCase());
     if (existingOther) {
       const currentItem = data.items[idx];
       existingOther.quantity = (parseInt(existingOther.quantity) || 0) + (parseInt(req.body.quantity ?? currentItem.quantity) || 0);

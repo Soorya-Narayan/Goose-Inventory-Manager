@@ -291,6 +291,38 @@ async function loadAll(showLoader = true, customMsg = 'Synchronizing Warehouse D
     ]);
     state.items = items || [];
     state.requests = requests || [];
+
+    // LocalStorage sync guard: restore any newly created items if cloud instance filesystem was reset
+    try {
+      const cachedStr = localStorage.getItem('ims_local_items_cache');
+      let cachedItems = cachedStr ? JSON.parse(cachedStr) : [];
+      if (Array.isArray(cachedItems) && cachedItems.length > 0) {
+        const serverIds = new Set(state.items.map(i => i.id));
+        const missingItems = cachedItems.filter(ci => ci && ci.id && !serverIds.has(ci.id));
+
+        if (missingItems.length > 0) {
+          console.warn(`[DATA SYNC] Restoring ${missingItems.length} items missing on server...`);
+          for (const mItem of missingItems) {
+            try {
+              const restored = await api.post('/api/items', mItem);
+              if (restored && restored.id) {
+                const idx = state.items.findIndex(i => i.id === restored.id);
+                if (idx !== -1) state.items[idx] = restored;
+                else state.items.push(restored);
+              }
+            } catch (e) {
+              if (!state.items.find(i => i.id === mItem.id)) {
+                state.items.push(mItem);
+              }
+            }
+          }
+        }
+      }
+      localStorage.setItem('ims_local_items_cache', JSON.stringify(state.items));
+    } catch (cacheErr) {
+      console.warn('Items local cache sync warning:', cacheErr);
+    }
+
     computeStats();
   } catch (err) {
     showToast('Failed to load data from server', 'error');
@@ -2697,6 +2729,8 @@ async function deleteItem(id, name) {
         const res = await api.delete(`/api/items/${id}`);
         if (res.success) {
           showToast(`"${itemName}" deleted from inventory`, 'success');
+          state.items = state.items.filter(i => i.id !== id);
+          localStorage.setItem('ims_local_items_cache', JSON.stringify(state.items));
           await loadAll();
           renderView(state.currentView);
         } else {
