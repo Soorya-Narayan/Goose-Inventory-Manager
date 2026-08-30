@@ -46,7 +46,7 @@ Complete audit trail recording every inward receipt and outward allocation to sp
 ### 👨‍💻 Engineer Activity & Audit Log
 Track historical material requests, dispatch approvals/rejections, and aggregate total item quantities linked to engineer email IDs with 1-click PDF audit report export.
 
-![Engineer Activity Audit Log](pictures/engineer_activity.png)
+![Engineer Activity Audit Log](pictures/engineer-ACT.png)
 
 ---
 
