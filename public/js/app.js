@@ -323,6 +323,37 @@ async function loadAll(showLoader = true, customMsg = 'Synchronizing Warehouse D
       console.warn('Items local cache sync warning:', cacheErr);
     }
 
+    // LocalStorage sync guard: restore any material requests if cloud instance filesystem was reset
+    try {
+      const cachedReqsStr = localStorage.getItem('ims_local_requests_cache');
+      let cachedReqs = cachedReqsStr ? JSON.parse(cachedReqsStr) : [];
+      if (Array.isArray(cachedReqs) && cachedReqs.length > 0) {
+        const serverReqIds = new Set(state.requests.map(r => r.id));
+        const missingReqs = cachedReqs.filter(cr => cr && cr.id && !serverReqIds.has(cr.id));
+
+        if (missingReqs.length > 0) {
+          console.warn(`[DATA SYNC] Restoring ${missingReqs.length} requests missing on server...`);
+          for (const mReq of missingReqs) {
+            try {
+              const restoredReq = await api.post('/api/requests', mReq);
+              if (restoredReq && restoredReq.id) {
+                const idx = state.requests.findIndex(r => r.id === restoredReq.id);
+                if (idx !== -1) state.requests[idx] = restoredReq;
+                else state.requests.push(restoredReq);
+              }
+            } catch (e) {
+              if (!state.requests.find(r => r.id === mReq.id)) {
+                state.requests.push(mReq);
+              }
+            }
+          }
+        }
+      }
+      localStorage.setItem('ims_local_requests_cache', JSON.stringify(state.requests));
+    } catch (reqCacheErr) {
+      console.warn('Requests local cache sync warning:', reqCacheErr);
+    }
+
     computeStats();
   } catch (err) {
     showToast('Failed to load data from server', 'error');
