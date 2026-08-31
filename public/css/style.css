@@ -1395,6 +1395,32 @@ td {
   border-color: rgba(201, 64, 64, 0.3);
 }
 
+.btn-delete-icon {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  padding: 0.35rem 0.55rem;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-delete-icon:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+}
+
+.btn-delete-icon svg {
+  stroke: currentColor !important;
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
 .btn-sm {
   padding: 0.3rem 0.625rem;
   font-size: 0.75rem;
