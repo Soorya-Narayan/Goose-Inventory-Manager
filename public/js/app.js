@@ -292,66 +292,12 @@ async function loadAll(showLoader = true, customMsg = 'Synchronizing Warehouse D
     state.items = items || [];
     state.requests = requests || [];
 
-    // LocalStorage sync guard: restore any newly created items if cloud instance filesystem was reset
+    // Sync LocalStorage cache with official server dataset
     try {
-      const cachedStr = localStorage.getItem('ims_local_items_cache');
-      let cachedItems = cachedStr ? JSON.parse(cachedStr) : [];
-      if (Array.isArray(cachedItems) && cachedItems.length > 0) {
-        const serverIds = new Set(state.items.map(i => i.id));
-        const missingItems = cachedItems.filter(ci => ci && ci.id && !serverIds.has(ci.id));
-
-        if (missingItems.length > 0) {
-          console.warn(`[DATA SYNC] Restoring ${missingItems.length} items missing on server...`);
-          for (const mItem of missingItems) {
-            try {
-              const restored = await api.post('/api/items', mItem);
-              if (restored && restored.id) {
-                const idx = state.items.findIndex(i => i.id === restored.id);
-                if (idx !== -1) state.items[idx] = restored;
-                else state.items.push(restored);
-              }
-            } catch (e) {
-              if (!state.items.find(i => i.id === mItem.id)) {
-                state.items.push(mItem);
-              }
-            }
-          }
-        }
-      }
       localStorage.setItem('ims_local_items_cache', JSON.stringify(state.items));
-    } catch (cacheErr) {
-      console.warn('Items local cache sync warning:', cacheErr);
-    }
-
-    // LocalStorage sync guard: restore any material requests if cloud instance filesystem was reset
-    try {
-      const cachedReqsStr = localStorage.getItem('ims_local_requests_cache');
-      let cachedReqs = cachedReqsStr ? JSON.parse(cachedReqsStr) : [];
-      if (Array.isArray(cachedReqs) && cachedReqs.length > 0) {
-        const serverReqIds = new Set(state.requests.map(r => r.id));
-        const missingReqs = cachedReqs.filter(cr => cr && cr.id && !serverReqIds.has(cr.id));
-
-        if (missingReqs.length > 0) {
-          console.warn(`[DATA SYNC] Restoring ${missingReqs.length} requests missing on server...`);
-          for (const mReq of missingReqs) {
-            try {
-              const restoredReq = await api.post('/api/requests', mReq);
-              if (restoredReq && restoredReq.id) {
-                const idx = state.requests.findIndex(r => r.id === restoredReq.id);
-                if (idx !== -1) state.requests[idx] = restoredReq;
-                else state.requests.push(restoredReq);
-              }
-            } catch (e) {
-              if (!state.requests.find(r => r.id === mReq.id)) {
-                state.requests.push(mReq);
-              }
-            }
-          }
-        }
-      }
       localStorage.setItem('ims_local_requests_cache', JSON.stringify(state.requests));
-    } catch (reqCacheErr) {
-      console.warn('Requests local cache sync warning:', reqCacheErr);
+    } catch (cacheErr) {
+      console.warn('Local cache sync warning:', cacheErr);
     }
 
     computeStats();
