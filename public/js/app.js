@@ -2768,10 +2768,13 @@ function openAddItemModal() {
   generateProductId();
   // Hide duplicate warning
   document.getElementById('duplicate-warning')?.classList.add('hidden');
-  // Wire up live duplicate detection
+  // Wire up live duplicate detection for both Zoho Code and Material Name
+  if (zohoEl) {
+    zohoEl.oninput = () => checkDuplicateZohoCode(zohoEl.value);
+  }
   const nameEl = document.getElementById('item-name');
   if (nameEl) {
-    nameEl.oninput = () => checkDuplicateName(nameEl.value);
+    nameEl.oninput = () => checkDuplicateZohoCode(document.getElementById('item-zoho-code')?.value || '');
   }
   // Populate category autocomplete suggestions from existing items
   populateCategorySuggestions();
@@ -2795,8 +2798,8 @@ function openEditItemModal(id) {
   document.getElementById('item-barcode').value = item.barcode || item.sku || '';
   document.getElementById('item-notes').value = item.notes || '';
   // Populate Zoho Code, SO #, and PO #
-  const zohoEl = document.getElementById('item-zoho-code');
-  if (zohoEl) zohoEl.value = item.zohoCode || '';
+  const zohoInp = document.getElementById('item-zoho-code');
+  if (zohoInp) zohoInp.value = item.zohoCode || '';
   const soEl = document.getElementById('item-so');
   if (soEl) soEl.value = item.soNumber || item.so || '';
   const poEl = document.getElementById('item-po');
@@ -2806,6 +2809,7 @@ function openEditItemModal(id) {
   document.getElementById('duplicate-warning')?.classList.add('hidden');
   const nameEl = document.getElementById('item-name');
   if (nameEl) nameEl.oninput = null;
+  if (zohoInp) zohoInp.oninput = null;
   // Populate category autocomplete suggestions from existing items
   populateCategorySuggestions();
   document.getElementById('modal-item-overlay').classList.remove('hidden');
@@ -2819,6 +2823,8 @@ function closeItemModal(e) {
   document.getElementById('modal-item-overlay')?.classList.add('hidden');
   const nameEl = document.getElementById('item-name');
   if (nameEl) nameEl.oninput = null;
+  const zohoInp = document.getElementById('item-zoho-code');
+  if (zohoInp) zohoInp.oninput = null;
 }
 
 function togglePasswordVisibility(inputId, btn) {
@@ -2835,30 +2841,48 @@ function togglePasswordVisibility(inputId, btn) {
   }
 }
 
-function checkDuplicateName(name) {
-  if (!name || name.length < 4) {
-    document.getElementById('duplicate-warning')?.classList.add('hidden');
-    return;
-  }
-  const lower = name.toLowerCase();
-  const matches = state.items.filter(i =>
-    i.name && i.name.toLowerCase().includes(lower.slice(0, Math.min(lower.length, 12)))
-  );
+function checkDuplicateZohoCode(inputVal) {
+  const zohoCodeVal = (inputVal || document.getElementById('item-zoho-code')?.value || '').trim();
+  const nameVal = (document.getElementById('item-name')?.value || '').trim();
+  
   const warn = document.getElementById('duplicate-warning');
   const warnText = document.getElementById('duplicate-warning-text');
-  if (matches.length > 0 && warn && warnText) {
-    warnText.textContent = `"${matches[0].name}" already exists in inventory (SKU: ${matches[0].sku}). Are you adding a different item?`;
+  if (!warn || !warnText) return;
+
+  const IGNORED_ZOHO_CODES = new Set(['', 'n/a', 'na', 'none', '0', '-', '--', 'null', 'nil', 'temp', 'placeholder', 'default']);
+  const cleanZoho = zohoCodeVal.toLowerCase();
+
+  // Check Zoho Code match first
+  let match = null;
+  if (cleanZoho.length >= 2 && !IGNORED_ZOHO_CODES.has(cleanZoho)) {
+    match = state.items.find(i => 
+      !state.editingItemId || i.id !== state.editingItemId ? 
+      (i.zohoCode || i.sku || '').toLowerCase() === cleanZoho : false
+    );
+  }
+
+  // Fallback: check name match
+  if (!match && nameVal.length >= 4) {
+    const lowerName = nameVal.toLowerCase();
+    match = state.items.find(i => 
+      !state.editingItemId || i.id !== state.editingItemId ? 
+      (i.name || '').toLowerCase().includes(lowerName.slice(0, Math.min(lowerName.length, 12))) : false
+    );
+  }
+
+  if (match) {
+    warnText.innerHTML = `⚠️ <strong>Existing Material Found:</strong> "${escHtml(match.name)}" (Zoho Code: <strong>${escHtml(match.zohoCode || match.sku)}</strong>, Stock: <strong>${match.quantity} ${match.unit}</strong> on shelf <strong>${escHtml(match.location || 'A1')}</strong>). Submitting will automatically merge new stock into this item.`;
     warn.classList.remove('hidden');
-  } else if (warn) {
+  } else {
     warn.classList.add('hidden');
   }
 }
 
 async function handleItemSubmit(e) {
   e.preventDefault();
+  const zohoCodeVal = document.getElementById('item-zoho-code')?.value.trim() || '';
   const skuEl = document.getElementById('item-sku');
-  // Ensure barcode mirrors product ID
-  const productId = skuEl?.value.trim() || generateProductId();
+  const productId = zohoCodeVal || skuEl?.value.trim() || generateProductId();
   const bcEl = document.getElementById('item-barcode');
   if (bcEl) bcEl.value = productId;
 
@@ -2874,11 +2898,34 @@ async function handleItemSubmit(e) {
     barcode: productId,
     notes: document.getElementById('item-notes').value.trim(),
     imageUrl: document.getElementById('item-imageUrl').value.trim(),
-    zohoCode: document.getElementById('item-zoho-code').value.trim(),
+    zohoCode: zohoCodeVal,
     soNumber: document.getElementById('item-so')?.value.trim() || '',
     poNumber: document.getElementById('item-po')?.value.trim() || ''
   };
 
+  const IGNORED_ZOHO_CODES = new Set(['', 'n/a', 'na', 'none', '0', '-', '--', 'null', 'nil', 'temp', 'placeholder', 'default']);
+  const cleanZoho = zohoCodeVal.toLowerCase();
+
+  // If adding a new item and duplicate Zoho Code exists, trigger confirmation popup modal
+  if (!state.editingItemId && cleanZoho.length >= 2 && !IGNORED_ZOHO_CODES.has(cleanZoho)) {
+    const existingMatch = state.items.find(i => (i.zohoCode || i.sku || '').trim().toLowerCase() === cleanZoho);
+    if (existingMatch) {
+      showConfirmModal({
+        title: 'Duplicate Zoho Code Found',
+        message: `A material with Zoho Code "${existingMatch.zohoCode || existingMatch.sku}" already exists in store inventory:\n\n• Existing Item: "${existingMatch.name}" (${existingMatch.quantity} ${existingMatch.unit} on shelf ${existingMatch.location || 'A1'})\n• New Quantity to Add: +${data.quantity} ${data.unit}\n\nSubmitting will automatically merge +${data.quantity} ${data.unit} directly into "${existingMatch.name}". Proceed with auto-merge?`,
+        confirmLabel: 'Merge Item Quantities',
+        onConfirm: async () => {
+          await submitItemData(data);
+        }
+      });
+      return;
+    }
+  }
+
+  await submitItemData(data);
+}
+
+async function submitItemData(data) {
   try {
     let savedItem = null;
     if (state.editingItemId) {
@@ -2890,7 +2937,6 @@ async function handleItemSubmit(e) {
       document.getElementById('modal-item-overlay').classList.add('hidden');
       await loadAll();
       renderView(state.currentView);
-      // Offer immediate barcode print after adding new item
       setTimeout(() => promptPrintAfterSave(savedItem), 300);
       return;
     }

@@ -78,7 +78,7 @@ function mergeDuplicateZohoItems(data) {
   const idRemap = new Map(); // deletedItemId -> primaryItemId
 
   data.items.forEach(item => {
-    const rawCode = (item.zohoCode || '').trim();
+    const rawCode = (item.zohoCode || item.sku || '').trim();
     if (!isMergeableZohoCode(rawCode)) return; // Skip empty & placeholder zoho codes
 
     const code = rawCode.toLowerCase();
