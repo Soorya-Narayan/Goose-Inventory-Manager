@@ -578,7 +578,7 @@
       </div>
       <!-- Search bar -->
       <div style="padding:0.625rem 1rem;border-bottom:1px solid var(--border-subtle);flex-shrink:0">
-        <input type="text" id="picker-search" class="field-input" placeholder="Search by name or SKU…" oninput="renderPickerGrid()" style="width:100%" />
+        <input type="text" id="picker-search" class="field-input" placeholder="Search by name or Zoho Code…" oninput="renderPickerGrid()" style="width:100%" />
       </div>
       <!-- Body: sidebar + grid -->
       <div style="display:flex;flex:1;overflow:hidden">
@@ -612,12 +612,12 @@
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
             <label class="field-label" style="margin:0;color:var(--text-primary);display:flex;align-items:center;gap:0.4rem">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h1v10H7zM10 7h2v10h-2zM14 7h1v10h-1zM17 7h1v10h-1z"/></svg>
-              SCAN PRODUCT BARCODE / SKU
+              SCAN PRODUCT BARCODE / ZOHO CODE
             </label>
             <span style="font-size:0.7rem;color:var(--goose);font-family:var(--font-mono);font-weight:600">HELETT HT20 READY</span>
           </div>
           <div style="display:flex;gap:0.5rem">
-            <input type="text" id="checklist-barcode-input" class="field-input mono" placeholder="Point scanner here or enter SKU / Barcode…" onkeydown="handleChecklistScanKey(event)" style="font-size:0.95rem;background:var(--bg-surface)" />
+            <input type="text" id="checklist-barcode-input" class="field-input mono" placeholder="Point scanner here or enter Zoho Code / Barcode…" onkeydown="handleChecklistScanKey(event)" style="font-size:0.95rem;background:var(--bg-surface)" />
             <button type="button" class="btn btn-primary" onclick="processChecklistBarcodeScan()" style="white-space:nowrap;padding:0 0.875rem">
               Verify
             </button>

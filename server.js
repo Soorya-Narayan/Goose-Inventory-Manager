@@ -338,11 +338,12 @@ app.get('/api/items', (req, res) => {
 
 app.post('/api/items', (req, res) => {
   const data = readData();
-  const newZoho = (req.body.zohoCode || req.body.zoho || '').trim();
+  const newZoho = (req.body.zohoCode || req.body.zoho || req.body.sku || '').trim();
+  const primarySku = newZoho || req.body.sku || req.body.barcode || `MEC-${Date.now().toString().slice(-4)}`;
 
   // If item with same valid non-placeholder zohoCode exists, merge quantities into it
   if (isMergeableZohoCode(newZoho)) {
-    const existing = data.items.find(i => isMergeableZohoCode(i.zohoCode) && (i.zohoCode || '').trim().toLowerCase() === newZoho.toLowerCase());
+    const existing = data.items.find(i => isMergeableZohoCode(i.zohoCode || i.sku) && (i.zohoCode || i.sku || '').trim().toLowerCase() === newZoho.toLowerCase());
     if (existing) {
       existing.quantity = (parseInt(existing.quantity) || 0) + (parseInt(req.body.quantity) || 0);
       if (req.body.notes && req.body.notes.trim() && !existing.notes.includes(req.body.notes.trim())) {
@@ -357,16 +358,16 @@ app.post('/api/items', (req, res) => {
   }
 
   const item = {
-    id: req.body.id || req.body.barcode || uuidv4(),
+    id: req.body.id || primarySku || uuidv4(),
     name: req.body.name || 'Unnamed Material',
-    sku: req.body.sku || req.body.barcode || `MEC-${Date.now().toString().slice(-4)}`,
+    sku: primarySku,
     zone: req.body.zone || 'mechanical',
     category: req.body.category || 'General',
     quantity: parseInt(req.body.quantity) || 0,
     unit: req.body.unit || 'pcs',
     minStock: parseInt(req.body.minStock) || 0,
     location: req.body.location || 'A1',
-    barcode: req.body.barcode || req.body.sku || '',
+    barcode: req.body.barcode || primarySku,
     rate: parseFloat(req.body.rate) || 0,
     purchaseRate: parseFloat(req.body.purchaseRate) || 0,
     hsn: req.body.hsn || '',

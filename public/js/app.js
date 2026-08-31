@@ -413,7 +413,7 @@ function handleBarcodeScanned(barcode) {
 function openScanActionModal(item) {
   currentScannedItem = item;
   document.getElementById('scan-action-title').textContent = item.name;
-  document.getElementById('scan-action-sku').textContent = `SKU: ${item.sku}`;
+  document.getElementById('scan-action-sku').textContent = `Zoho Code: ${item.zohoCode || item.sku}`;
   document.getElementById('scan-action-location').textContent = item.location || 'A1';
   document.getElementById('scan-action-category').textContent = item.category || 'Goods';
   document.getElementById('scan-action-qty').textContent = `${item.quantity || 0} ${item.unit || 'pcs'}`;
@@ -1064,7 +1064,7 @@ async function renderTransactions() {
         <tr>
           <th>TIME</th>
           <th>ITEM</th>
-          <th>SKU / CODE</th>
+          <th>ZOHO CODE</th>
           <th>MOVEMENT TYPE</th>
           <th>RECIPIENT / PERSON</th>
           <th>PROJECT / DESTINATION</th>
@@ -1279,7 +1279,7 @@ function renderDashboard() {
               <div style="display:flex;align-items:center;justify-content:space-between;padding:0.65rem 0.875rem;background:var(--bg-elevated);border-radius:var(--radius-md);border:1px solid var(--border-subtle)">
                 <div>
                   <div style="font-weight:600;font-size:0.85rem;color:var(--text-primary)">${escHtml(i.name)}</div>
-                  <div style="font-size:0.72rem;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:0.15rem">SKU: ${escHtml(i.sku)} &middot; Shelf ${escHtml(i.location)}</div>
+                  <div style="font-size:0.72rem;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:0.15rem">Zoho Code: ${escHtml(i.zohoCode || i.sku)} &middot; Shelf ${escHtml(i.location)}</div>
                 </div>
                 <div>${stockTag(i)}</div>
               </div>
@@ -1690,7 +1690,7 @@ function renderStoreMap() {
                   ${getItemImageHtml(item)}
                   <div>
                     <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);line-height:1.3">${escHtml(item.name)}</div>
-                    <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--goose)">SKU: ${escHtml(item.sku)}</div>
+                    <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--goose)">Zoho Code: ${escHtml(item.zohoCode || item.sku)}</div>
                     ${item.location ? `<div style="font-size:0.7rem;color:var(--text-tertiary)">Location: ${escHtml(item.location)}</div>` : ''}
                   </div>
                 </div>
@@ -1878,7 +1878,7 @@ function openShelfDetailModal(shelfCode) {
                 ${getItemImageHtml(item)}
                 <div>
                   <div style="font-weight:700;font-size:0.88rem;color:var(--text-primary)">${escHtml(item.name)}</div>
-                  <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--goose)">SKU: ${escHtml(item.sku)}</div>
+                  <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--goose)">Zoho Code: ${escHtml(item.zohoCode || item.sku)}</div>
                 </div>
               </div>
               <div style="text-align:right">
@@ -1926,7 +1926,7 @@ function exportInventoryCSV() {
   }
 
   const headers = [
-    'Item ID', 'SKU / Barcode', 'Material Name', 'Zone', 'Category', 
+    'Item ID', 'Zoho Code / Barcode', 'Material Name', 'Zone', 'Category', 
     'Quantity', 'Unit', 'Unit Rate (INR)', 'Total Value (INR)', 'Min Stock', 
     'Shelf Location', 'HSN', 'Notes', 'Added Date'
   ];
@@ -1944,7 +1944,7 @@ function exportInventoryCSV() {
 
     return [
       escapeCSV(item.id),
-      escapeCSV(item.sku || item.barcode || ''),
+      escapeCSV(item.zohoCode || item.sku || item.barcode || ''),
       escapeCSV(item.name || ''),
       escapeCSV(item.zone || ''),
       escapeCSV(item.category || ''),
@@ -2033,13 +2033,13 @@ function exportInventoryPDF() {
     doc.text(`Total Inventory Value: INR ${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 132, 39);
 
     // AutoTable
-    const tableHeaders = [['#', 'SKU / CODE', 'MATERIAL NAME', 'ZONE', 'QTY', 'UNIT RATE', 'LOCATION']];
+    const tableHeaders = [['#', 'ZOHO CODE', 'MATERIAL NAME', 'ZONE', 'QTY', 'UNIT RATE', 'LOCATION']];
     const tableRows = items.map((item, index) => {
       const zoneName = item.zone ? item.zone.charAt(0).toUpperCase() + item.zone.slice(1) : 'General';
       const rateStr = item.rate ? `INR ${parseFloat(item.rate).toLocaleString('en-IN')}` : 'INR 0';
       return [
         index + 1,
-        item.sku || item.barcode || '-',
+        item.zohoCode || item.sku || item.barcode || '-',
         item.name.length > 32 ? item.name.slice(0, 32) + '...' : item.name,
         zoneName,
         `${item.quantity || 0} ${item.unit || 'pcs'}`,
@@ -2122,7 +2122,7 @@ function renderInventory() {
 
     <!-- Search Input (Kept intact during typing) -->
     <div style="margin-bottom:1rem">
-      <input type="text" id="inventory-search-input" class="field-input" placeholder="Search materials by name, SKU, shelf location..."
+      <input type="text" id="inventory-search-input" class="field-input" placeholder="Search materials by name, Zoho Code, shelf location..."
         value="${escHtml(state.searchQuery)}" oninput="state.searchQuery=this.value;filterAndRenderInventoryRows()" style="font-size:0.9rem;padding:0.7rem 0.875rem" />
     </div>
 
@@ -2155,7 +2155,7 @@ function renderInventory() {
           <thead>
             <tr>
               <th style="width:48px">Photo</th>
-              <th>SKU / Code</th>
+              <th>Zoho Code</th>
               <th>Material Name</th>
               <th>Zone</th>
               <th>Category</th>
@@ -2232,7 +2232,7 @@ function filterAndRenderInventoryRows() {
   tbody.innerHTML = items.map(item => `
     <tr>
       <td>${getItemImageHtml(item)}</td>
-      <td style="font-family:var(--font-mono);font-size:0.75rem">${escHtml(item.sku)}</td>
+      <td style="font-family:var(--font-mono);font-size:0.75rem;font-weight:600">${escHtml(item.zohoCode || item.sku)}</td>
       <td>
         <strong style="font-size:0.85rem">${escHtml(item.name)}</strong>
         ${item.notes ? `<div style="font-size:0.7rem;color:var(--text-tertiary)">${escHtml(item.notes)}</div>` : ''}
