@@ -302,7 +302,16 @@ async function loadAll(showLoader = true, customMsg = 'Synchronizing Warehouse D
 
     computeStats();
   } catch (err) {
-    showToast('Failed to load data from server', 'error');
+    try {
+      const cachedItems = localStorage.getItem('ims_local_items_cache');
+      const cachedReqs = localStorage.getItem('ims_local_requests_cache');
+      if (cachedItems) state.items = JSON.parse(cachedItems) || [];
+      if (cachedReqs) state.requests = JSON.parse(cachedReqs) || [];
+      computeStats();
+      showToast('Loaded data from local cache', 'info');
+    } catch (cErr) {
+      showToast('Failed to load data from server', 'error');
+    }
   } finally {
     if (showLoader) {
       hideLoadingScreen();
@@ -2836,7 +2845,7 @@ function checkDuplicateZohoCode(inputVal) {
   const warnText = document.getElementById('duplicate-warning-text');
   if (!warn || !warnText) return;
 
-  const IGNORED_ZOHO_CODES = new Set(['', 'n/a', 'na', 'none', '0', '-', '--', 'null', 'nil', 'temp', 'placeholder', 'default']);
+  const IGNORED_ZOHO_CODES = new Set(['', 'n/a', 'na', 'none', '0', '-', '--', 'null', 'nil', 'temp', 'placeholder', 'default', '?']);
   const cleanZoho = zohoCodeVal.toLowerCase();
 
   // Check Zoho Code match first
@@ -2890,7 +2899,7 @@ async function handleItemSubmit(e) {
     poNumber: document.getElementById('item-po')?.value.trim() || ''
   };
 
-  const IGNORED_ZOHO_CODES = new Set(['', 'n/a', 'na', 'none', '0', '-', '--', 'null', 'nil', 'temp', 'placeholder', 'default']);
+  const IGNORED_ZOHO_CODES = new Set(['', 'n/a', 'na', 'none', '0', '-', '--', 'null', 'nil', 'temp', 'placeholder', 'default', '?']);
   const cleanZoho = zohoCodeVal.toLowerCase();
 
   // If adding a new item and duplicate Zoho Code exists, trigger confirmation popup modal
