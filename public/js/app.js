@@ -1118,9 +1118,13 @@ async function renderTransactions() {
               ${isManager ? `
                 <td>
                   <button onclick="deleteTransaction('${t.id}')" title="Delete this log entry"
-                    style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);padding:4px;border-radius:4px"
-                    onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-tertiary)'">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);cursor:pointer;color:#ef4444;padding:4px 6px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
                   </button>
                 </td>
               ` : ''}
@@ -2253,8 +2257,13 @@ function filterAndRenderInventoryRows() {
           <button class="btn btn-ghost btn-sm" title="Print Barcode on Tej C15" onclick="openPrintModal('${item.id}')">Sticker</button>
           <button class="btn btn-ghost btn-sm" title="Request Material" onclick="openRequestModal('${item.id}')">Request</button>
           ${isManager ? `<button class="btn btn-ghost btn-sm" onclick="openEditItemModal('${item.id}')">Edit</button>` : ''}
-          ${isManager ? `<button class="btn btn-ghost btn-sm" onclick="deleteItem('${item.id}')" title="Delete this material" style="color:var(--danger)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          ${isManager ? `<button class="btn btn-ghost btn-sm" onclick="deleteItem('${item.id}', '${escHtml(item.name)}')" title="Delete ${escHtml(item.name)}" style="color:#ef4444;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);padding:0.35rem 0.55rem;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-sm)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
           </button>` : ''}
         </div>
       </td>
