@@ -1760,29 +1760,7 @@ function renderStoreMap() {
       </button>
     </div>
 
-    <!-- Stats Summary Cards -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:0.875rem;margin-bottom:1.5rem">
-      <div class="stat-card" style="padding:0.875rem 1rem">
-        <div class="stat-label">TOTAL SHELVES</div>
-        <div class="stat-value" style="color:var(--text-primary)">${allShelves.length}</div>
-        <div class="stat-meta">${currentZone.toUpperCase()} ZONE</div>
-      </div>
-      <div class="stat-card" style="padding:0.875rem 1rem">
-        <div class="stat-label">OCCUPIED SHELVES</div>
-        <div class="stat-value" style="color:var(--accent-emerald)">${occupiedCount}</div>
-        <div class="stat-meta">${Math.round((occupiedCount / (allShelves.length || 1)) * 100)}% Capacity Used</div>
-      </div>
-      <div class="stat-card" style="padding:0.875rem 1rem">
-        <div class="stat-label">AVAILABLE / EMPTY</div>
-        <div class="stat-value" style="color:var(--text-tertiary)">${emptyCount}</div>
-        <div class="stat-meta">Ready for Inward Stock</div>
-      </div>
-      <div class="stat-card" style="padding:0.875rem 1rem">
-        <div class="stat-label">STORED MATERIALS</div>
-        <div class="stat-value" style="color:var(--goose)">${totalStoredItems}</div>
-        <div class="stat-meta">Total Catalog Items</div>
-      </div>
-    </div>
+
 
     <!-- Rack Groups -->
     <div style="display:flex;flex-direction:column;gap:1.5rem">
