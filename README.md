@@ -9,7 +9,7 @@
 
 ## 🏭 Overview
 
-**Goose Inventory Manager** is a high-density, industrial-grade store inventory management web application built for factory floors, industrial plants, and engineering equipment stores. It provides real-time material tracking, HID barcode scanner integration (**Helett HT20**), 1-click FlashLabel Pro barcode printing workflow, project/client material allocations, and live **Zoho Books API** synchronization.
+**Goose Inventory Manager** is a high-density, industrial-grade store inventory management web application built for factory floors, industrial plants, and engineering equipment stores. It provides real-time material tracking, primary **Zoho Code** master SKU management, automatic stock deduplication & merging, HID barcode scanner integration (**Helett HT20**), 1-click **Tej C15** thermal barcode sticker printing, project/client material allocations, and live **Zoho Books API** synchronization.
 
 ---
 
@@ -23,7 +23,7 @@ Real-time operational summary displaying total inventory count, low stock thresh
 ---
 
 ### 📦 Material Directory & Inventory Management
-Search and filter over 4,000+ industrial materials by zone (Mechanical, Electrical, Consumables), stock status, category, or shelf location.
+Search and filter industrial materials by Zoho Code, zone (Mechanical, Electrical, Consumables), stock status, category, or shelf location.
 
 ![Store Inventory](pictures/store_inventory.png)
 
@@ -50,25 +50,28 @@ Track historical material requests, dispatch approvals/rejections, and aggregate
 
 ---
 
-### ⚙️ Store Manager Options Menu
-Quick options menu for updating manager credentials, toggling Dark/Light themes, and triggering live Zoho Books API synchronization.
+### ⚙️ Store Manager Options Menu & Centralized Security
+Quick options menu for updating manager credentials globally across all devices, toggling Dark/Light themes, and triggering live Zoho Books API synchronization.
 
 ![Store Manager Options Menu](pictures/admin_options.png)
 
 ---
 
-## 🛠️ Key Features
+## 🛠️ Key Features & System Capabilities
 
+- **🏷️ Primary Zoho Code Identifier System**: Tracks materials using **Zoho Code** as the primary master SKU across search, directory, barcode stickers, PDF reports, and CSV exports.
+- **🔄 Automatic Stock Deduplication & Auto-Merging Engine**: Adding or importing items sharing an existing non-placeholder Zoho Code automatically consolidates quantities into a single primary item entry.
+- **⚡ Live Duplicate Warning & Submit Pop-up Modal**: Typing an existing Zoho Code displays an instant real-time amber warning banner with stock & shelf location details, followed by a confirmation pop-up modal requesting manager approval before merging.
 - **⚡ Hardware Barcode Scanner Support**: Instant HID mode barcode scanning via **Helett HT20** (2.4G wireless USB dongle).
-- **🏷️ Auto-Generated Barcode IDs**: Auto-generates unique Product IDs (`GIS-YYMM-XXXX`) for new materials with 1-click copy for **FlashLabel Pro** label printing.
-- **🔒 Engineer Zoho Email 6-Digit OTP Auth**: Secure two-factor login workflow requiring Engineers to enter their Zoho/Company Email ID (`surya@goosesolutions.in`) and verify a 6-digit OTP sent via Zoho SMTP.
+- **🖨️ Tej C15 Thermal Barcode Sticker Printing**: Direct browser thermal sticker printing pre-formatted for **Tej C15 / YXWL Y50** label printers (50mm × 25mm labels) featuring scannable Code128 barcodes, QR codes, Zoho Code, and shelf location tags.
+- **🔒 Centralized Password Security (`Mannar@200`)**: Store Manager password (`Mannar@200`) is managed centrally via `POST /api/auth/change-pin`. Changing the password on one device immediately updates access across all laptops, phones, and desktops globally.
+- **🔐 Engineer Zoho Email 6-Digit OTP Auth**: Secure two-factor login workflow requiring Engineers to enter their Zoho/Company Email ID (`surya@goosesolutions.in`) and verify a 6-digit OTP sent via Zoho SMTP.
+- **🌐 Offline LocalStorage Cache Resilience**: Client automatically caches inventory and requests in browser `localStorage`. If network connection drops, the app seamlessly falls back to offline cache mode without UI freezing.
+- **🗺️ Physical Store Layout & Shelf Directory**: Visual rack directory mapping Racks A through E, shelf codes (`E-G1`, `C4`, `T1 & T2`, `D1`, `D2`, etc.), shelf search, and zone tabs.
 - **📊 Engineer Activity & Audit History Log**: Dedicated activity dashboard tracking all material requests and stock dispatches linked to engineer email addresses.
-- **📄 1-Click PDF Report Export**: Export comprehensive individual or company-wide engineer activity reports as formatted PDF audit documents (`jsPDF` + `jsPDF-AutoTable`).
-- **🔍 Live Database Verification**: Scanning a barcode instantly cross-checks the inventory database, displaying material specs, photo, zone, shelf location, rate, and recent logs.
-- **🏗️ Project, Client & Vendor Allocation**: Allocate outward stock to specific project names (e.g. *Project HeatWatch Phase 3*) and recipient engineers (e.g. *Rajesh Kumar*).
-- **📜 Complete Audit Log**: Real-time transaction logging for all stock movements with timestamped recipient notes and delta history.
+- **📄 1-Click CSV & PDF Report Exports**: Export complete store inventory catalog to UTF-8 Excel-compatible CSV spreadsheets or formatted A4 PDF summary reports (`jsPDF` + `jsPDF-AutoTable`).
+- **🏗️ Project, Client & Vendor Allocation**: Allocate outward stock to specific project names (e.g. *Project HeatWatch Phase 3*) and recipient engineers.
 - **💼 Zoho Books REST API Sync**: Direct 1-click integration with Zoho Books catalog for automatic item import and stock synchronization.
-- **🎨 Industrial Design System**: High-density UI built with Vanilla CSS, dark/light mode toggle, and modern typography tailored for industrial environments.
 
 ---
 
@@ -78,14 +81,16 @@ Quick options menu for updating manager credentials, toggling Dark/Light themes,
 1. Item Arrival
    └─▶ Material arrives at the store room.
 
-2. Web Registration
-   └─▶ Manager registers material in web app → Auto-generates unique ID (GIS-2608-4721).
+2. Web Registration & Auto-Merge Guard
+   └─▶ Manager registers material in web app → Checks Zoho Code.
+   └─▶ If Zoho Code exists → Real-time alert triggers → Merges quantity into existing item.
+   └─▶ If new item → Registers master catalog item with shelf location.
 
-3. FlashLabel Pro Print
-   └─▶ Click "Copy ID" → Paste into FlashLabel Pro → Print 50x30mm sticker on Tej C15 printer.
+3. Tej C15 Thermal Label Printing
+   └─▶ Click "Sticker" → Click "Print Sticker (Tej C15)" → Prints 50x25mm barcode label.
 
 4. Label Application
-   └─▶ Stick the printed barcode label onto the physical material item/box.
+   └─▶ Stick the printed barcode label onto the physical material item/box/bin.
 
 5. Barcode Verification Scan
    └─▶ Scan label with Helett HT20 scanner → Displays "REGISTERED IN DATABASE" verification badge & specs.
@@ -94,7 +99,7 @@ Quick options menu for updating manager credentials, toggling Dark/Light themes,
    └─▶ Option A: Receive into central store inventory (+ Stock IN).
    └─▶ Option B: Allocate & issue outward (- Stock OUT) to Project, Client, or Vendor.
 
-7. Real-Time Sync & Audit
+7. Real-Time Sync & Audit Log
    └─▶ Transaction logged automatically in Stock Movements with recipient name and project details.
 ```
 
@@ -105,7 +110,7 @@ Quick options menu for updating manager credentials, toggling Dark/Light themes,
 | Hardware | Model | Connection | Function |
 |---|---|---|---|
 | **Barcode Scanner** | Helett HT20 | 2.4GHz USB Dongle (HID) | Instant barcode lookup & stock action trigger |
-| **Label Printer** | Tej C15 / YXWL Y50 | USB / FlashLabel Pro App | Thermal sticker printing (50mm × 30mm Code128) |
+| **Label Printer** | Tej C15 / YXWL Y50 | Classic Bluetooth / Browser Print | Thermal sticker printing (50mm × 25mm Code128 + QR) |
 
 ---
 
@@ -136,13 +141,13 @@ Quick options menu for updating manager credentials, toggling Dark/Light themes,
 4. **Environment Configuration (`.env`)**:
    Create a `.env` file in the root directory to enable Zoho Mail SMTP OTP email dispatching:
    ```env
-   ZOHO_EMAIL=johndoe@gmail.com
+   ZOHO_EMAIL=surya@goosesolutions.in
    ZOHO_PASSWORD=your_zoho_app_password
    ```
 
 5. **Access the Web App**:
    Open your browser and navigate to `http://localhost:3000`
-   - **Default Store Manager PIN**: `1234`
+   - **Default Store Manager Password**: `Mannar@200`
    - **Engineer Login**: Requires valid Zoho/Company Email ID & 6-digit OTP
 
 ---
@@ -151,10 +156,13 @@ Quick options menu for updating manager credentials, toggling Dark/Light themes,
 
 | Endpoint | Method | Description |
 |---|---|---|
+| `/api/auth/login` | `POST` | Authenticate Store Manager (`Mannar@200`) or Engineer PIN |
+| `/api/auth/change-pin` | `POST` | Update Store Manager password globally across all server clients |
+| `/api/auth/pin` | `GET` | Retrieve current global Store Manager password status |
 | `/api/auth/send-otp` | `POST` | Dispatch 6-digit verification OTP code to specified Zoho/company email |
 | `/api/auth/verify-otp` | `POST` | Validate 6-digit OTP code and return authenticated engineer session profile |
 | `/api/items` | `GET` | Retrieve complete inventory material catalog |
-| `/api/items` | `POST` | Add a new material item with auto-generated SKU |
+| `/api/items` | `POST` | Add a new material item with auto-merge duplicate Zoho Code handling |
 | `/api/items/:id` | `PUT` / `DELETE` | Edit or delete a material item |
 | `/api/items/:id/adjust-stock` | `POST` | Process stock inward/outward allocation with recipient info |
 | `/api/requests` | `GET` / `POST` | Submit or retrieve material requests linked to engineer mail IDs |
