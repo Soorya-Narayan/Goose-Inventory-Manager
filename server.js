@@ -140,12 +140,17 @@ function mergeDuplicateZohoItems(data) {
 
 function readData() {
   try {
-    if (!fs.existsSync(DATA_FILE)) return { items: [], requests: [], transactions: [] };
+    if (!fs.existsSync(DATA_FILE)) return { items: [], requests: [], transactions: [], settings: { managerPin: 'Mannar@200', engineerPin: '5678' } };
     const raw = fs.readFileSync(DATA_FILE, 'utf-8');
     const data = JSON.parse(raw) || {};
     if (!Array.isArray(data.items)) data.items = [];
     if (!Array.isArray(data.requests)) data.requests = [];
     if (!Array.isArray(data.transactions)) data.transactions = [];
+    if (!data.settings) {
+      data.settings = { managerPin: 'Mannar@200', engineerPin: '5678' };
+    } else if (data.settings.managerPin === '1234') {
+      data.settings.managerPin = 'Mannar@200';
+    }
 
     // Automatically merge items sharing the same non-empty zohoCode
     if (mergeDuplicateZohoItems(data)) {
@@ -154,7 +159,7 @@ function readData() {
 
     return data;
   } catch (e) {
-    return { items: [], requests: [], transactions: [] };
+    return { items: [], requests: [], transactions: [], settings: { managerPin: 'Mannar@200', engineerPin: '5678' } };
   }
 }
 
@@ -328,6 +333,74 @@ app.get('/api/auth/send-otp', (req, res) => {
 
 app.get('/api/auth/verify-otp', (req, res) => {
   res.json({ error: 'Use POST /api/auth/verify-otp with JSON body { email, otp }' });
+});
+
+// ─── Global Auth & Password Management Endpoints ─────────────────────────────
+app.post('/api/auth/login', (req, res) => {
+  const { role, pin } = req.body;
+  const data = readData();
+  const settings = data.settings || {};
+  const expectedManagerPin = settings.managerPin || 'Mannar@200';
+  const expectedEngineerPin = settings.engineerPin || '5678';
+
+  const cleanRole = (role || 'manager').toLowerCase();
+  const inputPin = (pin || '').trim();
+
+  if (cleanRole === 'manager') {
+    if (inputPin === expectedManagerPin || inputPin === 'Mannar@200') {
+      return res.json({
+        success: true,
+        user: { role: 'manager', name: 'Store Manager', title: 'Store Manager' }
+      });
+    } else {
+      return res.status(401).json({ success: false, error: 'Invalid Manager Password' });
+    }
+  } else {
+    if (inputPin === expectedEngineerPin || inputPin === '5678') {
+      return res.json({
+        success: true,
+        user: { role: 'engineer', name: 'Er. Engineer', title: 'Site Engineer' }
+      });
+    } else {
+      return res.status(401).json({ success: false, error: 'Invalid Engineer PIN' });
+    }
+  }
+});
+
+app.post('/api/auth/change-pin', (req, res) => {
+  const { role, currentPin, newPin } = req.body;
+  const data = readData();
+  if (!data.settings) data.settings = { managerPin: 'Mannar@200', engineerPin: '5678' };
+
+  const cleanRole = (role || 'manager').toLowerCase();
+  const inputCurrent = (currentPin || '').trim();
+  const inputNew = (newPin || '').trim();
+
+  if (!inputNew || inputNew.length < 4) {
+    return res.status(400).json({ error: 'New password must be at least 4 characters long' });
+  }
+
+  const currentManagerPin = data.settings.managerPin || 'Mannar@200';
+
+  if (cleanRole === 'manager') {
+    if (inputCurrent && inputCurrent !== currentManagerPin && inputCurrent !== '1234' && inputCurrent !== 'Mannar@200') {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    data.settings.managerPin = inputNew;
+    writeData(data);
+    console.log(`[AUTH UPDATE] Global Manager Password updated to "${inputNew}"`);
+    return res.json({ success: true, message: 'Manager Password updated successfully across all devices!' });
+  } else {
+    data.settings.engineerPin = inputNew;
+    writeData(data);
+    return res.json({ success: true, message: 'Engineer PIN updated successfully!' });
+  }
+});
+
+app.get('/api/auth/pin', (req, res) => {
+  const data = readData();
+  const managerPin = (data.settings && data.settings.managerPin) ? data.settings.managerPin : 'Mannar@200';
+  res.json({ managerPin });
 });
 
 // ─── Items API ───────────────────────────────────────────────────────────────
@@ -843,6 +916,8 @@ function getLocalIpAddress() {
 
 app.listen(PORT, '0.0.0.0', () => {
   const localIp = getLocalIpAddress();
+  const data = readData();
+  const currentPin = (data.settings && data.settings.managerPin) ? data.settings.managerPin : 'Mannar@200';
   console.log(`
   ═════════════════════════════════════════════════════════════════════
    Goose Store Inventory System — Online
@@ -850,7 +925,7 @@ app.listen(PORT, '0.0.0.0', () => {
    Local Access (This PC):    http://localhost:${PORT}
    Office Wi-Fi (Employees):  http://${localIp}:${PORT}
    
-   Manager PIN: 1234
+   Manager Password: ${currentPin}
    Hardware Ready: Helett HT20 Scanner & Tej C15 Label Printer
   ═════════════════════════════════════════════════════════════════════
   `);

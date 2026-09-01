@@ -850,22 +850,30 @@ async function verifyEngineerOTP() {
   }
 }
 
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault();
   const isManager = document.getElementById('role-btn-manager').classList.contains('selected');
   const errorEl = document.getElementById('login-error');
 
   if (isManager) {
     const pin = document.getElementById('manager-pin').value;
-    const requiredPin = localStorage.getItem('ims_manager_pin') || state.managerPin || '1234';
-    if (pin !== requiredPin) {
+    try {
+      const res = await api.post('/api/auth/login', { role: 'manager', pin });
+      if (res && res.success) {
+        setUser({ role: 'manager', name: 'Store Manager' });
+        if (errorEl) errorEl.classList.add('hidden');
+      } else {
+        if (errorEl) {
+          errorEl.textContent = res.error || 'Invalid Manager Password';
+          errorEl.classList.remove('hidden');
+        }
+      }
+    } catch (err) {
       if (errorEl) {
-        errorEl.textContent = 'Invalid Manager PIN. Default manager PIN is 1234';
+        errorEl.textContent = err.message || 'Invalid Manager Password';
         errorEl.classList.remove('hidden');
       }
-      return;
     }
-    setUser({ role: 'manager', name: 'Store Manager' });
   } else {
     const otpGroup = document.getElementById('engineer-otp-group');
     if (otpGroup && !otpGroup.classList.contains('hidden')) {
@@ -3446,13 +3454,21 @@ async function handleZohoApiSync(e) {
 }
 
 // ─── Settings Modal Handlers ─────────────────────────────────────────────────
-function openSettingsModal() {
+async function openSettingsModal() {
   if (state.user?.role !== 'manager') {
     showToast('Access Denied: Settings & Manager PIN configuration are restricted to Store Manager only', 'error');
     return;
   }
   applyZohoVisibility();
-  const currentPin = localStorage.getItem('ims_manager_pin') || state.managerPin || '1234';
+  try {
+    const res = await api.get('/api/auth/pin');
+    if (res && res.managerPin) {
+      state.managerPin = res.managerPin;
+      localStorage.setItem('ims_manager_pin', res.managerPin);
+    }
+  } catch (e) {}
+
+  const currentPin = state.managerPin || localStorage.getItem('ims_manager_pin') || 'Mannar@200';
   const pinInput = document.getElementById('settings-manager-pin');
   if (pinInput) pinInput.value = currentPin;
 
@@ -3465,18 +3481,36 @@ function closeSettingsModal(e) {
   document.getElementById('modal-settings-overlay')?.classList.add('hidden');
 }
 
-function handleSaveSettings(e) {
+async function handleSaveSettings(e) {
   e.preventDefault();
   if (state.user?.role !== 'manager') {
     showToast('Access Denied: Only Store Manager can change PIN or settings', 'error');
     return;
   }
   const newPin = document.getElementById('settings-manager-pin').value.trim();
-  if (newPin) {
-    state.managerPin = newPin;
-    localStorage.setItem('ims_manager_pin', newPin);
+  if (!newPin || newPin.length < 4) {
+    showToast('Password must be at least 4 characters long', 'error');
+    return;
   }
-  showToast('Settings saved successfully', 'success');
+
+  try {
+    const res = await api.post('/api/auth/change-pin', {
+      role: 'manager',
+      currentPin: state.managerPin || 'Mannar@200',
+      newPin: newPin
+    });
+
+    if (res && res.success) {
+      state.managerPin = newPin;
+      localStorage.setItem('ims_manager_pin', newPin);
+      showToast('Manager Password updated globally across all devices!', 'success');
+      document.getElementById('modal-settings-overlay')?.classList.add('hidden');
+    } else {
+      showToast(res.error || 'Failed to update password on server', 'error');
+    }
+  } catch (err) {
+    showToast('Error updating password: ' + err.message, 'error');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

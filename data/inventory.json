@@ -4908,5 +4908,9 @@
     }
   ],
   "requests": [],
-  "transactions": []
+  "transactions": [],
+  "settings": {
+    "managerPin": "Mannar@200",
+    "engineerPin": "5678"
+  }
 }
