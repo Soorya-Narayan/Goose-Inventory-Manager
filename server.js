@@ -403,6 +403,91 @@ app.get('/api/auth/pin', (req, res) => {
   res.json({ managerPin });
 });
 
+app.post('/api/auth/send-manager-reset-otp', async (req, res) => {
+  const { email } = req.body;
+  const targetEmail = (email || process.env.ZOHO_EMAIL || 'surya@goosesolutions.in').trim().toLowerCase();
+  
+  const resetOtp = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore[`reset_${targetEmail}`] = {
+    code: resetOtp,
+    expiresAt: Date.now() + 10 * 60 * 1000
+  };
+
+  console.log(`[MANAGER RESET OTP] Email: ${targetEmail} | Reset OTP: ${resetOtp}`);
+
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b; max-width: 500px; margin: auto; border: 1px solid #e2e8f0; border-radius: 10px;">
+      <h2 style="color: #0072ff; margin-bottom: 5px;">Goose Industrial Solutions</h2>
+      <p style="font-size: 0.9rem; color: #64748b; margin-top: 0;">Store Manager Password Reset Request</p>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;" />
+      <p>Your 6-digit password reset authorization code is:</p>
+      <div style="background: #f1f5f9; font-size: 1.8rem; font-weight: bold; letter-spacing: 5px; color: #0f172a; padding: 12px; text-align: center; border-radius: 6px; margin: 15px 0;">
+        ${resetOtp}
+      </div>
+      <p style="font-size: 0.8rem; color: #64748b;">This code is valid for 10 minutes. If you did not request a password reset, please secure your account immediately.</p>
+    </div>
+  `;
+
+  const result = await sendMailWithFallback(targetEmail, 'Store Manager Password Reset Code — Goose Inventory', htmlContent);
+
+  if (!result.success) {
+    return res.json({
+      success: true,
+      message: `Reset OTP code generated for ${targetEmail}`,
+      email: targetEmail,
+      fallbackCode: resetOtp
+    });
+  }
+
+  res.json({
+    success: true,
+    message: `6-digit reset OTP sent to ${targetEmail}. Check your email inbox.`,
+    email: targetEmail
+  });
+});
+
+app.post('/api/auth/reset-manager-password', (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ error: 'Email, 6-digit OTP code, and new password are required' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanNewPass = newPassword.trim();
+
+  if (cleanNewPass.length < 4) {
+    return res.status(400).json({ error: 'New password must be at least 4 characters long' });
+  }
+
+  const record = otpStore[`reset_${cleanEmail}`];
+  if (!record) {
+    return res.status(400).json({ error: 'No password reset requested for this email address. Please click "Send Reset OTP" first.' });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    delete otpStore[`reset_${cleanEmail}`];
+    return res.status(400).json({ error: 'Reset OTP has expired. Please request a new code.' });
+  }
+
+  if (record.code !== otp.trim()) {
+    return res.status(400).json({ error: 'Invalid 6-digit Reset OTP code. Please check your email and try again.' });
+  }
+
+  const data = readData();
+  if (!data.settings) data.settings = {};
+  data.settings.managerPin = cleanNewPass;
+  writeData(data);
+
+  delete otpStore[`reset_${cleanEmail}`];
+
+  console.log(`[PASSWORD RESET SUCCESS] Manager password updated to "${cleanNewPass}" via OTP verification`);
+  res.json({
+    success: true,
+    message: 'Store Manager Password reset successfully! You can now log in with your new password.',
+    newPassword: cleanNewPass
+  });
+});
+
 // ─── Items API ───────────────────────────────────────────────────────────────
 app.get('/api/items', (req, res) => {
   const data = readData();

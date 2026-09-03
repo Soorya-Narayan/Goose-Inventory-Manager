@@ -159,6 +159,8 @@ Quick options menu for updating manager credentials globally across all devices,
 | `/api/auth/login` | `POST` | Authenticate Store Manager (`Mannar@200`) or Engineer PIN |
 | `/api/auth/change-pin` | `POST` | Update Store Manager password globally across all server clients |
 | `/api/auth/pin` | `GET` | Retrieve current global Store Manager password status |
+| `/api/auth/send-manager-reset-otp` | `POST` | Dispatch 6-digit password reset OTP to company admin email |
+| `/api/auth/reset-manager-password` | `POST` | Authorize and reset Store Manager password via OTP code |
 | `/api/auth/send-otp` | `POST` | Dispatch 6-digit verification OTP code to specified Zoho/company email |
 | `/api/auth/verify-otp` | `POST` | Validate 6-digit OTP code and return authenticated engineer session profile |
 | `/api/items` | `GET` | Retrieve complete inventory material catalog |

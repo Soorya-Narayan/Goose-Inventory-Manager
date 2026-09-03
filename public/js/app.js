@@ -3513,6 +3513,103 @@ async function handleSaveSettings(e) {
   }
 }
 
+// ─── Forgot Manager Password (OTP Reset) Handlers ────────────────────────────
+function openForgotManagerPasswordModal() {
+  const overlay = document.getElementById('modal-forgot-password-overlay');
+  if (!overlay) return;
+  
+  document.getElementById('reset-step-2')?.classList.add('hidden');
+  document.getElementById('btn-submit-reset-pass')?.classList.add('hidden');
+  const statusEl = document.getElementById('reset-otp-sent-status');
+  if (statusEl) statusEl.style.display = 'none';
+  const otpInp = document.getElementById('reset-manager-otp');
+  if (otpInp) otpInp.value = '';
+  const newPassInp = document.getElementById('reset-manager-new-pass');
+  if (newPassInp) newPassInp.value = '';
+
+  overlay.classList.remove('hidden');
+}
+
+function closeForgotManagerPasswordModal(e) {
+  if (e && e.target !== document.getElementById('modal-forgot-password-overlay')) return;
+  document.getElementById('modal-forgot-password-overlay')?.classList.add('hidden');
+}
+
+async function sendManagerResetOTP() {
+  const emailInp = document.getElementById('reset-manager-email');
+  const email = emailInp?.value.trim();
+  const statusEl = document.getElementById('reset-otp-sent-status');
+
+  if (!email || !email.includes('@')) {
+    showToast('Please enter a valid Admin email address', 'error');
+    return;
+  }
+
+  showToast('Sending password reset OTP...', 'info');
+
+  try {
+    const res = await api.post('/api/auth/send-manager-reset-otp', { email });
+    if (res && res.success) {
+      if (statusEl) {
+        statusEl.textContent = `✓ 6-digit Reset OTP sent to ${email}`;
+        statusEl.style.display = 'block';
+      }
+
+      if (res.fallbackCode) {
+        showToast(`Reset OTP code generated: ${res.fallbackCode}`, 'info');
+      } else {
+        showToast(`6-digit Reset OTP sent to ${email}!`, 'success');
+      }
+
+      document.getElementById('reset-step-2')?.classList.remove('hidden');
+      document.getElementById('btn-submit-reset-pass')?.classList.remove('hidden');
+      document.getElementById('reset-manager-otp')?.focus();
+    } else {
+      showToast(res.error || 'Failed to send reset OTP', 'error');
+    }
+  } catch (err) {
+    showToast('Failed to send reset OTP: ' + err.message, 'error');
+  }
+}
+
+async function handleManagerPasswordResetSubmit(e) {
+  e.preventDefault();
+  const email = document.getElementById('reset-manager-email')?.value.trim();
+  const otp = document.getElementById('reset-manager-otp')?.value.trim();
+  const newPassword = document.getElementById('reset-manager-new-pass')?.value.trim();
+
+  if (!otp || otp.length !== 6) {
+    showToast('Please enter the 6-digit OTP sent to your email', 'error');
+    return;
+  }
+
+  if (!newPassword || newPassword.length < 4) {
+    showToast('New password must be at least 4 characters long', 'error');
+    return;
+  }
+
+  try {
+    const res = await api.post('/api/auth/reset-manager-password', { email, otp, newPassword });
+    if (res && res.success) {
+      state.managerPin = newPassword;
+      localStorage.setItem('ims_manager_pin', newPassword);
+
+      showToast('Store Manager Password reset successfully!', 'success');
+      document.getElementById('modal-forgot-password-overlay')?.classList.add('hidden');
+
+      const managerPinInp = document.getElementById('manager-pin');
+      if (managerPinInp) {
+        managerPinInp.value = newPassword;
+        managerPinInp.focus();
+      }
+    } else {
+      showToast(res.error || 'Password reset failed', 'error');
+    }
+  } catch (err) {
+    showToast('Failed to reset password: ' + err.message, 'error');
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  ENGINEER ACTIVITY & AUDIT HISTORY LOG
 // ═══════════════════════════════════════════════════════════════════════════════
