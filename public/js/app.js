@@ -3211,10 +3211,23 @@ function renderPickerGrid() {
   const q = (document.getElementById('picker-search')?.value || '').toLowerCase();
   let items = state.items || [];
   if (_pickerCategory !== 'All') items = items.filter(i => i.category === _pickerCategory);
-  if (q) items = items.filter(i => ((i.name || '') + ' ' + (i.sku || '') + ' ' + (i.barcode || '')).toLowerCase().includes(q));
+  if (q) {
+    items = items.filter(i => (
+      (i.name || '') + ' ' +
+      (i.sku || '') + ' ' +
+      (i.zohoCode || '') + ' ' +
+      (i.specification || '') + ' ' +
+      (i.barcode || '')
+    ).toLowerCase().includes(q));
+  }
 
   if (items.length === 0) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-tertiary);font-size:0.85rem">No materials found</div>`;
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:3rem 1.5rem;color:var(--text-tertiary);background:var(--bg-raised);border:1px dashed var(--border-muted);border-radius:var(--radius-lg);margin:1rem 0">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:0.75rem;opacity:0.5"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <div style="font-size:0.95rem;font-weight:600;color:var(--text-primary)">No materials match search</div>
+        <div style="font-size:0.78rem;margin-top:0.25rem">Try searching with a different name, specification, or Zoho Code.</div>
+      </div>`;
     return;
   }
 
@@ -3224,48 +3237,46 @@ function renderPickerGrid() {
     const isOut = qty <= 0;
     const isLow = !isOut && qty <= min;
 
-    // Card border/background based on stock
-    let cardBorder, cardBg, hoverBorder, hoverShadow, badge;
-
+    let stockStatusClass = 'in-stock';
+    let badgeHtml = `<span class="picker-stock-badge in">IN STOCK (${qty} ${item.unit || 'pcs'})</span>`;
     if (isOut) {
-      cardBorder  = '1px solid rgba(239,68,68,0.35)';
-      cardBg      = 'rgba(239,68,68,0.06)';
-      hoverBorder = 'rgba(239,68,68,0.6)';
-      hoverShadow = '0 0 0 2px rgba(239,68,68,0.12)';
-      badge = `<span style="font-size:0.62rem;font-weight:700;color:#dc2626;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:3px;padding:0.1rem 0.35rem;letter-spacing:0.03em">OUT OF STOCK</span>`;
+      stockStatusClass = 'out-of-stock';
+      badgeHtml = `<span class="picker-stock-badge out">OUT OF STOCK</span>`;
     } else if (isLow) {
-      cardBorder  = '1px solid rgba(245,158,11,0.35)';
-      cardBg      = 'rgba(245,158,11,0.06)';
-      hoverBorder = 'rgba(245,158,11,0.7)';
-      hoverShadow = '0 0 0 2px rgba(245,158,11,0.15)';
-      badge = `<span style="font-size:0.62rem;font-weight:700;color:#d97706;background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.3);border-radius:3px;padding:0.1rem 0.35rem;letter-spacing:0.03em">LOW STOCK</span>`;
-    } else {
-      cardBorder  = '1px solid rgba(34,197,94,0.35)';
-      cardBg      = 'rgba(34,197,94,0.06)';
-      hoverBorder = 'rgba(34,197,94,0.7)';
-      hoverShadow = '0 0 0 2px rgba(34,197,94,0.15)';
-      badge = `<span style="font-size:0.62rem;font-weight:700;color:#16a34a;background:rgba(34,197,94,0.14);border:1px solid rgba(34,197,94,0.3);border-radius:3px;padding:0.1rem 0.35rem;letter-spacing:0.03em">IN STOCK</span>`;
+      stockStatusClass = 'low-stock';
+      badgeHtml = `<span class="picker-stock-badge low">LOW STOCK (${qty} ${item.unit || 'pcs'})</span>`;
     }
 
+    const specHtml = item.specification
+      ? `<div class="picker-card-spec" title="Specification: ${escHtml(item.specification)}">⚡ ${escHtml(item.specification)}</div>`
+      : '';
+
     const imgHtml = item.imageUrl
-      ? `<img src="${escHtml(item.imageUrl)}" style="width:100%;height:80px;object-fit:cover;border-radius:var(--radius) var(--radius) 0 0;${isOut ? 'opacity:0.5;' : ''}" />`
-      : `<div style="width:100%;height:80px;background:var(--bg-raised);border-radius:var(--radius) var(--radius) 0 0;display:flex;align-items:center;justify-content:center;color:var(--text-muted);${isOut ? 'opacity:0.5;' : ''}">
-           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-         </div>`;
+      ? `<img src="${escHtml(item.imageUrl)}" style="width:calc(100% + 1.7rem);height:85px;object-fit:cover;border-radius:var(--radius) var(--radius) 0 0;margin:-0.85rem -0.85rem 0.5rem -0.85rem;" />`
+      : '';
+
+    const locText = item.location ? `Loc: ${item.location}` : 'General Store';
+    const codeText = item.zohoCode || item.sku || item.id;
 
     return `
-      <div onclick="selectPickerItem('${escHtml(item.id)}')"
-        style="background:${cardBg};border:${cardBorder};border-radius:var(--radius);cursor:pointer;overflow:hidden;transition:border-color 0.15s,box-shadow 0.15s;${isOut ? 'opacity:0.75;' : ''}"
-        onmouseenter="this.style.borderColor='${hoverBorder}';this.style.boxShadow='${hoverShadow}'"
-        onmouseleave="this.style.borderColor='${cardBorder}';this.style.boxShadow='none'">
+      <div class="picker-material-card ${stockStatusClass}" onclick="selectPickerItem('${escHtml(item.id)}')" title="Click to select ${escHtml(item.name)}">
         ${imgHtml}
-        <div style="padding:0.45rem 0.5rem">
-          <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(item.name)}">${escHtml(item.name)}</div>
-          <div style="font-size:0.68rem;font-family:var(--font-mono);color:var(--text-tertiary);margin-top:0.1rem">${escHtml(item.sku)}</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.3rem;gap:0.3rem">
-            <span style="font-size:0.68rem;color:var(--text-secondary)">${item.quantity} ${item.unit} · ${escHtml(item.location || '')}</span>
-            ${badge}
+        <div>
+          <div class="picker-card-header">
+            <div class="picker-card-title" title="${escHtml(item.name)}">${escHtml(item.name)}</div>
           </div>
+          ${specHtml}
+          <div class="picker-card-code">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+            <span>${escHtml(codeText)}</span>
+          </div>
+        </div>
+        <div class="picker-card-footer">
+          <div class="picker-card-location">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>${escHtml(locText)}</span>
+          </div>
+          ${badgeHtml}
         </div>
       </div>`;
   }).join('');
