@@ -2997,118 +2997,15 @@ function setImagePreview(url) {
   }
 }
 
-async function handleImageFileSelect(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
+const DRAFT_KEY = 'goose_request_draft';
 
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const dataUrl = e.target.result;
-    setImagePreview(dataUrl);
-    try {
-      const res = await api.post('/api/upload', { image: dataUrl });
-      if (res && res.imageUrl) {
-        setImagePreview(res.imageUrl);
-      }
-      showToast('Photo uploaded successfully', 'success');
-    } catch (err) {
-      showToast('Photo attached', 'success');
-    }
-  };
-  reader.readAsDataURL(file);
-}
-
-function removeSelectedImage() {
-  document.getElementById('item-img-file').value = '';
-  setImagePreview('');
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function getItemImageHtml(item) {
-  if (item.imageUrl) {
-    return `<img src="${item.imageUrl}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;cursor:pointer" onclick="openLightboxModal('${item.imageUrl}', '${escHtml(item.name)}')" />`;
-  }
-  return `<div style="width:36px;height:36px;border-radius:4px;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>`;
-}
-
-function stockTag(item) {
-  const s = getStockStatus(item);
-  if (s === 'ok') return `<span class="status-tag ok">● IN STOCK</span>`;
-  if (s === 'low') return `<span class="status-tag low">● LOW STOCK</span>`;
-  return `<span class="status-tag out">● OUT OF STOCK</span>`;
-}
-
-function getStockStatus(item) {
-  if (!item) return 'ok';
-  const qty = Number(item.quantity) || 0;
-  const min = Number(item.minStock) || 0;
-  if (qty <= 0) return 'out';
-  if (min > 0 && qty <= min) return 'low';
-  return 'ok';
-}
-
-function zoneInlineTag(zone) {
-  return `<span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;color:var(--zone-${zone==='electrical'?'elec':zone==='mechanical'?'mec':'con'})">${zone}</span>`;
-}
-
-function reqStatusTag(status) {
-  if (status === 'approved') return `<span class="status-tag ok">Approved</span>`;
-  if (status === 'rejected') return `<span class="status-tag out">Rejected</span>`;
-  if (status === 'issued')   return `<span class="status-tag issued">Issued</span>`;
-  return `<span class="status-tag low">Pending</span>`;
-}
-
-function escHtml(str) {
-  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function showToast(msg, type = 'info') {
-  const toast = document.getElementById('toast');
-  const txt = document.getElementById('toast-message');
-  if (!toast || !txt) return;
-  txt.textContent = msg;
-  toast.classList.remove('hidden');
-  setTimeout(() => toast.classList.add('hidden'), 3000);
-}
-
-function applyThemeUI(theme) {
-  const isLight = theme === 'light';
-  const moonIcon = document.getElementById('menu-icon-moon');
-  const sunIcon = document.getElementById('menu-icon-sun');
-  if (moonIcon) moonIcon.classList.toggle('hidden', isLight);
-  if (sunIcon) sunIcon.classList.toggle('hidden', !isLight);
-  
-  const menuLabel = document.getElementById('menu-theme-label');
-  if (menuLabel) menuLabel.textContent = isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode';
-
-  const metaTheme = document.getElementById('meta-theme-color');
-  if (metaTheme) metaTheme.setAttribute('content', isLight ? '#f8fafc' : '#090d16');
-}
-
-function initTheme() {
-  const savedTheme = localStorage.getItem('ims_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  applyThemeUI(savedTheme);
-}
-
-function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
-  const next = current === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('ims_theme', next);
-  applyThemeUI(next);
-  showToast(`Switched to ${next === 'light' ? 'Light' : 'Dark'} Mode`, 'info');
-}
-
-// ─── Material Row counter ─────────────────────────────────────────────────────
-let _rowCounter = 0;
-
-// ─── Modal Openers for Requesting ─────────────────────────────────────────────
 function openRequestModal() {
-  _rowCounter = 0;
-  document.getElementById('form-request').reset();
+  const form = document.getElementById('form-request');
+  if (form) form.reset();
+
   const container = document.getElementById('material-rows-container');
-  container.innerHTML = '';
+  if (container) container.innerHTML = '';
+
   // Pre-fill name from session if available
   if (state.user?.name) {
     const el = document.getElementById('req-engineer');
@@ -3116,7 +3013,180 @@ function openRequestModal() {
   }
   // Add one empty row to start
   addMaterialRow();
+
+  // Check for saved draft banner
+  checkAndShowRequestDraftBanner();
+
   document.getElementById('modal-request-overlay').classList.remove('hidden');
+}
+
+function checkAndShowRequestDraftBanner() {
+  const banner = document.getElementById('request-draft-banner');
+  const timeLabel = document.getElementById('draft-time-label');
+  if (!banner) return;
+
+  const rawDraft = localStorage.getItem(DRAFT_KEY);
+  if (rawDraft) {
+    try {
+      const draft = JSON.parse(rawDraft);
+      const timeStr = draft.savedAt ? new Date(draft.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'recently';
+      const count = draft.materials ? draft.materials.length : 0;
+      if (timeLabel) timeLabel.textContent = `(${count} material${count === 1 ? '' : 's'} saved at ${timeStr})`;
+      banner.classList.remove('hidden');
+    } catch (e) {
+      banner.classList.add('hidden');
+    }
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+function saveRequestDraft(closeAfterSave = false) {
+  const materials = collectRequestMaterials();
+  const engineer   = document.getElementById('req-engineer')?.value.trim() || '';
+  const employeeId = document.getElementById('req-employee-id')?.value.trim() || '';
+  const project    = document.getElementById('req-project')?.value.trim() || '';
+  const purpose    = document.getElementById('req-purpose')?.value.trim() || '';
+
+  if (materials.length === 0 && !project && !purpose) {
+    showToast('No materials or details to save as draft', 'warning');
+    return;
+  }
+
+  const draftData = {
+    engineer,
+    employeeId,
+    project,
+    purpose,
+    materials,
+    savedAt: new Date().toISOString()
+  };
+
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
+  showToast('Request draft saved successfully!', 'success');
+
+  if (closeAfterSave) {
+    document.getElementById('modal-draft-confirm-overlay')?.classList.add('hidden');
+    document.getElementById('modal-request-overlay')?.classList.add('hidden');
+  } else {
+    checkAndShowRequestDraftBanner();
+  }
+}
+
+function restoreRequestDraft() {
+  const rawDraft = localStorage.getItem(DRAFT_KEY);
+  if (!rawDraft) return;
+
+  try {
+    const draft = JSON.parse(rawDraft);
+    if (draft.engineer) document.getElementById('req-engineer').value = draft.engineer;
+    if (draft.employeeId) document.getElementById('req-employee-id').value = draft.employeeId;
+    if (draft.project) document.getElementById('req-project').value = draft.project;
+    if (draft.purpose) document.getElementById('req-purpose').value = draft.purpose;
+
+    const container = document.getElementById('material-rows-container');
+    if (container) container.innerHTML = '';
+
+    if (draft.materials && draft.materials.length > 0) {
+      draft.materials.forEach(m => {
+        const rowId = ++_rowCounter;
+        const row = document.createElement('div');
+        row.id = `mat-row-${rowId}`;
+        row.dataset.itemId   = m.itemId || '';
+        row.dataset.itemName = m.itemName || '';
+        row.dataset.itemSku  = m.itemSku || '';
+        row.dataset.unit     = m.unit || 'pcs';
+        row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.5rem 0.625rem';
+
+        const btnLabel = (m.itemName && m.itemSku) ? `${m.itemName} (${m.itemSku})` : (m.itemName || 'Select Material');
+        const btnStyleColor = m.itemId ? 'var(--text-primary)' : 'var(--text-tertiary)';
+        const btnStyleWeight = m.itemId ? '600' : 'normal';
+
+        row.innerHTML = `
+          <button type="button"
+            style="flex:1;text-align:left;background:var(--bg-surface);border:1px solid var(--border-muted);border-radius:var(--radius);padding:0.4rem 0.65rem;font-size:0.82rem;color:${btnStyleColor};font-weight:${btnStyleWeight};cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0"
+            onclick="openPickerModal(${rowId})" id="mat-picker-btn-${rowId}">
+            ${escHtml(btnLabel)}
+          </button>
+          <div style="display:flex;align-items:center;gap:0.3rem;flex-shrink:0">
+            <button type="button" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.55rem;font-size:1rem;line-height:1" onclick="stepQty(${rowId}, -1)">−</button>
+            <input type="number" id="mat-qty-${rowId}" value="${m.quantity || 1}" min="1" class="field-input mono" style="width:52px;text-align:center;padding:0.3rem;font-size:0.88rem;-moz-appearance:textfield;-webkit-appearance:none;" oninput="if(this.value<1)this.value=1" />
+            <button type="button" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.55rem;font-size:1rem;line-height:1" onclick="stepQty(${rowId}, 1)">+</button>
+            <span id="mat-unit-${rowId}" style="font-size:0.75rem;color:var(--text-tertiary);min-width:24px">${escHtml(m.unit || 'pcs')}</span>
+          </div>
+          <button type="button" onclick="removeMaterialRow(${rowId})" style="flex-shrink:0;background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:1.1rem;padding:0.15rem 0.3rem;line-height:1" title="Remove row">&times;</button>
+        `;
+        container.appendChild(row);
+      });
+    } else {
+      addMaterialRow();
+    }
+
+    document.getElementById('request-draft-banner')?.classList.add('hidden');
+    showToast('Request draft restored successfully', 'success');
+  } catch (e) {
+    showToast('Failed to restore draft', 'error');
+  }
+}
+
+function discardSavedDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+  document.getElementById('request-draft-banner')?.classList.add('hidden');
+  showToast('Saved draft discarded', 'info');
+}
+
+function collectRequestMaterials() {
+  const container = document.getElementById('material-rows-container');
+  if (!container) return [];
+  const rows = Array.from(container.children);
+  const materials = [];
+  for (const row of rows) {
+    const itemId   = row.dataset.itemId;
+    const itemName = row.dataset.itemName;
+    const itemSku  = row.dataset.itemSku;
+    const unit     = row.dataset.unit || 'pcs';
+    const rowId    = row.id.replace('mat-row-', '');
+    const qty      = parseInt(document.getElementById(`mat-qty-${rowId}`)?.value) || 1;
+    if (itemId || itemName) {
+      materials.push({ itemId, itemName, itemSku, unit, quantity: qty });
+    }
+  }
+  return materials;
+}
+
+function hasUnsavedRequestContent() {
+  const materials = collectRequestMaterials();
+  if (materials.length > 0) return true;
+  const project = document.getElementById('req-project')?.value.trim() || '';
+  const purpose = document.getElementById('req-purpose')?.value.trim() || '';
+  return project.length > 0 || purpose.length > 0;
+}
+
+function closeRequestModal(e) {
+  if (e && e.target !== document.getElementById('modal-request-overlay')) return;
+
+  if (hasUnsavedRequestContent()) {
+    document.getElementById('modal-draft-confirm-overlay')?.classList.remove('hidden');
+  } else {
+    document.getElementById('modal-request-overlay')?.classList.add('hidden');
+  }
+}
+
+function closeDraftConfirmModal(e) {
+  if (e && e.target !== document.getElementById('modal-draft-confirm-overlay')) return;
+  document.getElementById('modal-draft-confirm-overlay')?.classList.add('hidden');
+}
+
+function confirmSaveDraftAndClose() {
+  saveRequestDraft(true);
+}
+
+function forceCloseRequestModal(discardDraft = false) {
+  if (discardDraft) {
+    discardSavedDraft();
+  }
+  document.getElementById('modal-draft-confirm-overlay')?.classList.add('hidden');
+  document.getElementById('modal-request-overlay')?.classList.add('hidden');
 }
 
 function addMaterialRow() {
@@ -3315,40 +3385,14 @@ function selectPickerItem(itemId) {
 // ─── Old stubs kept for backward compat (now unused) ─────────────────────────
 function onRequestItemSelectChange() {}
 
-function closeRequestModal(e) {
-  if (e && e.target !== document.getElementById('modal-request-overlay')) return;
-  document.getElementById('modal-request-overlay')?.classList.add('hidden');
-}
-
 async function handleRequestSubmit(e) {
   e.preventDefault();
 
   // Collect all material rows
-  const container = document.getElementById('material-rows-container');
-  const rows = Array.from(container.children);
-  const materials = [];
-
-  for (const row of rows) {
-    const itemId   = row.dataset.itemId;
-    const itemName = row.dataset.itemName;
-    const itemSku  = row.dataset.itemSku;
-    const unit     = row.dataset.unit || 'pcs';
-    const rowId    = row.id.replace('mat-row-', '');
-    const qty      = parseInt(document.getElementById(`mat-qty-${rowId}`)?.value) || 0;
-
-    if (!itemId) {
-      showToast('Please select a material for every row', 'error');
-      return;
-    }
-    if (qty < 1) {
-      showToast('Quantity must be at least 1 for every material', 'error');
-      return;
-    }
-    materials.push({ itemId, itemName, itemSku, unit, quantity: qty });
-  }
+  const materials = collectRequestMaterials();
 
   if (materials.length === 0) {
-    showToast('Add at least one material to the offer', 'error');
+    showToast('Add at least one material to the request', 'error');
     return;
   }
 
@@ -3367,12 +3411,13 @@ async function handleRequestSubmit(e) {
       showToast(res.error, 'error');
       return;
     }
-    showToast('Supplier offer submitted successfully!', 'success');
+    showToast('Material request submitted successfully!', 'success');
+    discardSavedDraft();
     document.getElementById('modal-request-overlay').classList.add('hidden');
     await loadAll();
     renderView('requests');
   } catch (err) {
-    showToast('Failed to submit offer', 'error');
+    showToast('Failed to submit request', 'error');
   }
 }
 

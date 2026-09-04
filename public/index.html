@@ -513,13 +513,13 @@
     </div>
   </div>
 
-  <!-- Supplier Offer / Request Modal -->
+  <!-- Material Requisition / Request Modal -->
   <div class="modal-backdrop hidden" id="modal-request-overlay" onclick="closeRequestModal(event)">
     <div class="modal" id="modal-request" style="max-width:640px" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title-block">
-          <div class="modal-title-tag">SUPPLIER OFFER</div>
-          <h2 class="modal-title">Supplier Offer</h2>
+          <div class="modal-title-tag">MATERIAL REQUISITION</div>
+          <h2 class="modal-title">Request Material</h2>
         </div>
         <button class="modal-close-btn" onclick="closeRequestModal()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -527,6 +527,18 @@
       </div>
       <form id="form-request" onsubmit="handleRequestSubmit(event)">
         <div class="modal-body" style="display:flex;flex-direction:column;gap:0.75rem;padding:1.125rem 1.35rem">
+
+          <!-- Saved Draft Banner -->
+          <div id="request-draft-banner" class="hidden" style="background:rgba(0,198,255,0.08);border:1px solid rgba(0,198,255,0.3);border-radius:var(--radius-md);padding:0.65rem 0.85rem;display:flex;align-items:center;justify-content:space-between;gap:0.75rem;font-size:0.8rem">
+            <div>
+              <strong style="color:var(--goose)">Saved Draft Available:</strong>
+              <span id="draft-time-label" style="color:var(--text-secondary);margin-left:0.3rem"></span>
+            </div>
+            <div style="display:flex;gap:0.4rem;flex-shrink:0">
+              <button type="button" class="btn btn-primary btn-sm" onclick="restoreRequestDraft()" style="padding:0.25rem 0.65rem;font-size:0.75rem">Restore Draft</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="discardSavedDraft()" style="padding:0.25rem 0.5rem;font-size:0.75rem">Discard</button>
+            </div>
+          </div>
 
           <!-- Name + Employee ID -->
           <div class="field-grid two-col" style="gap:0.75rem">
@@ -550,7 +562,7 @@
           <div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
               <label class="field-label" style="margin:0">MATERIALS REQUIRED <span class="req">*</span></label>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="addMaterialRow()" style="font-size:0.75rem;padding:0.3rem 0.65rem">+ Add</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="addMaterialRow()" style="font-size:0.75rem;padding:0.3rem 0.65rem">+ Add Material</button>
             </div>
             <div id="material-rows-container" style="display:flex;flex-direction:column;gap:0.5rem"></div>
           </div>
@@ -562,11 +574,37 @@
           </div>
 
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center">
           <button type="button" class="btn btn-ghost" onclick="closeRequestModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Submit Offer</button>
+          <div style="display:flex;gap:0.65rem">
+            <button type="button" class="btn" onclick="saveRequestDraft(true)" id="btn-save-draft" style="background:var(--bg-elevated);border:1px solid var(--border-base);color:var(--text-primary)">Save Draft</button>
+            <button type="submit" class="btn btn-primary">Submit Request</button>
+          </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Save Draft Prompt Modal -->
+  <div class="modal-backdrop hidden" id="modal-draft-confirm-overlay" style="z-index:1150" onclick="closeDraftConfirmModal(event)">
+    <div class="modal" id="modal-draft-confirm" style="max-width:440px" onclick="event.stopPropagation()">
+      <div class="modal-header" style="padding:1rem 1.25rem">
+        <div class="modal-title-block">
+          <div class="modal-title-tag">UNSAVED REQUEST DRAFT</div>
+          <h3 class="modal-title" style="font-size:1.05rem">Save Request as Draft?</h3>
+        </div>
+        <button class="modal-close-btn" onclick="closeDraftConfirmModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding:1rem 1.25rem;font-size:0.85rem;color:var(--text-secondary)">
+        You have unsaved materials or details in your request. Would you like to save it as a draft to resume later?
+      </div>
+      <div class="modal-footer" style="padding:0.85rem 1.25rem;gap:0.5rem;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="forceCloseRequestModal(true)">Discard</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeDraftConfirmModal()">Keep Editing</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="confirmSaveDraftAndClose()">Save Draft</button>
+      </div>
     </div>
   </div>
 
