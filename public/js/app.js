@@ -2542,14 +2542,14 @@ function processChecklistBarcodeScan() {
     if (feedbackEl) {
       feedbackEl.style.display = 'block';
       feedbackEl.style.color = '#10b981';
-      feedbackEl.innerHTML = `✓ Verified &amp; Scanned: <strong>${escHtml(item.itemName)}</strong> (${item.quantity} ${item.unit})`;
+      feedbackEl.innerHTML = `Verified &amp; Scanned: <strong>${escHtml(item.itemName)}</strong> (${item.quantity} ${item.unit})`;
     }
     showToast(`Scanned & Verified: ${item.itemName}`, 'success');
   } else {
     if (feedbackEl) {
       feedbackEl.style.display = 'block';
       feedbackEl.style.color = '#ef4444';
-      feedbackEl.innerHTML = `✗ Barcode <strong>"${escHtml(rawCode)}"</strong> not found in this request order.`;
+      feedbackEl.innerHTML = `Barcode <strong>"${escHtml(rawCode)}"</strong> not found in this request order.`;
     }
     showToast(`Barcode "${rawCode}" not in request list`, 'error');
   }
@@ -2882,7 +2882,7 @@ function checkDuplicateZohoCode(inputVal) {
   }
 
   if (match) {
-    warnText.innerHTML = `⚠️ <strong>Existing Material Found:</strong> "${escHtml(match.name)}" (Zoho Code: <strong>${escHtml(match.zohoCode || match.sku)}</strong>, Stock: <strong>${match.quantity} ${match.unit}</strong> on shelf <strong>${escHtml(match.location || 'A1')}</strong>). Submitting will automatically merge new stock into this item.`;
+    warnText.innerHTML = `<strong>Existing Material Found:</strong> "${escHtml(match.name)}" (Zoho Code: <strong>${escHtml(match.zohoCode || match.sku)}</strong>, Stock: <strong>${match.quantity} ${match.unit}</strong> on shelf <strong>${escHtml(match.location || 'A1')}</strong>). Submitting will automatically merge new stock into this item.`;
     warn.classList.remove('hidden');
   } else {
     warn.classList.add('hidden');
@@ -3248,7 +3248,7 @@ function renderPickerGrid() {
     }
 
     const specHtml = item.specification
-      ? `<div class="picker-card-spec" title="Specification: ${escHtml(item.specification)}">⚡ ${escHtml(item.specification)}</div>`
+      ? `<div class="picker-card-spec" title="Specification: ${escHtml(item.specification)}">${escHtml(item.specification)}</div>`
       : '';
 
     const imgHtml = item.imageUrl
@@ -3570,7 +3570,7 @@ async function sendManagerResetOTP() {
     const res = await api.post('/api/auth/send-manager-reset-otp', { email });
     if (res && res.success) {
       if (statusEl) {
-        statusEl.textContent = `✓ 6-digit Reset OTP sent to ${email}`;
+        statusEl.textContent = `6-digit Reset OTP sent to ${email}`;
         statusEl.style.display = 'block';
       }
 
@@ -3710,8 +3710,8 @@ async function renderEngineerHistory() {
       <div style="display:flex;gap:0.75rem;align-items:center">
         ${isManager ? `
           <select id="engineer-filter-select" class="field-input" onchange="_selectedEngineerEmail=this.value;renderEngineerHistory()" style="width:auto;font-size:0.85rem;padding:0.5rem 0.85rem">
-            <option value="all" ${_selectedEngineerEmail === 'all' ? 'selected' : ''}>📋 All Engineers Activity</option>
-            ${engineersList.map(e => `<option value="${e.email}" ${_selectedEngineerEmail === e.email ? 'selected' : ''}>👤 ${escHtml(e.name)} (${escHtml(e.email)})</option>`).join('')}
+            <option value="all" ${_selectedEngineerEmail === 'all' ? 'selected' : ''}>All Engineers Activity</option>
+            ${engineersList.map(e => `<option value="${e.email}" ${_selectedEngineerEmail === e.email ? 'selected' : ''}>${escHtml(e.name)} (${escHtml(e.email)})</option>`).join('')}
           </select>
         ` : ''}
         <button class="btn btn-primary" onclick="exportEngineerActivityPDF('${_selectedEngineerEmail}')" style="display:inline-flex;align-items:center;gap:0.4rem">
