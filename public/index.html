@@ -24,7 +24,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <!-- Chart.js CDN for Overview Stock Analytics Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="/css/style.css?v=2.8.2" />
+  <link rel="stylesheet" href="/css/style.css?v=2.8.3" />
   <style>
     /* Critical Inline Safety Rules — Prevents SVG size explosions */
     svg { max-width: 100%; height: auto; display: inline-block; }
@@ -519,7 +519,7 @@
       <div class="modal-header">
         <div class="modal-title-block">
           <div class="modal-title-tag">SUPPLIER OFFER</div>
-          <h2 class="modal-title">Supplier Offer</h2>
+          <h2 class="modal-title">Supplier Offer / Material Request</h2>
         </div>
         <button class="modal-close-btn" onclick="closeRequestModal()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -527,6 +527,15 @@
       </div>
       <form id="form-request" onsubmit="handleRequestSubmit(event)">
         <div class="modal-body" style="display:flex;flex-direction:column;gap:0.75rem;padding:1.125rem 1.35rem">
+
+          <!-- Draft Status Banner -->
+          <div id="request-draft-banner" class="hidden" style="background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:var(--radius);padding:0.5rem 0.75rem;display:flex;align-items:center;justify-content:space-between;font-size:0.78rem">
+            <div style="display:flex;align-items:center;gap:0.4rem;color:var(--text-primary)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>Restored draft saved <strong id="request-draft-time">Just now</strong></span>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="clearRequestDraft()" style="font-size:0.72rem;padding:0.2rem 0.5rem;color:var(--danger)">Clear Draft</button>
+          </div>
 
           <!-- Name + Employee ID -->
           <div class="field-grid two-col" style="gap:0.75rem">
@@ -550,7 +559,7 @@
           <div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
               <label class="field-label" style="margin:0">MATERIALS REQUIRED <span class="req">*</span></label>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="addMaterialRow()" style="font-size:0.75rem;padding:0.3rem 0.65rem">+ Add</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="addMaterialRow()" style="font-size:0.75rem;padding:0.3rem 0.65rem">+ Add Material</button>
             </div>
             <div id="material-rows-container" style="display:flex;flex-direction:column;gap:0.5rem"></div>
           </div>
@@ -562,9 +571,15 @@
           </div>
 
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-ghost" onclick="closeRequestModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Submit Offer</button>
+        <div class="modal-footer" style="justify-content:space-between">
+          <button type="button" class="btn btn-ghost" onclick="saveRequestDraft(true)" title="Save draft and close dialog" style="display:inline-flex;align-items:center;gap:0.35rem">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>Save Draft</span>
+          </button>
+          <div style="display:flex;gap:0.5rem">
+            <button type="button" class="btn btn-ghost" onclick="closeRequestModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Submit Offer</button>
+          </div>
         </div>
       </form>
     </div>
@@ -1059,6 +1074,6 @@
     </div>
   </div>
 
-  <script src="/js/app.js?v=2.8.2"></script>
+  <script src="/js/app.js?v=2.8.3"></script>
 </body>
 </html>

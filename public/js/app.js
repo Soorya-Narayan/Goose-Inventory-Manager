@@ -3113,19 +3113,46 @@ function toggleTheme() {
 let _rowCounter = 0;
 
 // ─── Modal Openers for Requesting ─────────────────────────────────────────────
-function openRequestModal() {
+function openRequestModal(preselectItemId = null) {
   _rowCounter = 0;
-  document.getElementById('form-request').reset();
+  document.getElementById('form-request')?.reset();
   const container = document.getElementById('material-rows-container');
-  container.innerHTML = '';
-  // Pre-fill name from session if available
-  if (state.user?.name) {
-    const el = document.getElementById('req-engineer');
-    if (el) el.value = state.user.name;
+  if (container) container.innerHTML = '';
+
+  const restored = loadRequestDraft();
+  if (!restored) {
+    // Pre-fill name from session if available
+    if (state.user?.name) {
+      const el = document.getElementById('req-engineer');
+      if (el) el.value = state.user.name;
+    }
+    // Add one empty row to start
+    addMaterialRow();
+
+    if (preselectItemId) {
+      const item = (state.items || []).find(i => i.id === preselectItemId);
+      if (item) {
+        const row = document.getElementById('mat-row-1');
+        if (row) {
+          row.dataset.itemId   = item.id;
+          row.dataset.itemName = item.name;
+          row.dataset.itemSku  = item.sku;
+          row.dataset.unit     = item.unit || 'pcs';
+          const btn = document.getElementById('mat-picker-btn-1');
+          if (btn) {
+            btn.style.color = 'var(--text-primary)';
+            btn.style.fontWeight = '600';
+            btn.textContent = `${item.name} (${item.sku})`;
+          }
+          const unitEl = document.getElementById('mat-unit-1');
+          if (unitEl) unitEl.textContent = item.unit || 'pcs';
+        }
+      }
+    }
+  } else {
+    showToast('Restored saved material request draft', 'info');
   }
-  // Add one empty row to start
-  addMaterialRow();
-  document.getElementById('modal-request-overlay').classList.remove('hidden');
+  document.getElementById('modal-request-overlay')?.classList.remove('hidden');
 }
 
 function addMaterialRow() {
@@ -3321,11 +3348,170 @@ function selectPickerItem(itemId) {
   _pickerTargetRowId = null;
 }
 
-// ─── Old stubs kept for backward compat (now unused) ─────────────────────────
-function onRequestItemSelectChange() {}
+// ─── Material Request Draft Helpers ──────────────────────────────────────────
+
+function saveRequestDraft(closeAfterSave = false) {
+  const engineer   = document.getElementById('req-engineer')?.value.trim() || '';
+  const employeeId = document.getElementById('req-employee-id')?.value.trim() || '';
+  const project    = document.getElementById('req-project')?.value.trim() || '';
+  const purpose    = document.getElementById('req-purpose')?.value.trim() || '';
+
+  const container = document.getElementById('material-rows-container');
+  const materials = [];
+  if (container) {
+    for (const row of container.children) {
+      const itemId   = row.dataset.itemId || '';
+      const itemName = row.dataset.itemName || '';
+      const itemSku  = row.dataset.itemSku || '';
+      const unit     = row.dataset.unit || 'pcs';
+      const rowId    = row.id.replace('mat-row-', '');
+      const qty      = parseInt(document.getElementById(`mat-qty-${rowId}`)?.value) || 1;
+      if (itemId || itemName || qty > 1) {
+        materials.push({ itemId, itemName, itemSku, unit, quantity: qty });
+      }
+    }
+  }
+
+  const hasContent = engineer || employeeId || project || purpose || materials.length > 0;
+
+  if (hasContent) {
+    const draft = {
+      engineer,
+      employeeId,
+      project,
+      purpose,
+      materials,
+      savedAt: new Date().toISOString()
+    };
+    try {
+      localStorage.setItem('ims_request_draft', JSON.stringify(draft));
+    } catch (e) {
+      console.warn('Draft save error:', e);
+    }
+
+    if (closeAfterSave) {
+      showToast('Material request saved as draft', 'info');
+      document.getElementById('modal-request-overlay')?.classList.add('hidden');
+    }
+    return true;
+  } else if (closeAfterSave) {
+    document.getElementById('modal-request-overlay')?.classList.add('hidden');
+  }
+  return false;
+}
+
+function loadRequestDraft() {
+  const draftBanner = document.getElementById('request-draft-banner');
+  const draftTime   = document.getElementById('request-draft-time');
+  const raw = localStorage.getItem('ims_request_draft');
+  if (!raw) {
+    if (draftBanner) draftBanner.classList.add('hidden');
+    return false;
+  }
+
+  try {
+    const draft = JSON.parse(raw);
+    if (!draft || typeof draft !== 'object') {
+      if (draftBanner) draftBanner.classList.add('hidden');
+      return false;
+    }
+
+    const hasContent = draft.engineer || draft.employeeId || draft.project || draft.purpose || (Array.isArray(draft.materials) && draft.materials.length > 0);
+    if (!hasContent) {
+      if (draftBanner) draftBanner.classList.add('hidden');
+      return false;
+    }
+
+    if (document.getElementById('req-engineer')) document.getElementById('req-engineer').value = draft.engineer || '';
+    if (document.getElementById('req-employee-id')) document.getElementById('req-employee-id').value = draft.employeeId || '';
+    if (document.getElementById('req-project')) document.getElementById('req-project').value = draft.project || '';
+    if (document.getElementById('req-purpose')) document.getElementById('req-purpose').value = draft.purpose || '';
+
+    const container = document.getElementById('material-rows-container');
+    if (container) {
+      container.innerHTML = '';
+      _rowCounter = 0;
+      if (Array.isArray(draft.materials) && draft.materials.length > 0) {
+        draft.materials.forEach(m => {
+          const rowId = ++_rowCounter;
+          const row = document.createElement('div');
+          row.id = `mat-row-${rowId}`;
+          row.dataset.itemId   = m.itemId || '';
+          row.dataset.itemName = m.itemName || '';
+          row.dataset.itemSku  = m.itemSku || '';
+          row.dataset.unit     = m.unit || 'pcs';
+          row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.5rem 0.625rem';
+
+          const btnLabel = m.itemName ? `${m.itemName} (${m.itemSku || m.itemId})` : 'Select Material';
+          const btnColor = m.itemName ? 'var(--text-primary)' : 'var(--text-tertiary)';
+          const btnWeight = m.itemName ? '600' : 'normal';
+
+          row.innerHTML = `
+            <button type="button"
+              style="flex:1;text-align:left;background:var(--bg-surface);border:1px solid var(--border-muted);border-radius:var(--radius);padding:0.4rem 0.65rem;font-size:0.82rem;color:${btnColor};font-weight:${btnWeight};cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0"
+              onclick="openPickerModal(${rowId})" id="mat-picker-btn-${rowId}">
+              ${escHtml(btnLabel)}
+            </button>
+            <div style="display:flex;align-items:center;gap:0.3rem;flex-shrink:0">
+              <button type="button" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.55rem;font-size:1rem;line-height:1" onclick="stepQty(${rowId}, -1)">−</button>
+              <input type="number" id="mat-qty-${rowId}" value="${m.quantity || 1}" min="1" class="field-input mono" style="width:52px;text-align:center;padding:0.3rem;font-size:0.88rem;-moz-appearance:textfield;-webkit-appearance:none;" oninput="if(this.value<1)this.value=1" />
+              <button type="button" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.55rem;font-size:1rem;line-height:1" onclick="stepQty(${rowId}, 1)">+</button>
+              <span id="mat-unit-${rowId}" style="font-size:0.75rem;color:var(--text-tertiary);min-width:24px">${escHtml(m.unit || 'pcs')}</span>
+            </div>
+            <button type="button" onclick="removeMaterialRow(${rowId})" style="flex-shrink:0;background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:1.1rem;padding:0.15rem 0.3rem;line-height:1" title="Remove row">&times;</button>
+          `;
+          container.appendChild(row);
+        });
+      } else {
+        addMaterialRow();
+      }
+    }
+
+    if (draftBanner) {
+      if (draftTime && draft.savedAt) {
+        try {
+          const d = new Date(draft.savedAt);
+          draftTime.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' (' + d.toLocaleDateString() + ')';
+        } catch (_) {
+          draftTime.textContent = 'recently';
+        }
+      }
+      draftBanner.classList.remove('hidden');
+    }
+    return true;
+  } catch (e) {
+    if (draftBanner) draftBanner.classList.add('hidden');
+    return false;
+  }
+}
+
+function clearRequestDraft(showNotice = true) {
+  try {
+    localStorage.removeItem('ims_request_draft');
+  } catch (_) {}
+
+  const draftBanner = document.getElementById('request-draft-banner');
+  if (draftBanner) draftBanner.classList.add('hidden');
+
+  document.getElementById('form-request')?.reset();
+  const container = document.getElementById('material-rows-container');
+  if (container) container.innerHTML = '';
+  _rowCounter = 0;
+
+  if (state.user?.name) {
+    const el = document.getElementById('req-engineer');
+    if (el) el.value = state.user.name;
+  }
+  addMaterialRow();
+
+  if (showNotice) {
+    showToast('Draft cleared', 'info');
+  }
+}
 
 function closeRequestModal(e) {
   if (e && e.target !== document.getElementById('modal-request-overlay')) return;
+  saveRequestDraft(false);
   document.getElementById('modal-request-overlay')?.classList.add('hidden');
 }
 
@@ -3376,6 +3562,7 @@ async function handleRequestSubmit(e) {
       showToast(res.error, 'error');
       return;
     }
+    clearRequestDraft(false);
     showToast('Supplier offer submitted successfully!', 'success');
     document.getElementById('modal-request-overlay').classList.add('hidden');
     await loadAll();
