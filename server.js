@@ -82,11 +82,14 @@ function mergeDuplicateZohoItems(data) {
     if (!isMergeableZohoCode(rawCode)) return; // Skip empty & placeholder zoho codes
 
     const code = rawCode.toLowerCase();
+    const spec = (item.specification || '').trim().toLowerCase();
+    const name = (item.name || '').trim().toLowerCase();
+    const key = `${code}||${spec}||${name}`;
 
-    if (!map.has(code)) {
-      map.set(code, item);
+    if (!map.has(key)) {
+      map.set(key, item);
     } else {
-      const primary = map.get(code);
+      const primary = map.get(key);
 
       // Sum quantities
       const primaryQty = parseInt(primary.quantity) || 0;
@@ -509,6 +512,7 @@ app.post('/api/items', (req, res) => {
       }
       if (req.body.soNumber && !existing.soNumber) existing.soNumber = req.body.soNumber;
       if (req.body.poNumber && !existing.poNumber) existing.poNumber = req.body.poNumber;
+      if (req.body.specification && !existing.specification) existing.specification = req.body.specification;
       existing.updatedAt = new Date().toISOString();
       writeData(data);
       return res.status(200).json(existing);
@@ -532,6 +536,7 @@ app.post('/api/items', (req, res) => {
     notes: req.body.notes || '',
     imageUrl: req.body.imageUrl || '',
     zohoCode: newZoho,
+    specification: req.body.specification || '',
     soNumber: req.body.soNumber || req.body.so || '',
     poNumber: req.body.poNumber || req.body.po || '',
     addedAt: new Date().toISOString(),

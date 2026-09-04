@@ -1925,7 +1925,7 @@ function exportInventoryCSV() {
   }
 
   const headers = [
-    'Item ID', 'Zoho Code / Barcode', 'Material Name', 'Zone', 'Category', 
+    'Item ID', 'Zoho Code / Barcode', 'Material Name', 'Specification', 'Zone', 'Category', 
     'Quantity', 'Unit', 'Unit Rate (INR)', 'Total Value (INR)', 'Min Stock', 
     'Shelf Location', 'HSN', 'Notes', 'Added Date'
   ];
@@ -1945,6 +1945,7 @@ function exportInventoryCSV() {
       escapeCSV(item.id),
       escapeCSV(item.zohoCode || item.sku || item.barcode || ''),
       escapeCSV(item.name || ''),
+      escapeCSV(item.specification || ''),
       escapeCSV(item.zone || ''),
       escapeCSV(item.category || ''),
       qty,
@@ -2032,17 +2033,16 @@ function exportInventoryPDF() {
     doc.text(`Total Inventory Value: INR ${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 132, 39);
 
     // AutoTable
-    const tableHeaders = [['#', 'ZOHO CODE', 'MATERIAL NAME', 'ZONE', 'QTY', 'UNIT RATE', 'LOCATION']];
+    const tableHeaders = [['#', 'ZOHO CODE', 'MATERIAL NAME', 'SPECIFICATION', 'ZONE', 'QTY', 'SHELF']];
     const tableRows = items.map((item, index) => {
       const zoneName = item.zone ? item.zone.charAt(0).toUpperCase() + item.zone.slice(1) : 'General';
-      const rateStr = item.rate ? `INR ${parseFloat(item.rate).toLocaleString('en-IN')}` : 'INR 0';
       return [
         index + 1,
         item.zohoCode || item.sku || item.barcode || '-',
-        item.name.length > 32 ? item.name.slice(0, 32) + '...' : item.name,
+        item.name.length > 25 ? item.name.slice(0, 25) + '...' : item.name,
+        item.specification ? (item.specification.length > 18 ? item.specification.slice(0, 18) + '...' : item.specification) : '-',
         zoneName,
         `${item.quantity || 0} ${item.unit || 'pcs'}`,
-        rateStr,
         item.location || 'A1'
       ];
     });
@@ -2156,6 +2156,7 @@ function renderInventory() {
               <th style="width:48px">Photo</th>
               <th>Zoho Code</th>
               <th>Material Name</th>
+              <th>Specification</th>
               <th>Zone</th>
               <th>Category</th>
               <th>Quantity</th>
@@ -2198,6 +2199,7 @@ function filterAndRenderInventoryRows() {
       (i.barcode || '').toLowerCase().includes(q) || 
       (i.location || '').toLowerCase().includes(q) ||
       (i.category || '').toLowerCase().includes(q) ||
+      (i.specification || '').toLowerCase().includes(q) ||
       (i.soNumber || i.so || '').toLowerCase().includes(q) ||
       (i.poNumber || i.po || '').toLowerCase().includes(q)
     );
@@ -2220,7 +2222,7 @@ function filterAndRenderInventoryRows() {
   if (items.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" style="text-align:center;padding:3rem;color:var(--text-tertiary)">
+        <td colspan="10" style="text-align:center;padding:3rem;color:var(--text-tertiary)">
           No materials matching "${escHtml(state.searchQuery)}"
         </td>
       </tr>
@@ -2242,6 +2244,7 @@ function filterAndRenderInventoryRows() {
           </div>
         ` : ''}
       </td>
+      <td style="font-size:0.78rem;font-weight:500">${escHtml(item.specification || '-')}</td>
       <td>${zoneInlineTag(item.zone)}</td>
       <td style="color:var(--text-tertiary);font-size:0.75rem">${escHtml(item.category)}</td>
       <td style="font-family:var(--font-mono);font-weight:600">${item.quantity} ${item.unit}</td>
@@ -2759,9 +2762,11 @@ function openAddItemModal() {
   state.editingItemId = null;
   document.getElementById('modal-item-title').textContent = 'New Item';
   document.getElementById('form-item').reset();
-  // Clear Zoho Code, SO #, and PO # explicitly
+  // Clear Zoho Code, Specification, SO #, and PO # explicitly
   const zohoEl = document.getElementById('item-zoho-code');
   if (zohoEl) zohoEl.value = '';
+  const specEl = document.getElementById('item-specification');
+  if (specEl) specEl.value = '';
   const soEl = document.getElementById('item-so');
   if (soEl) soEl.value = '';
   const poEl = document.getElementById('item-po');
@@ -2801,9 +2806,11 @@ function openEditItemModal(id) {
   document.getElementById('item-location').value = item.location;
   document.getElementById('item-barcode').value = item.barcode || item.sku || '';
   document.getElementById('item-notes').value = item.notes || '';
-  // Populate Zoho Code, SO #, and PO #
+  // Populate Zoho Code, Specification, SO #, and PO #
   const zohoInp = document.getElementById('item-zoho-code');
   if (zohoInp) zohoInp.value = item.zohoCode || '';
+  const specInp = document.getElementById('item-specification');
+  if (specInp) specInp.value = item.specification || '';
   const soEl = document.getElementById('item-so');
   if (soEl) soEl.value = item.soNumber || item.so || '';
   const poEl = document.getElementById('item-po');
@@ -2903,6 +2910,7 @@ async function handleItemSubmit(e) {
     notes: document.getElementById('item-notes').value.trim(),
     imageUrl: document.getElementById('item-imageUrl').value.trim(),
     zohoCode: zohoCodeVal,
+    specification: document.getElementById('item-specification')?.value.trim() || '',
     soNumber: document.getElementById('item-so')?.value.trim() || '',
     poNumber: document.getElementById('item-po')?.value.trim() || ''
   };
