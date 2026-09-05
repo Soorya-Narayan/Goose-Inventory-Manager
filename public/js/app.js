@@ -21,6 +21,11 @@ const state = {
   // Issue checklist
   activeChecklistRequestId: null,
   activeChecklist: [],
+  // System Update & Maintenance
+  initialServerStartTime: null,
+  currentVersion: '2.9.1',
+  isUpdateOverlayShowing: false,
+  maintenanceActive: false,
 };
 
 // ─── API Helpers ─────────────────────────────────────────────────────────────
@@ -4160,9 +4165,133 @@ function exportEngineerActivityPDF(filterEmail = 'all') {
   }
 }
 
+// ─── System Update & Maintenance Screen Logic ─────────────────────────────
+async function initSystemStatusPolling() {
+  try {
+    const res = await fetch('/api/system/status').then(r => r.json()).catch(() => null);
+    if (res && res.status === 'ok') {
+      state.initialServerStartTime = res.serverStartTime;
+      state.currentVersion = res.version || '2.9.0';
+      if (res.maintenance) {
+        state.maintenanceActive = true;
+        updateMaintenanceSettingBtn(true);
+        showSystemUpdateOverlay('Store maintenance mode enabled by Manager. Active operations are temporarily paused.');
+      }
+    }
+  } catch {}
+
+  if (state.pollTimer) clearInterval(state.pollTimer);
+  state.pollTimer = setInterval(() => checkSystemUpdateStatus(), 5000);
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkSystemUpdateStatus();
+  });
+}
+
+async function checkSystemUpdateStatus(manual = false) {
+  try {
+    const res = await fetch('/api/system/status').then(r => r.json());
+    const tag = document.getElementById('system-update-version-tag');
+    if (tag && res.version) tag.textContent = `v${res.version}`;
+
+    // 1. Maintenance Mode
+    if (res.maintenance) {
+      state.maintenanceActive = true;
+      updateMaintenanceSettingBtn(true);
+      showSystemUpdateOverlay('Store maintenance mode enabled by Manager. Active operations are temporarily paused.');
+      return;
+    } else {
+      if (state.maintenanceActive) {
+        state.maintenanceActive = false;
+        updateMaintenanceSettingBtn(false);
+        hideSystemUpdateOverlay();
+        showToast('Store maintenance completed! System online.', 'success');
+      }
+    }
+
+    // 2. System Version or Server Start Time Changed (Deploy / Restart Pushed)
+    const serverRestarted = state.initialServerStartTime && res.serverStartTime !== state.initialServerStartTime;
+    const versionBumped = state.currentVersion && res.version !== state.currentVersion;
+
+    if (serverRestarted || versionBumped) {
+      showSystemUpdateOverlay('New updates successfully deployed! Reloading application...');
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 1200);
+      return;
+    }
+
+    // 3. Reconnected after temporary downtime during push
+    if (state.isUpdateOverlayShowing && !res.maintenance) {
+      showToast('Store server reconnected! Reloading latest changes...', 'success');
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 1000);
+      return;
+    }
+
+    if (manual) {
+      showToast(`System online & up to date (v${res.version})`, 'success');
+    }
+  } catch (err) {
+    showSystemUpdateOverlay('Store system is currently being updated. Waiting for server connection...');
+  }
+}
+
+function showSystemUpdateOverlay(message = 'Store System is Updating') {
+  const overlay = document.getElementById('modal-system-update-overlay');
+  const statusTxt = document.getElementById('system-update-status-text');
+  if (statusTxt && message) statusTxt.textContent = message;
+  if (overlay) {
+    overlay.classList.remove('hidden');
+    state.isUpdateOverlayShowing = true;
+  }
+}
+
+function hideSystemUpdateOverlay() {
+  const overlay = document.getElementById('modal-system-update-overlay');
+  if (overlay) {
+    overlay.classList.add('hidden');
+    state.isUpdateOverlayShowing = false;
+  }
+}
+
+async function toggleMaintenanceModeSetting() {
+  if (!state.user || state.user.role !== 'manager') {
+    showToast('Access Denied: Only Store Manager can change maintenance mode', 'error');
+    return;
+  }
+  const newMaintState = !state.maintenanceActive;
+  try {
+    const res = await api.post('/api/system/maintenance', { enabled: newMaintState, role: 'manager' });
+    state.maintenanceActive = res.maintenance;
+    updateMaintenanceSettingBtn(res.maintenance);
+    showToast(res.message, res.maintenance ? 'warning' : 'success');
+    checkSystemUpdateStatus();
+  } catch (err) {
+    showToast('Failed to toggle maintenance mode', 'error');
+  }
+}
+
+function updateMaintenanceSettingBtn(active) {
+  const btn = document.getElementById('btn-toggle-maintenance-setting');
+  if (btn) {
+    if (active) {
+      btn.textContent = 'Broadcasting On';
+      btn.style.color = '#ef4444';
+      btn.style.borderColor = 'rgba(239,68,68,0.4)';
+    } else {
+      btn.textContent = 'Broadcasting Off';
+      btn.style.color = 'var(--warning)';
+      btn.style.borderColor = 'var(--border-subtle)';
+    }
+  }
+}
+
 // ─── Init ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
+  initSystemStatusPolling();
   // Pre-fetch items from server in background to warm cache
   loadAll(false).catch(() => {});
 

@@ -1,6 +1,6 @@
 {
   "name": "storeims",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "description": "Digital Store Inventory Management System with Barcode Scanner & Label Printer Support",
   "main": "server.js",
   "scripts": {

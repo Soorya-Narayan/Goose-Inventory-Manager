@@ -2160,3 +2160,7 @@ input[type="number"] {
   background: rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(239, 68, 68, 0.35);
 }
+
+.spin-slow {
+  animation: bt-spin 2.5s linear infinite;
+}

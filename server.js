@@ -10,6 +10,10 @@ const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data', 'inventory.json');
 const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
 
+const SERVER_START_TIME = Date.now();
+const SYSTEM_VERSION = require('./package.json').version || '2.9.0';
+let maintenanceMode = false;
+
 // Ensure data & uploads folders exist
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -987,6 +991,37 @@ app.delete('/api/transactions', (req, res) => {
   data.transactions = [];
   writeData(data);
   res.json({ success: true, message: 'All transactions cleared' });
+});
+
+// ─── System Status & Maintenance API ───────────────────────────────────────
+app.get('/api/system/status', (req, res) => {
+  const data = readData();
+  const isMaint = maintenanceMode || (data.settings && data.settings.maintenanceMode === true);
+  res.json({
+    status: 'ok',
+    version: SYSTEM_VERSION,
+    serverStartTime: SERVER_START_TIME,
+    maintenance: isMaint,
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.post('/api/system/maintenance', (req, res) => {
+  const { enabled, role } = req.body;
+  if (role !== 'manager') {
+    return res.status(403).json({ error: 'Only Store Manager can change maintenance state' });
+  }
+  maintenanceMode = !!enabled;
+  const data = readData();
+  if (!data.settings) data.settings = {};
+  data.settings.maintenanceMode = maintenanceMode;
+  writeData(data);
+
+  res.json({
+    success: true,
+    maintenance: maintenanceMode,
+    message: maintenanceMode ? 'System maintenance mode enabled' : 'System maintenance mode disabled'
+  });
 });
 
 // ─── Health Check & SPA Wildcard Fallback ────────────────────────────────────
