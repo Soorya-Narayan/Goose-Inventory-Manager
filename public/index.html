@@ -24,7 +24,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <!-- Chart.js CDN for Overview Stock Analytics Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="/css/style.css?v=2.9.1" />
+  <link rel="stylesheet" href="/css/style.css?v=2.9.2" />
   <style>
     /* Critical Inline Safety Rules — Prevents SVG size explosions */
     svg { max-width: 100%; height: auto; display: inline-block; }
@@ -175,7 +175,7 @@
       </form>
 
       <div class="login-footer">
-        <span>INVENTORY v2.9.1 &middot; GOOSE INDUSTRIAL SOLUTIONS PVT LTD</span>
+        <span>INVENTORY v2.9.2 &middot; GOOSE INDUSTRIAL SOLUTIONS PVT LTD</span>
       </div>
     </div>
   </div>
@@ -262,6 +262,10 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             <span>Overview</span>
           </a>
+          <a href="#" class="nav-link" data-view="analytics" onclick="navigateTo('analytics');return false;" id="nav-analytics-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Analytics</span>
+          </a>
           <a href="#" class="nav-link" data-view="inventory" onclick="navigateTo('inventory');return false;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
             <span>Store Inventory</span>
@@ -289,13 +293,14 @@
           </a>
         </div>
         <div style="padding:0.75rem 1rem;margin-top:auto;border-top:1px solid var(--border-subtle);font-size:0.7rem;color:var(--text-tertiary);font-family:var(--font-mono)">
-          System v2.9.1
+          System v2.9.2
         </div>
       </nav>
 
       <!-- Main Content Area -->
       <main class="content-area" id="content-area">
         <div class="view" id="view-dashboard"></div>
+        <div class="view hidden" id="view-analytics"></div>
         <div class="view hidden" id="view-storemap"></div>
         <div class="view hidden" id="view-inventory"></div>
         <div class="view hidden" id="view-requests"></div>
@@ -311,6 +316,10 @@
       <button class="bnav-btn active" data-view="dashboard" onclick="navigateTo('dashboard')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         <span>Home</span>
+      </button>
+      <button class="bnav-btn" data-view="analytics" onclick="navigateTo('analytics')" id="bnav-analytics-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Analytics</span>
       </button>
       <button class="bnav-btn" data-view="inventory" onclick="navigateTo('inventory')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
@@ -1111,7 +1120,7 @@
           <span class="status-dot pulse" style="background:#eab308;width:8px;height:8px;border-radius:50%;display:inline-block"></span>
           <span id="system-update-status-text">Reconnecting to store server...</span>
         </div>
-        <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)" id="system-update-version-tag">v2.9.1</span>
+        <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)" id="system-update-version-tag">v2.9.2</span>
       </div>
 
       <div style="display:flex;gap:0.75rem;justify-content:center;width:100%">
@@ -1123,6 +1132,6 @@
     </div>
   </div>
 
-  <script src="/js/app.js?v=2.9.1"></script>
+  <script src="/js/app.js?v=2.9.2"></script>
 </body>
 </html>

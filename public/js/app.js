@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '2.9.1',
+  currentVersion: '2.9.2',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
 };
@@ -1033,6 +1033,7 @@ function navigateTo(view) {
 function renderView(view) {
   switch (view) {
     case 'dashboard':        renderDashboard();       break;
+    case 'analytics':        renderAnalytics();       break;
     case 'storemap':         renderStoreMap();        break;
     case 'inventory':        renderInventory();       break;
     case 'requests':         renderRequests();        break;
@@ -1040,6 +1041,34 @@ function renderView(view) {
     case 'engineer-history': renderEngineerHistory(); break;
     case 'labeldesigner':    renderLabelDesigner();   break;
   }
+}
+
+function renderAnalytics() {
+  const container = document.getElementById('view-analytics');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="page-hdr">
+      <div>
+        <h1 class="page-title">Analytics</h1>
+        <div class="page-subtitle">Industrial Equipment, Material Consumption &amp; Store Trends</div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:3.5rem 1.5rem;text-align:center;background:var(--bg-elevated);border:1px dashed var(--border-subtle);border-radius:var(--radius-lg);margin-top:0.5rem">
+      <div style="width:64px;height:64px;margin:0 auto 1.25rem auto;background:rgba(0,114,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,114,255,0.25)">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+      </div>
+      <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-primary);margin:0 0 0.5rem 0">Analytics Tab Ready</h2>
+      <p style="font-size:0.88rem;color:var(--text-tertiary);max-width:500px;margin:0 auto;line-height:1.65">
+        The Analytics tab is now live in navigation. Custom widgets, trend charts, and material reporting will be displayed here based on your upcoming instructions.
+      </p>
+    </div>
+  `;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
