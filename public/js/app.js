@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.0.3',
+  currentVersion: '3.0.4',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -1450,17 +1450,76 @@ function renderAnalytics() {
       </div>
     </div>
 
+    <!-- Audit Analytics Breakdown Pie Chart & Distribution Panel -->
+    <div class="card" style="padding:1.25rem;margin-bottom:1.5rem;background:var(--bg-elevated);border:1px solid var(--border-subtle)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+        <div>
+          <h3 style="margin:0 0 0.2rem 0;font-size:1.05rem;font-weight:700;color:var(--text-primary)">Audit Analytics Breakdown</h3>
+          <div style="font-size:0.78rem;color:var(--text-tertiary)">Visual distribution of stock reconciliation results between Zoho Books and Store Inventory</div>
+        </div>
+        ${auditResults.length > 0 ? `<div style="font-size:0.75rem;font-weight:700;font-family:var(--font-mono);padding:0.25rem 0.65rem;background:rgba(0,114,255,0.1);color:var(--goose);border-radius:var(--radius-sm)">${summary.totalChecked || auditResults.length} Total Records Evaluated</div>` : ''}
+      </div>
+
+      <div style="display:grid;grid-template-columns:minmax(220px, 300px) 1fr;gap:1.5rem;align-items:center">
+        <!-- Pie Chart Canvas Container -->
+        <div style="position:relative;height:220px;width:100%;display:flex;align-items:center;justify-content:center">
+          <canvas id="analytics-audit-pie-chart"></canvas>
+        </div>
+
+        <!-- Chart Legend & Status Breakdown -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:0.875rem">
+          <div onclick="setAnalyticsTab('synced')" style="cursor:pointer;display:flex;align-items:center;gap:0.75rem;background:var(--bg-surface);padding:0.75rem 1rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle);transition:all 0.2s" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='var(--border-subtle)'" title="Filter by Fully Synced items">
+            <span style="width:12px;height:12px;border-radius:50%;background:#10b981;display:inline-block;flex-shrink:0"></span>
+            <div style="flex:1">
+              <div style="font-size:0.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase">Fully Synced</div>
+              <div style="font-size:1.15rem;font-weight:800;font-family:var(--font-mono);color:#10b981">${summary.matchedCount || 0}</div>
+            </div>
+          </div>
+
+          <div onclick="setAnalyticsTab('mismatch')" style="cursor:pointer;display:flex;align-items:center;gap:0.75rem;background:var(--bg-surface);padding:0.75rem 1rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle);transition:all 0.2s" onmouseover="this.style.borderColor='#f59e0b'" onmouseout="this.style.borderColor='var(--border-subtle)'" title="Filter by Qty Mismatches">
+            <span style="width:12px;height:12px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0"></span>
+            <div style="flex:1">
+              <div style="font-size:0.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase">Qty Mismatches</div>
+              <div style="font-size:1.15rem;font-weight:800;font-family:var(--font-mono);color:#f59e0b">${summary.mismatchCount || 0}</div>
+            </div>
+          </div>
+
+          <div onclick="setAnalyticsTab('missing_store')" style="cursor:pointer;display:flex;align-items:center;gap:0.75rem;background:var(--bg-surface);padding:0.75rem 1rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle);transition:all 0.2s" onmouseover="this.style.borderColor='#ef4444'" onmouseout="this.style.borderColor='var(--border-subtle)'" title="Filter by Missing in Store">
+            <span style="width:12px;height:12px;border-radius:50%;background:#ef4444;display:inline-block;flex-shrink:0"></span>
+            <div style="flex:1">
+              <div style="font-size:0.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase">Missing in Store</div>
+              <div style="font-size:1.15rem;font-weight:800;font-family:var(--font-mono);color:#ef4444">${summary.missingInStoreCount || 0}</div>
+            </div>
+          </div>
+
+          <div onclick="setAnalyticsTab('extra_store')" style="cursor:pointer;display:flex;align-items:center;gap:0.75rem;background:var(--bg-surface);padding:0.75rem 1rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle);transition:all 0.2s" onmouseover="this.style.borderColor='#06b6d4'" onmouseout="this.style.borderColor='var(--border-subtle)'" title="Filter by Extra in Store">
+            <span style="width:12px;height:12px;border-radius:50%;background:#06b6d4;display:inline-block;flex-shrink:0"></span>
+            <div style="flex:1">
+              <div style="font-size:0.72rem;font-weight:700;color:var(--text-tertiary);text-transform:uppercase">Extra in Store</div>
+              <div style="font-size:1.15rem;font-weight:800;font-family:var(--font-mono);color:#06b6d4">${summary.extraInStoreCount || 0}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Reconciliation Source Input Box -->
     <div class="card" style="padding:1.25rem;margin-bottom:1.5rem;background:var(--bg-elevated);border:1px solid var(--border-subtle)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem">
         <div>
           <h3 style="margin:0 0 0.2rem 0;font-size:1.05rem;font-weight:700;color:var(--text-primary)">Zoho Books Data Source</h3>
           <div style="font-size:0.78rem;color:var(--text-tertiary)">
-            ${lastRunAt ? `Last Audit: <strong>${escHtml(sourceName || 'Zoho Export')}</strong> &middot; ${new Date(lastRunAt).toLocaleString('en-IN')}` : 'Upload a Zoho Books CSV export file or connect via Live REST API to run store comparison'}
+            ${lastRunAt ? `Active Source: <strong>${escHtml(sourceName || 'Zoho Export')}</strong> &middot; Audited: ${new Date(lastRunAt).toLocaleString('en-IN')}` : 'Upload a Zoho Books CSV export file or connect via Live REST API to run store comparison'}
           </div>
         </div>
 
-        <div style="display:flex;gap:0.5rem">
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+          ${(sourceName || auditResults.length > 0) ? `
+            <button class="btn btn-ghost btn-sm" onclick="clearAnalyticsCSV()" style="color:#ef4444;border-color:rgba(239,68,68,0.3);gap:0.35rem" title="Remove uploaded CSV file and reset audit statistics">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              Remove CSV File
+            </button>
+          ` : ''}
           <button class="btn ${sourceType === 'csv' ? 'btn-primary' : 'btn-ghost'} btn-sm" onclick="setAnalyticsSourceType('csv')">Upload CSV File</button>
           <button class="btn ${sourceType === 'api' ? 'btn-primary' : 'btn-ghost'} btn-sm" onclick="setAnalyticsSourceType('api')">Live REST API Sync</button>
         </div>
@@ -1594,6 +1653,121 @@ function renderAnalytics() {
       `}
     </div>
   `;
+
+  renderAnalyticsPieChart(summary);
+}
+
+function clearAnalyticsCSV() {
+  if (!confirm('Are you sure you want to remove the uploaded CSV file and reset the audit analytics?')) {
+    return;
+  }
+
+  state.analyticsAudit.auditResults = [];
+  state.analyticsAudit.summary = {
+    totalZohoItems: 0,
+    totalStoreItems: state.items ? state.items.length : 0,
+    totalChecked: 0,
+    matchedCount: 0,
+    mismatchCount: 0,
+    missingInStoreCount: 0,
+    extraInStoreCount: 0
+  };
+  state.analyticsAudit.sourceName = '';
+  state.analyticsAudit.lastRunAt = null;
+
+  try {
+    localStorage.removeItem('ims_analytics_audit');
+  } catch (e) {}
+
+  const csvInput = document.getElementById('analytics-csv-input');
+  if (csvInput) csvInput.value = '';
+
+  showToast('Uploaded CSV file and audit results cleared', 'info');
+  renderAnalytics();
+}
+
+function renderAnalyticsPieChart(summary) {
+  const canvas = document.getElementById('analytics-audit-pie-chart');
+  if (!canvas || !window.Chart) return;
+
+  if (window._analyticsAuditPieChartInstance) {
+    window._analyticsAuditPieChartInstance.destroy();
+  }
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const borderColor = isDark ? '#1e293b' : '#ffffff';
+
+  const dataValues = [
+    summary.matchedCount || 0,
+    summary.mismatchCount || 0,
+    summary.missingInStoreCount || 0,
+    summary.extraInStoreCount || 0
+  ];
+
+  const total = dataValues.reduce((a, b) => a + b, 0);
+
+  const chartObj = new Chart(canvas, {
+    type: 'pie',
+    data: {
+      labels: ['Fully Synced', 'Qty Mismatches', 'Missing in Store', 'Extra in Store'],
+      datasets: [{
+        data: total === 0 ? [1, 0, 0, 0] : dataValues,
+        backgroundColor: total === 0 ? ['#94a3b8'] : ['#10b981', '#f59e0b', '#ef4444', '#06b6d4'],
+        borderWidth: 2,
+        borderColor: borderColor,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick: (evt, activeElements, chart) => {
+        const elems = (activeElements && activeElements.length > 0)
+          ? activeElements
+          : (chart && typeof chart.getElementsAtEventForMode === 'function'
+              ? chart.getElementsAtEventForMode(evt, 'nearest', { intersect: false }, true)
+              : []);
+        
+        if (elems && elems.length > 0) {
+          const idx = elems[0].index;
+          const filterMap = ['synced', 'mismatch', 'missing_store', 'extra_store'];
+          if (filterMap[idx]) {
+            setAnalyticsTab(filterMap[idx]);
+          }
+        }
+      },
+      onHover: (event, chartElement) => {
+        if (event.native && event.native.target) {
+          event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+          titleColor: isDark ? '#f8fafc' : '#0f172a',
+          bodyColor: isDark ? '#cbd5e1' : '#334155',
+          borderColor: isDark ? '#334155' : '#e2e8f0',
+          borderWidth: 1,
+          padding: 10,
+          cornerRadius: 8,
+          boxPadding: 6,
+          usePointStyle: true,
+          callbacks: {
+            label: (context) => {
+              if (total === 0) return ' No Audit Data';
+              const val = context.raw || 0;
+              const pct = ((val / total) * 100).toFixed(1);
+              return ` ${val} items (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  window._analyticsAuditPieChartInstance = chartObj;
 }
 
 function setAnalyticsTab(tabName) {
@@ -1838,25 +2012,79 @@ function exportAnalyticsAuditPDF() {
     doc.setTextColor(148, 163, 184);
     doc.text(`Generated: ${dateStr}  |  Auditor: Store Manager  |  Source: ${sourceName || 'Zoho Export'}`, 14, 30);
 
-    // Summary Statistics Box
+    // Summary Statistics Bar
     doc.setFillColor(248, 250, 252);
-    doc.rect(14, 42, 182, 18, 'F');
+    doc.rect(14, 42, 182, 16, 'F');
     doc.setDrawColor(226, 232, 240);
-    doc.rect(14, 42, 182, 18, 'S');
+    doc.rect(14, 42, 182, 16, 'S');
 
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 41, 59);
-    doc.text(`Total Checked: ${summary.totalChecked}`, 18, 53);
+    doc.text(`CSV Items: ${summary.totalZohoItems || 0}`, 18, 52);
+    doc.text(`Store Items: ${summary.totalStoreItems || 0}`, 62, 52);
 
     doc.setTextColor(217, 119, 6); // amber
-    doc.text(`Mismatches: ${summary.mismatchCount}`, 65, 53);
+    doc.text(`Mismatches: ${summary.mismatchCount || 0}`, 108, 52);
 
     doc.setTextColor(220, 38, 38); // red
-    doc.text(`Missing in Store: ${summary.missingInStoreCount}`, 112, 53);
+    doc.text(`Missing: ${summary.missingInStoreCount || 0}`, 144, 52);
 
     doc.setTextColor(16, 185, 129); // green
-    doc.text(`Fully Synced: ${summary.matchedCount}`, 160, 53);
+    doc.text(`Synced: ${summary.matchedCount || 0}`, 174, 52);
+
+    let startTableY = 64;
+
+    // Embed Pie Chart in PDF if Canvas exists
+    const pieCanvas = document.getElementById('analytics-audit-pie-chart');
+    if (pieCanvas) {
+      try {
+        const pieImgData = pieCanvas.toDataURL('image/png');
+        
+        // Chart Box Container
+        doc.setFillColor(248, 250, 252);
+        doc.rect(14, 62, 182, 48, 'F');
+        doc.setDrawColor(226, 232, 240);
+        doc.rect(14, 62, 182, 48, 'S');
+
+        // Render Pie Chart Image
+        doc.addImage(pieImgData, 'PNG', 18, 64, 44, 44);
+
+        // Render Legend & Analytics Distribution on PDF
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(30, 41, 59);
+        doc.text('AUDIT RECONCILIATION ANALYTICS PIE CHART', 70, 71);
+
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+
+        // Fully Synced
+        doc.setFillColor(16, 185, 129);
+        doc.circle(72, 79, 1.8, 'F');
+        doc.setTextColor(51, 65, 85);
+        doc.text(`Fully Synced: ${summary.matchedCount || 0} items`, 76, 80);
+
+        // Qty Mismatches
+        doc.setFillColor(245, 158, 11);
+        doc.circle(72, 87, 1.8, 'F');
+        doc.text(`Qty Mismatches: ${summary.mismatchCount || 0} items`, 76, 88);
+
+        // Missing in Store
+        doc.setFillColor(239, 68, 68);
+        doc.circle(72, 95, 1.8, 'F');
+        doc.text(`Missing in Store: ${summary.missingInStoreCount || 0} items`, 76, 96);
+
+        // Extra in Store
+        doc.setFillColor(6, 182, 212);
+        doc.circle(72, 103, 1.8, 'F');
+        doc.text(`Extra in Store: ${summary.extraInStoreCount || 0} items`, 76, 104);
+
+        startTableY = 115;
+      } catch (chartErr) {
+        console.error('Error adding pie chart to PDF:', chartErr);
+      }
+    }
 
     // Table Data Formatting
     const tableHeaders = [['#', 'Zoho Code', 'Material Description', 'Store Stock', 'Zoho Stock', 'Variance', 'Audit Status']];
