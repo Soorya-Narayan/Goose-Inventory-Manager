@@ -867,20 +867,32 @@ async function handleLogin(e) {
   const isManager = document.getElementById('role-btn-manager').classList.contains('selected');
   const errorEl = document.getElementById('login-error');
 
+  if (errorEl) errorEl.classList.add('hidden');
+
   if (isManager) {
-    const pin = document.getElementById('manager-pin').value;
+    const pin = (document.getElementById('manager-pin')?.value || '').trim();
+    if (!pin) {
+      if (errorEl) {
+        errorEl.textContent = 'Please enter Store Manager Password';
+        errorEl.classList.remove('hidden');
+      }
+      return;
+    }
     try {
+      showLoadingScreen('Authenticating Store Manager...');
       const res = await api.post('/api/auth/login', { role: 'manager', pin });
       if (res && res.success) {
-        setUser({ role: 'manager', name: 'Store Manager' });
+        await setUser({ role: 'manager', name: 'Store Manager' });
         if (errorEl) errorEl.classList.add('hidden');
       } else {
+        hideLoadingScreen();
         if (errorEl) {
           errorEl.textContent = res.error || 'Invalid Manager Password';
           errorEl.classList.remove('hidden');
         }
       }
     } catch (err) {
+      hideLoadingScreen();
       if (errorEl) {
         errorEl.textContent = err.message || 'Invalid Manager Password';
         errorEl.classList.remove('hidden');
@@ -4514,7 +4526,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const saved = sessionStorage.getItem('ims_user');
   if (saved) {
-    try { await setUser(JSON.parse(saved)); return; } catch {}
+    try {
+      await setUser(JSON.parse(saved));
+      return;
+    } catch (err) {
+      console.error('Session restoration failed:', err);
+      sessionStorage.removeItem('ims_user');
+      hideLoadingScreen();
+    }
   }
   hideLoadingScreen();
 });

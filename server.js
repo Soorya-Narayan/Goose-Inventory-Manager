@@ -361,7 +361,7 @@ app.get('/api/auth/verify-otp', (req, res) => {
 
 // ─── Global Auth & Password Management Endpoints ─────────────────────────────
 app.post('/api/auth/login', (req, res) => {
-  const { role, pin } = req.body;
+  const { role, pin } = req.body || {};
   const data = readData();
   const settings = data.settings || {};
   const expectedManagerPin = settings.managerPin || 'Mannar@200';
@@ -371,7 +371,12 @@ app.post('/api/auth/login', (req, res) => {
   const inputPin = (pin || '').trim();
 
   if (cleanRole === 'manager') {
-    if (inputPin === expectedManagerPin || inputPin === 'Mannar@200') {
+    if (
+      inputPin === expectedManagerPin ||
+      inputPin === 'Mannar@200' ||
+      inputPin.toLowerCase() === expectedManagerPin.toLowerCase() ||
+      inputPin.toLowerCase() === 'mannar@200'
+    ) {
       return res.json({
         success: true,
         user: { role: 'manager', name: 'Store Manager', title: 'Store Manager' }
@@ -380,7 +385,12 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid Manager Password' });
     }
   } else {
-    if (inputPin === expectedEngineerPin || inputPin === '5678') {
+    if (
+      inputPin === expectedEngineerPin ||
+      inputPin === '5678' ||
+      inputPin.toLowerCase() === expectedEngineerPin.toLowerCase() ||
+      inputPin === '5678'
+    ) {
       return res.json({
         success: true,
         user: { role: 'engineer', name: 'Er. Engineer', title: 'Site Engineer' }
