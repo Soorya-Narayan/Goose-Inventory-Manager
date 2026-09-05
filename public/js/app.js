@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.0.0',
+  currentVersion: '3.0.1',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -1284,31 +1284,31 @@ function renderAnalytics() {
     </div>
 
     <!-- Summary KPI Cards -->
-    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:1rem;margin-bottom:1.25rem">
-      <div class="card stat-card" onclick="setAnalyticsTab('all')" style="cursor:pointer;border-left:4px solid var(--goose)">
-        <div class="stat-lbl">TOTAL CHECKED</div>
-        <div class="stat-val">${summary.totalChecked}</div>
-        <div style="font-size:0.72rem;color:var(--text-tertiary)">Master items evaluated</div>
+    <div class="analytics-stats-grid">
+      <div class="analytics-kpi-card total" onclick="setAnalyticsTab('all')" title="Click to view all items">
+        <div class="analytics-kpi-title">Total Checked</div>
+        <div class="analytics-kpi-value">${summary.totalChecked}</div>
+        <div class="analytics-kpi-sub">Master items evaluated</div>
       </div>
-      <div class="card stat-card" onclick="setAnalyticsTab('mismatch')" style="cursor:pointer;border-left:4px solid #f59e0b">
-        <div class="stat-lbl" style="color:#f59e0b">QTY MISMATCHES</div>
-        <div class="stat-val" style="color:#f59e0b">${summary.mismatchCount}</div>
-        <div style="font-size:0.72rem;color:var(--text-tertiary)">Stock quantity differs</div>
+      <div class="analytics-kpi-card mismatch" onclick="setAnalyticsTab('mismatch')" title="Click to view stock quantity mismatches">
+        <div class="analytics-kpi-title">Qty Mismatches</div>
+        <div class="analytics-kpi-value">${summary.mismatchCount}</div>
+        <div class="analytics-kpi-sub">Stock quantity differs</div>
       </div>
-      <div class="card stat-card" onclick="setAnalyticsTab('missing_store')" style="cursor:pointer;border-left:4px solid #ef4444">
-        <div class="stat-lbl" style="color:#ef4444">MISSING IN STORE</div>
-        <div class="stat-val" style="color:#ef4444">${summary.missingInStoreCount}</div>
-        <div style="font-size:0.72rem;color:var(--text-tertiary)">Only in Zoho master</div>
+      <div class="analytics-kpi-card missing" onclick="setAnalyticsTab('missing_store')" title="Click to view items missing in local store">
+        <div class="analytics-kpi-title">Missing in Store</div>
+        <div class="analytics-kpi-value">${summary.missingInStoreCount}</div>
+        <div class="analytics-kpi-sub">Only in Zoho master</div>
       </div>
-      <div class="card stat-card" onclick="setAnalyticsTab('extra_store')" style="cursor:pointer;border-left:4px solid #06b6d4">
-        <div class="stat-lbl" style="color:#06b6d4">EXTRA IN STORE</div>
-        <div class="stat-val" style="color:#06b6d4">${summary.extraInStoreCount}</div>
-        <div style="font-size:0.72rem;color:var(--text-tertiary)">Only in local store</div>
+      <div class="analytics-kpi-card extra" onclick="setAnalyticsTab('extra_store')" title="Click to view extra store items">
+        <div class="analytics-kpi-title">Extra in Store</div>
+        <div class="analytics-kpi-value">${summary.extraInStoreCount}</div>
+        <div class="analytics-kpi-sub">Only in local store</div>
       </div>
-      <div class="card stat-card" onclick="setAnalyticsTab('synced')" style="cursor:pointer;border-left:4px solid #10b981">
-        <div class="stat-lbl" style="color:#10b981">FULLY SYNCED</div>
-        <div class="stat-val" style="color:#10b981">${summary.matchedCount}</div>
-        <div style="font-size:0.72rem;color:var(--text-tertiary)">Stock &amp; details match</div>
+      <div class="analytics-kpi-card synced" onclick="setAnalyticsTab('synced')" title="Click to view fully synced items">
+        <div class="analytics-kpi-title">Fully Synced</div>
+        <div class="analytics-kpi-value">${summary.matchedCount}</div>
+        <div class="analytics-kpi-sub">Stock &amp; details match</div>
       </div>
     </div>
 
