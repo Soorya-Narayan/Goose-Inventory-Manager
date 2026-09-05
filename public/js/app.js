@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.0.1',
+  currentVersion: '3.0.2',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -1473,39 +1473,113 @@ function setAnalyticsSourceType(type) {
   renderAnalytics();
 }
 
+// ─── CSV Upload Progress Modal Helpers ────────────────────────────────────
+function showCSVProgressModal(filename = 'Items.csv', title = 'Uploading Zoho Items CSV') {
+  const overlay = document.getElementById('modal-csv-upload-progress');
+  const titleEl = document.getElementById('csv-upload-modal-title');
+  const nameEl  = document.getElementById('csv-upload-filename');
+  const pctEl   = document.getElementById('csv-upload-percent-text');
+  const fillEl  = document.getElementById('csv-upload-progress-fill');
+  const statusEl = document.getElementById('csv-upload-status-sub');
+
+  if (titleEl) titleEl.textContent = title;
+  if (nameEl)  nameEl.textContent  = filename;
+  if (pctEl)   pctEl.textContent   = '0%';
+  if (fillEl)  fillEl.style.width  = '0%';
+  if (statusEl) statusEl.innerHTML = `<span class="status-dot pulse" style="background:var(--goose);width:7px;height:7px;border-radius:50%;display:inline-block"></span> <span>Reading CSV file bytes...</span>`;
+
+  if (overlay) overlay.classList.remove('hidden');
+}
+
+function updateCSVProgress(percentage, statusMessage) {
+  const pctEl   = document.getElementById('csv-upload-percent-text');
+  const fillEl  = document.getElementById('csv-upload-progress-fill');
+  const statusEl = document.getElementById('csv-upload-status-sub');
+
+  const clampedPct = Math.min(100, Math.max(0, Math.round(percentage)));
+
+  if (pctEl)   pctEl.textContent  = `${clampedPct}%`;
+  if (fillEl)  fillEl.style.width = `${clampedPct}%`;
+  if (statusEl && statusMessage) {
+    statusEl.innerHTML = `<span class="status-dot pulse" style="background:var(--goose);width:7px;height:7px;border-radius:50%;display:inline-block"></span> <span>${statusMessage}</span>`;
+  }
+}
+
+function hideCSVProgressModal() {
+  const overlay = document.getElementById('modal-csv-upload-progress');
+  if (overlay) overlay.classList.add('hidden');
+}
+
+function processCSVWithProgress(file, modalTitle, onComplete) {
+  if (!file) return;
+
+  showCSVProgressModal(file.name, modalTitle || 'Uploading Zoho Items CSV');
+
+  const reader = new FileReader();
+
+  reader.onprogress = function(evt) {
+    if (evt.lengthComputable) {
+      const readPct = (evt.loaded / evt.total) * 30;
+      updateCSVProgress(readPct, `Reading file (${Math.round(evt.loaded / 1024)} KB / ${Math.round(evt.total / 1024)} KB)...`);
+    }
+  };
+
+  reader.onload = function(evt) {
+    updateCSVProgress(35, 'Parsing CSV records...');
+    const csvContent = evt.target.result;
+
+    setTimeout(() => {
+      const items = parseCSVTextToObjects(csvContent);
+      if (items.length === 0) {
+        hideCSVProgressModal();
+        showToast('CSV file appears to be empty or invalid', 'error');
+        return;
+      }
+
+      updateCSVProgress(50, `Parsed ${items.length} records. Evaluating stock data...`);
+
+      let currentIndex = 0;
+      const total = items.length;
+      const step = Math.max(1, Math.floor(total / 20));
+
+      function stepProgress() {
+        currentIndex = Math.min(total, currentIndex + step);
+        const evalPct = 50 + Math.round((currentIndex / total) * 45);
+        updateCSVProgress(evalPct, `Reconciling record ${currentIndex} of ${total}...`);
+
+        if (currentIndex < total) {
+          setTimeout(stepProgress, 12);
+        } else {
+          updateCSVProgress(100, 'Processing complete! Finalizing output...');
+          setTimeout(() => {
+            hideCSVProgressModal();
+            if (onComplete) onComplete(items, csvContent);
+          }, 350);
+        }
+      }
+
+      stepProgress();
+    }, 80);
+  };
+
+  reader.readAsText(file);
+}
+
 function handleAnalyticsCSVSelect(e) {
   const file = e.target.files?.[0];
   if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    const csvContent = evt.target.result;
-    const items = parseCSVTextToObjects(csvContent);
-    if (items.length === 0) {
-      showToast('CSV file appears to be empty or invalid', 'error');
-      return;
-    }
+  processCSVWithProgress(file, 'Uploading Analytics CSV Audit', (items) => {
     runZohoAuditComparison(items, file.name);
-  };
-  reader.readAsText(file);
+  });
 }
 
 function handleAnalyticsCSVDrop(e) {
   e.preventDefault();
   const file = e.dataTransfer?.files?.[0];
   if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    const csvContent = evt.target.result;
-    const items = parseCSVTextToObjects(csvContent);
-    if (items.length === 0) {
-      showToast('CSV file appears to be empty or invalid', 'error');
-      return;
-    }
+  processCSVWithProgress(file, 'Uploading Analytics CSV Audit', (items) => {
     runZohoAuditComparison(items, file.name);
-  };
-  reader.readAsText(file);
+  });
 }
 
 async function handleAnalyticsAPISync(e) {
@@ -4320,9 +4394,7 @@ async function handleZohoCsvFile(e) {
   const file = e.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = async (event) => {
-    const csvContent = event.target.result;
+  processCSVWithProgress(file, 'Importing Zoho Items Master', async (items, csvContent) => {
     try {
       showToast('Importing items from Zoho CSV...', 'info');
       const res = await api.post('/api/zoho/import-csv', { csvContent });
@@ -4337,8 +4409,7 @@ async function handleZohoCsvFile(e) {
     } catch (err) {
       showToast('CSV processing failed', 'error');
     }
-  };
-  reader.readAsText(file);
+  });
 }
 
 async function handleZohoApiSync(e) {

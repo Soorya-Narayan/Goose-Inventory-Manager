@@ -1,7 +1,7 @@
 <div align="center">
   <img src="public/goose_logo_new.png" alt="Goose Industrial Systems" width="220" />
   <h1>Goose Inventory Manager</h1>
-  <p><strong>Industrial-Grade Store Inventory & Barcode Management System (v3.0.1)</strong></p>
+  <p><strong>Industrial-Grade Store Inventory & Barcode Management System (v3.0.2)</strong></p>
   <p>Engineered for Mechanical, Electrical & Consumable Equipment Stores</p>
 </div>
 

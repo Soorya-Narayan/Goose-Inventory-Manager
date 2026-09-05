@@ -24,7 +24,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <!-- Chart.js CDN for Overview Stock Analytics Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="/css/style.css?v=3.0.1" />
+  <link rel="stylesheet" href="/css/style.css?v=3.0.2" />
   <style>
     /* Critical Inline Safety Rules — Prevents SVG size explosions */
     svg { max-width: 100%; height: auto; display: inline-block; }
@@ -175,7 +175,7 @@
       </form>
 
       <div class="login-footer">
-        <span>INVENTORY v3.0.1 &middot; GOOSE INDUSTRIAL SOLUTIONS PVT LTD</span>
+        <span>INVENTORY v3.0.2 &middot; GOOSE INDUSTRIAL SOLUTIONS PVT LTD</span>
       </div>
     </div>
   </div>
@@ -293,7 +293,7 @@
           </a>
         </div>
         <div style="padding:0.75rem 1rem;margin-top:auto;border-top:1px solid var(--border-subtle);font-size:0.7rem;color:var(--text-tertiary);font-family:var(--font-mono)">
-          System v3.0.1
+          System v3.0.2
         </div>
       </nav>
 
@@ -1120,7 +1120,7 @@
           <span class="status-dot pulse" style="background:#eab308;width:8px;height:8px;border-radius:50%;display:inline-block"></span>
           <span id="system-update-status-text">Reconnecting to store server...</span>
         </div>
-        <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)" id="system-update-version-tag">v3.0.1</span>
+        <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)" id="system-update-version-tag">v3.0.2</span>
       </div>
 
       <div style="display:flex;gap:0.75rem;justify-content:center;width:100%">
@@ -1132,6 +1132,44 @@
     </div>
   </div>
 
-  <script src="/js/app.js?v=3.0.1"></script>
+  <!-- CSV UPLOAD & PROCESSING PROGRESS MODAL -->
+  <div class="modal-backdrop hidden" id="modal-csv-upload-progress" style="z-index:99999;background:rgba(8,12,20,0.88);backdrop-filter:blur(8px)">
+    <div class="modal card" style="max-width:480px;text-align:center;padding:2.25rem 1.75rem;border:1px solid var(--border-highlight);box-shadow:0 24px 48px rgba(0,0,0,0.5);display:flex;flex-direction:column;align-items:center">
+      <div style="width:64px;height:64px;margin:0 auto 1.25rem auto;background:rgba(0,114,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,114,255,0.25)">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="2" class="spin-slow">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+
+      <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;color:var(--goose);text-transform:uppercase;margin-bottom:0.35rem">
+        CSV FILE PROCESSING
+      </div>
+
+      <h2 style="font-size:1.3rem;font-weight:800;color:var(--text-primary);margin:0 0 0.5rem 0" id="csv-upload-modal-title">
+        Uploading Zoho Items CSV
+      </h2>
+
+      <div style="font-size:0.8rem;color:var(--text-tertiary);margin-bottom:1.5rem;font-family:var(--font-mono)" id="csv-upload-filename">
+        Items.csv
+      </div>
+
+      <div style="font-size:2.5rem;font-weight:800;font-family:var(--font-mono);color:var(--goose);line-height:1;margin-bottom:1rem" id="csv-upload-percent-text">
+        0%
+      </div>
+
+      <div style="width:100%;height:8px;background:var(--bg-surface);border-radius:4px;overflow:hidden;border:1px solid var(--border-subtle);margin-bottom:1rem;position:relative">
+        <div id="csv-upload-progress-fill" style="height:100%;width:0%;background:linear-gradient(90deg, #0072ff, #00c6ff);border-radius:4px;transition:width 0.15s ease-out"></div>
+      </div>
+
+      <div style="font-size:0.8rem;color:var(--text-secondary);display:flex;align-items:center;gap:0.5rem" id="csv-upload-status-sub">
+        <span class="status-dot pulse" style="background:var(--goose);width:7px;height:7px;border-radius:50%;display:inline-block"></span>
+        <span>Reading CSV file bytes...</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js?v=3.0.2"></script>
 </body>
 </html>
