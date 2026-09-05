@@ -868,6 +868,18 @@ app.post('/api/zoho/import-csv', (req, res) => {
       importedCount++;
     });
 
+    data.zohoItems = itemsToProcess.map(raw => ({
+      id: raw['Item ID'] || raw['ID'] || raw['sku'] || raw['barcode'] || uuidv4(),
+      name: raw['Item Name'] || raw['Name'] || raw['name'] || 'Zoho Item',
+      sku: raw['SKU'] || raw['barcode'] || raw['Item ID'] || '',
+      zohoCode: raw['SKU'] || raw['barcode'] || raw['Item ID'] || '',
+      quantity: parseInt(raw['Stock On Hand'] || raw['quantity'] || '0') || 0,
+      unit: raw['Usage Unit'] || raw['Unit Name'] || raw['unit'] || 'pcs',
+      rate: parseFloat((raw['Rate'] || raw['rate'] || '0').replace(/[^0-9\.]/g, '')) || 0,
+      purchaseRate: parseFloat((raw['Purchase Rate'] || raw['purchaseRate'] || '0').replace(/[^0-9\.]/g, '')) || 0,
+      location: raw['Location Name'] || raw['Stock Location'] || raw['location'] || 'A1'
+    }));
+
     writeData(data);
     res.json({ success: true, count: importedCount, message: `Successfully imported ${importedCount} item(s) from Zoho Books!` });
   } catch (err) {
@@ -948,11 +960,150 @@ app.post('/api/zoho/sync-api', async (req, res) => {
       importedCount++;
     });
 
+    data.zohoItems = allZohoItems.map(item => ({
+      id: item.item_id || item.sku || uuidv4(),
+      name: item.name || 'Zoho Item',
+      sku: item.sku || item.item_id || '',
+      zohoCode: item.sku || item.item_id || '',
+      quantity: item.actual_available_stock ?? item.stock_on_hand ?? 0,
+      unit: item.unit || 'pcs',
+      rate: item.rate || 0,
+      purchaseRate: item.purchase_rate || 0,
+      location: item.location_name || 'A1'
+    }));
+
     writeData(data);
     res.json({ success: true, count: importedCount, message: `Synced ${importedCount} items directly from Zoho Books API!` });
   } catch (err) {
     console.error('Zoho API Sync Error:', err);
     res.status(500).json({ error: 'Zoho API connection failed', details: err.message });
+  }
+});
+
+// ─── Zoho & Store Inventory Comparison Endpoint ──────────────────────────────
+app.post('/api/zoho/compare', (req, res) => {
+  try {
+    const data = readData();
+    const localItems = data.items || [];
+    const zohoItems = req.body.zohoItems || data.zohoItems || [];
+
+    const isMergeableCode = (c) => c && c !== '-' && c !== 'n/a' && c !== '0' && c.length > 1;
+
+    // Map local items by clean zohoCode / sku
+    const localMap = new Map();
+    localItems.forEach(item => {
+      const code = (item.zohoCode || item.sku || item.barcode || '').trim();
+      if (isMergeableCode(code)) {
+        localMap.set(code.toLowerCase(), item);
+      }
+    });
+
+    const zohoMap = new Map();
+    zohoItems.forEach(item => {
+      const code = (item.zohoCode || item.sku || item.item_id || item.id || '').trim();
+      if (isMergeableCode(code)) {
+        zohoMap.set(code.toLowerCase(), item);
+      }
+    });
+
+    const allKeys = Array.from(new Set([...localMap.keys(), ...zohoMap.keys()]));
+    const comparison = [];
+    let matchedCount = 0;
+    let mismatchCount = 0;
+    let localOnlyCount = 0;
+    let zohoOnlyCount = 0;
+
+    allKeys.forEach(key => {
+      const local = localMap.get(key);
+      const zoho = zohoMap.get(key);
+
+      if (local && zoho) {
+        const localQty = parseInt(local.quantity) || 0;
+        const zohoQty = parseInt(zoho.quantity ?? zoho.actual_available_stock ?? zoho.stock_on_hand) || 0;
+        const variance = localQty - zohoQty;
+        const status = variance === 0 ? 'MATCH' : 'MISMATCH';
+
+        if (status === 'MATCH') matchedCount++;
+        else mismatchCount++;
+
+        comparison.push({
+          code: local.zohoCode || local.sku || zoho.sku || key.toUpperCase(),
+          name: local.name || zoho.name || 'Unnamed Material',
+          localQty,
+          zohoQty,
+          variance,
+          localRate: parseFloat(local.rate) || 0,
+          zohoRate: parseFloat(zoho.rate || zoho.purchaseRate) || 0,
+          unit: local.unit || zoho.unit || 'pcs',
+          location: local.location || zoho.location || 'A1',
+          status
+        });
+      } else if (local) {
+        localOnlyCount++;
+        comparison.push({
+          code: local.zohoCode || local.sku || key.toUpperCase(),
+          name: local.name,
+          localQty: parseInt(local.quantity) || 0,
+          zohoQty: null,
+          variance: null,
+          localRate: parseFloat(local.rate) || 0,
+          zohoRate: null,
+          unit: local.unit || 'pcs',
+          location: local.location || 'A1',
+          status: 'LOCAL_ONLY'
+        });
+      } else if (zoho) {
+        zohoOnlyCount++;
+        const zohoQty = parseInt(zoho.quantity ?? zoho.actual_available_stock ?? zoho.stock_on_hand) || 0;
+        comparison.push({
+          code: zoho.zohoCode || zoho.sku || zoho.item_id || key.toUpperCase(),
+          name: zoho.name,
+          localQty: null,
+          zohoQty,
+          variance: null,
+          localRate: null,
+          zohoRate: parseFloat(zoho.rate || zoho.purchaseRate) || 0,
+          unit: zoho.unit || 'pcs',
+          location: zoho.location || 'A1',
+          status: 'ZOHO_ONLY'
+        });
+      }
+    });
+
+    // Also check for local items without zohoCode
+    localItems.forEach(item => {
+      const code = (item.zohoCode || item.sku || item.barcode || '').trim();
+      if (!isMergeableCode(code)) {
+        localOnlyCount++;
+        comparison.push({
+          code: item.id || 'NO-ZOHO-CODE',
+          name: item.name,
+          localQty: parseInt(item.quantity) || 0,
+          zohoQty: null,
+          variance: null,
+          localRate: parseFloat(item.rate) || 0,
+          zohoRate: null,
+          unit: item.unit || 'pcs',
+          location: item.location || 'A1',
+          status: 'LOCAL_ONLY'
+        });
+      }
+    });
+
+    res.json({
+      success: true,
+      summary: {
+        totalAudited: comparison.length,
+        matched: matchedCount,
+        mismatched: mismatchCount,
+        localOnly: localOnlyCount,
+        zohoOnly: zohoOnlyCount
+      },
+      comparison
+    });
+  } catch (err) {
+    console.error('Zoho Compare Error:', err);
+    res.status(500).json({ error: 'Failed to compute inventory comparison', details: err.message });
   }
 });
 
