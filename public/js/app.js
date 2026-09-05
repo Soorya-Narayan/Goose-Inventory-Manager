@@ -33,7 +33,7 @@ const state = {
     sourceName: '',
     sourceType: 'csv',
     auditResults: [],
-    summary: { totalChecked: 0, matchedCount: 0, mismatchCount: 0, missingInStoreCount: 0, extraInStoreCount: 0 }
+    summary: { totalZohoItems: 0, totalStoreItems: 0, totalChecked: 0, matchedCount: 0, mismatchCount: 0, missingInStoreCount: 0, extraInStoreCount: 0 }
   },
 };
 
@@ -1095,7 +1095,15 @@ function loadSavedAnalyticsAudit() {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.auditResults)) {
         state.analyticsAudit.auditResults = parsed.auditResults || [];
-        state.analyticsAudit.summary = parsed.summary || state.analyticsAudit.summary;
+        state.analyticsAudit.summary = Object.assign({
+          totalZohoItems: 0,
+          totalStoreItems: state.items?.length || 0,
+          totalChecked: 0,
+          matchedCount: 0,
+          mismatchCount: 0,
+          missingInStoreCount: 0,
+          extraInStoreCount: 0
+        }, parsed.summary || {});
         state.analyticsAudit.sourceName = parsed.sourceName || '';
         state.analyticsAudit.lastRunAt = parsed.lastRunAt || null;
       }
@@ -1339,6 +1347,8 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
   });
 
   const summary = {
+    totalZohoItems: rawZohoItems.length,
+    totalStoreItems: storeItems.length,
     totalChecked: auditResults.length,
     matchedCount,
     mismatchCount,
@@ -1408,29 +1418,34 @@ function renderAnalytics() {
 
     <!-- Summary KPI Cards -->
     <div class="analytics-stats-grid">
-      <div class="analytics-kpi-card total" onclick="setAnalyticsTab('all')" title="Click to view all items">
-        <div class="analytics-kpi-title">Total Checked</div>
-        <div class="analytics-kpi-value">${summary.totalChecked}</div>
-        <div class="analytics-kpi-sub">Master items evaluated</div>
+      <div class="analytics-kpi-card zoho" onclick="setAnalyticsTab('all')" title="Click to view all items in uploaded file">
+        <div class="analytics-kpi-title">Uploaded CSV Items</div>
+        <div class="analytics-kpi-value">${summary.totalZohoItems || 0}</div>
+        <div class="analytics-kpi-sub">Items in uploaded CSV</div>
+      </div>
+      <div class="analytics-kpi-card store" onclick="setAnalyticsTab('all')" title="Click to view all store inventory items">
+        <div class="analytics-kpi-title">Store Inventory Items</div>
+        <div class="analytics-kpi-value">${summary.totalStoreItems || (state.items ? state.items.length : 0)}</div>
+        <div class="analytics-kpi-sub">Total items in store</div>
       </div>
       <div class="analytics-kpi-card mismatch" onclick="setAnalyticsTab('mismatch')" title="Click to view stock quantity mismatches">
         <div class="analytics-kpi-title">Qty Mismatches</div>
-        <div class="analytics-kpi-value">${summary.mismatchCount}</div>
+        <div class="analytics-kpi-value">${summary.mismatchCount || 0}</div>
         <div class="analytics-kpi-sub">Stock quantity differs</div>
       </div>
       <div class="analytics-kpi-card missing" onclick="setAnalyticsTab('missing_store')" title="Click to view items missing in local store">
         <div class="analytics-kpi-title">Missing in Store</div>
-        <div class="analytics-kpi-value">${summary.missingInStoreCount}</div>
+        <div class="analytics-kpi-value">${summary.missingInStoreCount || 0}</div>
         <div class="analytics-kpi-sub">Only in Zoho master</div>
       </div>
       <div class="analytics-kpi-card extra" onclick="setAnalyticsTab('extra_store')" title="Click to view extra store items">
         <div class="analytics-kpi-title">Extra in Store</div>
-        <div class="analytics-kpi-value">${summary.extraInStoreCount}</div>
+        <div class="analytics-kpi-value">${summary.extraInStoreCount || 0}</div>
         <div class="analytics-kpi-sub">Only in local store</div>
       </div>
       <div class="analytics-kpi-card synced" onclick="setAnalyticsTab('synced')" title="Click to view fully synced items">
         <div class="analytics-kpi-title">Fully Synced</div>
-        <div class="analytics-kpi-value">${summary.matchedCount}</div>
+        <div class="analytics-kpi-value">${summary.matchedCount || 0}</div>
         <div class="analytics-kpi-sub">Stock &amp; details match</div>
       </div>
     </div>

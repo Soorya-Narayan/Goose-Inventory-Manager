@@ -2168,12 +2168,12 @@ input[type="number"] {
 /* ─── Analytics Audit KPI Grid Styling ───────────────────────────── */
 .analytics-stats-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1300px) {
   .analytics-stats-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -2221,6 +2221,8 @@ input[type="number"] {
   width: 4px;
 }
 
+.analytics-kpi-card.zoho::before { background: var(--goose); }
+.analytics-kpi-card.store::before { background: #8b5cf6; }
 .analytics-kpi-card.total::before { background: var(--goose); }
 .analytics-kpi-card.mismatch::before { background: #f59e0b; }
 .analytics-kpi-card.missing::before { background: #ef4444; }
@@ -2236,6 +2238,8 @@ input[type="number"] {
   margin-bottom: 0.35rem;
 }
 
+.analytics-kpi-card.zoho .analytics-kpi-title { color: var(--goose); }
+.analytics-kpi-card.store .analytics-kpi-title { color: #8b5cf6; }
 .analytics-kpi-card.total .analytics-kpi-title { color: var(--goose); }
 .analytics-kpi-card.mismatch .analytics-kpi-title { color: #f59e0b; }
 .analytics-kpi-card.missing .analytics-kpi-title { color: #ef4444; }
@@ -2250,6 +2254,9 @@ input[type="number"] {
   color: var(--text-primary);
   margin-bottom: 0.35rem;
 }
+
+.analytics-kpi-card.zoho .analytics-kpi-value { color: var(--text-primary); }
+.analytics-kpi-card.store .analytics-kpi-value { color: #8b5cf6; }
 
 .analytics-kpi-card.total .analytics-kpi-value { color: var(--text-primary); }
 .analytics-kpi-card.mismatch .analytics-kpi-value { color: #f59e0b; }
