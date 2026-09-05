@@ -21,6 +21,7 @@ const state = {
   // Issue checklist
   activeChecklistRequestId: null,
   activeChecklist: [],
+  analytics: { data: null, activeFilter: 'all', searchQuery: '' },
 };
 
 // ─── API Helpers ─────────────────────────────────────────────────────────────
@@ -3625,41 +3626,29 @@ function switchZohoTab(tab) {
   }
 }
 
-function handleZohoCsvFile(e) {
-  return new Promise((resolve, reject) => {
-    const file = e.target?.files?.[0];
-    if (!file) {
-      resolve({ success: false, error: 'No file selected' });
-      return;
-    }
+async function handleZohoCsvFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const csvContent = event.target.result;
-      try {
-        showToast('Importing & parsing items from Zoho CSV...', 'info');
-        const res = await api.post('/api/zoho/import-csv', { csvContent });
-        if (res && res.success) {
-          showToast(res.message || 'CSV imported successfully!', 'success');
-          closeZohoModal();
-          await loadAll();
-          renderView(state.currentView);
-          resolve(res);
-        } else {
-          showToast(res?.error || 'Failed to import CSV', 'error');
-          resolve(res || { success: false });
-        }
-      } catch (err) {
-        showToast('CSV processing failed: ' + (err.message || 'Server error'), 'error');
-        resolve({ success: false, error: err.message });
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    const csvContent = event.target.result;
+    try {
+      showToast('Importing items from Zoho CSV...', 'info');
+      const res = await api.post('/api/zoho/import-csv', { csvContent });
+      if (res.success) {
+        showToast(res.message, 'success');
+        closeZohoModal();
+        await loadAll();
+        renderView(state.currentView);
+      } else {
+        showToast(res.error || 'Failed to import CSV', 'error');
       }
-    };
-    reader.onerror = (err) => {
-      showToast('Error reading CSV file', 'error');
-      reject(err);
-    };
-    reader.readAsText(file);
-  });
+    } catch (err) {
+      showToast('CSV processing failed', 'error');
+    }
+  };
+  reader.readAsText(file);
 }
 
 async function handleZohoApiSync(e) {
@@ -4148,328 +4137,325 @@ function exportEngineerActivityPDF(filterEmail = 'all') {
     }
 
     const cleanFilenameMail = engMail.replace(/[^a-zA-Z0-9]/g, '_');
-    doc.save(`Engineer_Activity_${cleanFilenameMail}_${dateStr.replace(/ /g, '_')}.pdf`);
-    showToast('Engineer Activity PDF Report downloaded!', 'success');
-  } catch (err) {
-    console.error('PDF Export Error:', err);
-    showToast('Failed to generate PDF report', 'error');
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  ZOHO & STORE INVENTORY ANALYTICS & AUDIT RECONCILIATION
+//  ANALYTICS — Zoho Books vs Store Inventory Comparison
 // ═══════════════════════════════════════════════════════════════════════════════
-let analyticsState = {
-  filter: 'all',
-  search: '',
-  data: null
-};
-
 async function renderAnalytics() {
   const container = document.getElementById('view-analytics');
   if (!container) return;
 
-  if (state.user?.role !== 'manager') {
-    container.innerHTML = `<div class="card" style="padding:2rem;text-align:center;color:var(--danger)">Access Denied: Restricted to Store Manager</div>`;
+  const isManager = state.user?.role === 'manager';
+  if (!isManager) {
+    showToast('Access Denied: Analytics is restricted to Store Manager only', 'error');
+    navigateTo('dashboard');
     return;
   }
 
   container.innerHTML = `
     <div class="page-hdr">
       <div>
-        <h1 class="page-title">Zoho &amp; Store Inventory Analytics</h1>
-        <div class="page-subtitle">Reconciliation &amp; stock variance comparison between Store Inventory and Zoho Books</div>
+        <h1 class="page-title">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Zoho Books vs Store Inventory Analytics
+        </h1>
+        <p class="page-sub">Live stock quantity, valuation, and item alignment comparison between Zoho Books &amp; Store Inventory</p>
       </div>
-      <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" onclick="openAnalyticsCsvUpload()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Upload Zoho CSV
+      <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="renderAnalytics()" title="Refresh Comparison Data">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6"/><path d="M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.3L2.5 16"/></svg>
+          <span>Refresh Data</span>
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="fetchLiveZohoAnalytics()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          Sync / Refresh Data
-        </button>
-        <button class="btn btn-primary btn-sm" onclick="exportAnalyticsPDF()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-          Export PDF Report
+        <button class="btn btn-primary" onclick="exportAnalyticsPDF()" title="Export Comparison Report as PDF">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Export PDF</span>
         </button>
       </div>
     </div>
 
-    <div id="analytics-content-wrap">
-      <div style="min-height:240px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary)">
-        Analyzing store inventory &amp; Zoho catalog data...
-      </div>
+    <div style="padding: 3rem 0; text-align: center; color: var(--text-tertiary);" id="analytics-loading">
+      <div class="spinner" style="margin: 0 auto 1rem; width: 32px; height: 32px; border-width: 3px;"></div>
+      Fetching comparison data between Store Inventory &amp; Zoho Books...
     </div>
+    <div id="analytics-content" class="hidden"></div>
   `;
 
-  await loadAnalyticsData();
-}
-
-async function loadAnalyticsData() {
-  const contentWrap = document.getElementById('analytics-content-wrap');
-  if (!contentWrap) return;
-
   try {
-    const res = await api.post('/api/zoho/compare', {});
-    if (res && res.success) {
-      analyticsState.data = res;
-      renderAnalyticsBody();
-    } else {
-      contentWrap.innerHTML = `<div class="card" style="padding:2rem;text-align:center;color:var(--danger)">Failed to load comparison analytics: ${escHtml(res?.error || 'Unknown error')}</div>`;
-    }
+    const res = await api.get('/api/zoho/comparison');
+    if (!res.success) throw new Error(res.error || 'Failed to load comparison data');
+
+    state.analytics.data = res;
+    renderAnalyticsContent();
   } catch (err) {
-    console.error('Analytics load error:', err);
-    contentWrap.innerHTML = `<div class="card" style="padding:2rem;text-align:center;color:var(--danger)">Failed to connect to analytics service</div>`;
+    console.error('Analytics fetch error:', err);
+    const loadingEl = document.getElementById('analytics-loading');
+    if (loadingEl) {
+      loadingEl.innerHTML = `
+        <div style="color: var(--danger); font-weight: 600; margin-bottom: 0.5rem;">Failed to load comparison data</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary);">${escHtml(err.message || 'Error communicating with server')}</div>
+        <button class="btn btn-primary btn-sm" onclick="renderAnalytics()" style="margin-top: 1rem;">Retry</button>
+      `;
+    }
   }
 }
 
-function renderAnalyticsBody() {
-  const contentWrap = document.getElementById('analytics-content-wrap');
-  if (!contentWrap || !analyticsState.data) return;
+function renderAnalyticsContent() {
+  const contentEl = document.getElementById('analytics-content');
+  const loadingEl = document.getElementById('analytics-loading');
+  if (!contentEl || !state.analytics.data) return;
 
-  const { summary, comparison } = analyticsState.data;
+  if (loadingEl) loadingEl.classList.add('hidden');
+  contentEl.classList.remove('hidden');
+
+  const { summary, items } = state.analytics.data;
+  const currentFilter = state.analytics.activeFilter || 'all';
+  const searchQuery = (state.analytics.searchQuery || '').trim().toLowerCase();
 
   // Filter items
-  let filtered = comparison.filter(item => {
-    if (analyticsState.filter === 'mismatch' && item.status !== 'MISMATCH') return false;
-    if (analyticsState.filter === 'match' && item.status !== 'MATCH') return false;
-    if (analyticsState.filter === 'local_only' && item.status !== 'LOCAL_ONLY') return false;
-    if (analyticsState.filter === 'zoho_only' && item.status !== 'ZOHO_ONLY') return false;
+  let filteredItems = items.filter(item => {
+    if (currentFilter === 'discrepancy' && item.status !== 'QTY_DISCREPANCY') return false;
+    if (currentFilter === 'missing' && item.status !== 'MISSING_IN_STORE') return false;
+    if (currentFilter === 'unlinked' && item.status !== 'UNLINKED_STORE_ONLY') return false;
+    if (currentFilter === 'matched' && item.status !== 'MATCHED') return false;
 
-    if (analyticsState.search) {
-      const q = analyticsState.search.toLowerCase();
-      const matchCode = (item.code || '').toLowerCase().includes(q);
-      const matchName = (item.name || '').toLowerCase().includes(q);
-      const matchLoc = (item.location || '').toLowerCase().includes(q);
-      return matchCode || matchName || matchLoc;
+    if (searchQuery) {
+      const matchName = (item.name || '').toLowerCase().includes(searchQuery);
+      const matchCode = (item.zohoCode || '').toLowerCase().includes(searchQuery);
+      const matchSpec = (item.specification || '').toLowerCase().includes(searchQuery);
+      const matchCat = (item.category || '').toLowerCase().includes(searchQuery);
+      return matchName || matchCode || matchSpec || matchCat;
     }
+
     return true;
   });
 
-  contentWrap.innerHTML = `
-    <!-- KPI Summary Grid -->
-    <div class="analytics-kpi-grid">
-      <div class="analytics-kpi-card" onclick="setAnalyticsFilter('all')" style="cursor:pointer;border-left:4px solid var(--goose)">
-        <div class="analytics-kpi-val" style="color:var(--goose)">${summary.totalAudited}</div>
-        <div class="analytics-kpi-lbl">Total Audited</div>
-        <div class="analytics-kpi-sub">Total Catalog Items</div>
+  const formattedDate = new Date(summary.lastSyncedAt).toLocaleString('en-IN', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  });
+
+  contentEl.innerHTML = `
+    <!-- Summary Cards -->
+    <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 1.5rem;">
+      <div class="metric-card" style="border-left: 4px solid var(--success);">
+        <div class="metric-hdr">
+          <span class="metric-title">Matched Materials</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="metric-val">${summary.matchedCount}</div>
+        <div class="metric-sub">Perfect stock alignment</div>
       </div>
-      <div class="analytics-kpi-card" onclick="setAnalyticsFilter('match')" style="cursor:pointer;border-left:4px solid #10b981">
-        <div class="analytics-kpi-val" style="color:#10b981">${summary.matched}</div>
-        <div class="analytics-kpi-lbl">In Sync</div>
-        <div class="analytics-kpi-sub">Matching Quantities</div>
+
+      <div class="metric-card" style="border-left: 4px solid var(--warning);">
+        <div class="metric-hdr">
+          <span class="metric-title">Stock Discrepancies</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="metric-val" style="color: var(--warning);">${summary.discrepancyCount}</div>
+        <div class="metric-sub">Store Qty &ne; Zoho Qty</div>
       </div>
-      <div class="analytics-kpi-card" onclick="setAnalyticsFilter('mismatch')" style="cursor:pointer;border-left:4px solid #ef4444">
-        <div class="analytics-kpi-val" style="color:#ef4444">${summary.mismatched}</div>
-        <div class="analytics-kpi-lbl">Stock Mismatches</div>
-        <div class="analytics-kpi-sub">Quantity Discrepancies</div>
+
+      <div class="metric-card" style="border-left: 4px solid var(--danger);">
+        <div class="metric-hdr">
+          <span class="metric-title">Missing in Store</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        </div>
+        <div class="metric-val" style="color: var(--danger);">${summary.missingInStoreCount}</div>
+        <div class="metric-sub">In Zoho catalog, 0 in store</div>
       </div>
-      <div class="analytics-kpi-card" onclick="setAnalyticsFilter('local_only')" style="cursor:pointer;border-left:4px solid #06b6d4">
-        <div class="analytics-kpi-val" style="color:#06b6d4">${summary.localOnly}</div>
-        <div class="analytics-kpi-lbl">Local Store Only</div>
-        <div class="analytics-kpi-sub">Missing in Zoho</div>
-      </div>
-      <div class="analytics-kpi-card" onclick="setAnalyticsFilter('zoho_only')" style="cursor:pointer;border-left:4px solid #a855f7">
-        <div class="analytics-kpi-val" style="color:#a855f7">${summary.zohoOnly}</div>
-        <div class="analytics-kpi-lbl">Zoho Books Only</div>
-        <div class="analytics-kpi-sub">Missing in Store</div>
+
+      <div class="metric-card" style="border-left: 4px solid var(--goose);">
+        <div class="metric-hdr">
+          <span class="metric-title">Store Only / Unlinked</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="metric-val" style="color: var(--goose);">${summary.unlinkedStoreCount}</div>
+        <div class="metric-sub">Local items with no Zoho code</div>
       </div>
     </div>
 
     <!-- Filter Pills & Search Bar -->
-    <div class="card" style="margin-bottom:1rem;padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-      <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-sm ${analyticsState.filter === 'all' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('all')">All (${summary.totalAudited})</button>
-        <button class="btn btn-sm ${analyticsState.filter === 'mismatch' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('mismatch')" style="${analyticsState.filter === 'mismatch' ? '' : 'color:#ef4444'}">Mismatches (${summary.mismatched})</button>
-        <button class="btn btn-sm ${analyticsState.filter === 'local_only' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('local_only')" style="${analyticsState.filter === 'local_only' ? '' : 'color:#06b6d4'}">Local Only (${summary.localOnly})</button>
-        <button class="btn btn-sm ${analyticsState.filter === 'zoho_only' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('zoho_only')" style="${analyticsState.filter === 'zoho_only' ? '' : 'color:#a855f7'}">Zoho Only (${summary.zohoOnly})</button>
-        <button class="btn btn-sm ${analyticsState.filter === 'match' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('match')" style="${analyticsState.filter === 'match' ? '' : 'color:#10b981'}">In Sync (${summary.matched})</button>
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.25rem; background: var(--bg-card); padding: 0.85rem 1.15rem; border-radius: 8px; border: 1px solid var(--border-subtle);">
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+        <button class="btn btn-sm ${currentFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('all')">
+          All Materials (${summary.totalCompared})
+        </button>
+        <button class="btn btn-sm ${currentFilter === 'discrepancy' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('discrepancy')" style="${currentFilter === 'discrepancy' ? 'background: var(--warning); color: #000;' : ''}">
+          Quantity Discrepancies (${summary.discrepancyCount})
+        </button>
+        <button class="btn btn-sm ${currentFilter === 'missing' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('missing')" style="${currentFilter === 'missing' ? 'background: var(--danger); color: #fff;' : ''}">
+          Missing in Store (${summary.missingInStoreCount})
+        </button>
+        <button class="btn btn-sm ${currentFilter === 'unlinked' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('unlinked')">
+          Store Only (${summary.unlinkedStoreCount})
+        </button>
+        <button class="btn btn-sm ${currentFilter === 'matched' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('matched')">
+          Matched (${summary.matchedCount})
+        </button>
       </div>
 
-      <div style="position:relative;width:260px;max-width:100%">
-        <input type="text" class="form-input form-input-sm" placeholder="Search by name or Zoho code..." value="${escHtml(analyticsState.search)}" oninput="handleAnalyticsSearch(this.value)" style="padding-left:2rem" />
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:0.65rem;top:50%;transform:translateY(-50%);color:var(--text-tertiary)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <div style="position: relative; min-width: 240px;">
+        <input type="text" id="analytics-search-input" class="field-input" placeholder="Search by code, name, spec..." value="${escHtml(state.analytics.searchQuery || '')}" oninput="handleAnalyticsSearch(this.value)" style="padding-left: 2.2rem; font-size: 0.85rem; height: 36px;" />
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </div>
     </div>
 
     <!-- Data Table -->
-    <div class="card" style="overflow:hidden">
-      <div class="table-wrap">
-        <table class="data-table">
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <div style="overflow-x: auto;">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
           <thead>
-            <tr>
-              <th style="width:40px">#</th>
-              <th>Zoho Code / SKU</th>
-              <th>Material Name</th>
-              <th style="text-align:right">Local Stock</th>
-              <th style="text-align:right">Zoho Stock</th>
-              <th style="text-align:center">Stock Variance</th>
-              <th>Audit Status</th>
+            <tr style="background: var(--bg-hover); border-bottom: 1px solid var(--border-subtle); text-align: left;">
+              <th style="padding: 0.75rem 1rem; width: 40px;">#</th>
+              <th style="padding: 0.75rem 1rem;">Zoho Code / SKU</th>
+              <th style="padding: 0.75rem 1rem;">Material Name &amp; Specification</th>
+              <th style="padding: 0.75rem 1rem;">Category &amp; Location</th>
+              <th style="padding: 0.75rem 1rem; text-align: center;">Store Stock</th>
+              <th style="padding: 0.75rem 1rem; text-align: center;">Zoho Stock</th>
+              <th style="padding: 0.75rem 1rem; text-align: center;">Variance</th>
+              <th style="padding: 0.75rem 1rem; text-align: center;">Status</th>
             </tr>
           </thead>
           <tbody>
-            ${filtered.length === 0 ? `
+            ${filteredItems.length === 0 ? `
               <tr>
-                <td colspan="7" style="text-align:center;padding:2.5rem;color:var(--text-tertiary)">
-                  No inventory items match the selected filter query.
+                <td colspan="8" style="padding: 3rem 1rem; text-align: center; color: var(--text-tertiary);">
+                  No items match the selected filter criteria.
                 </td>
               </tr>
-            ` : filtered.map((item, idx) => {
-              let statusBadge = '';
-              if (item.status === 'MATCH') {
-                statusBadge = `<span class="badge-audit match">In Sync</span>`;
-              } else if (item.status === 'MISMATCH') {
-                statusBadge = `<span class="badge-audit mismatch">Qty Discrepancy</span>`;
-              } else if (item.status === 'LOCAL_ONLY') {
-                statusBadge = `<span class="badge-audit local-only">Local Only</span>`;
-              } else if (item.status === 'ZOHO_ONLY') {
-                statusBadge = `<span class="badge-audit zoho-only">Zoho Only</span>`;
-              }
+            ` : filteredItems.map((item, idx) => {
+              const varianceStr = item.variance > 0 ? `+${item.variance}` : `${item.variance}`;
+              const varianceColor = item.variance === 0 ? 'var(--text-tertiary)' : (item.variance > 0 ? 'var(--success)' : 'var(--danger)');
 
-              let varianceDisplay = '-';
-              if (item.variance !== null) {
-                if (item.variance > 0) {
-                  varianceDisplay = `<span class="variance-tag pos">+${item.variance} ${item.unit}</span>`;
-                } else if (item.variance < 0) {
-                  varianceDisplay = `<span class="variance-tag neg">${item.variance} ${item.unit}</span>`;
-                } else {
-                  varianceDisplay = `<span class="variance-tag zero">0 ${item.unit}</span>`;
-                }
+              let statusBadgeHtml = '';
+              if (item.status === 'MATCHED') {
+                statusBadgeHtml = `<span class="status-badge" style="background: rgba(34, 197, 94, 0.15); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.3);">Matched</span>`;
+              } else if (item.status === 'QTY_DISCREPANCY') {
+                statusBadgeHtml = `<span class="status-badge" style="background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3);">Qty Discrepancy</span>`;
+              } else if (item.status === 'MISSING_IN_STORE') {
+                statusBadgeHtml = `<span class="status-badge" style="background: rgba(239, 68, 68, 0.15); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3);">Missing in Store</span>`;
+              } else if (item.status === 'UNLINKED_STORE_ONLY') {
+                statusBadgeHtml = `<span class="status-badge" style="background: rgba(56, 189, 248, 0.15); color: #0284c7; border: 1px solid rgba(56, 189, 248, 0.3);">Store Only</span>`;
+              } else {
+                statusBadgeHtml = `<span class="status-badge" style="background: rgba(148, 163, 184, 0.15); color: #64748b; border: 1px solid rgba(148, 163, 184, 0.3);">${item.status}</span>`;
               }
-
-              const localQtyStr = item.localQty !== null ? `${item.localQty} ${item.unit}` : `<span style="color:var(--text-tertiary)">-</span>`;
-              const zohoQtyStr = item.zohoQty !== null ? `${item.zohoQty} ${item.unit}` : `<span style="color:var(--text-tertiary)">-</span>`;
 
               return `
-                <tr>
-                  <td style="font-size:0.75rem;color:var(--text-tertiary);font-family:var(--font-mono)">${idx + 1}</td>
-                  <td style="font-family:var(--font-mono);font-size:0.8rem;font-weight:600;color:var(--goose)">${escHtml(item.code || '-')}</td>
-                  <td style="font-weight:500;font-size:0.85rem">${escHtml(item.name)}</td>
-                  <td style="text-align:right;font-family:var(--font-mono);font-size:0.85rem;font-weight:600">${localQtyStr}</td>
-                  <td style="text-align:right;font-family:var(--font-mono);font-size:0.85rem;font-weight:600">${zohoQtyStr}</td>
-                  <td style="text-align:center">${varianceDisplay}</td>
-                  <td>${statusBadge}</td>
+                <tr style="border-bottom: 1px solid var(--border-subtle); transition: background 0.15s ease;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+                  <td style="padding: 0.75rem 1rem; color: var(--text-tertiary); font-family: var(--font-mono);">${idx + 1}</td>
+                  <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-weight: 600; color: var(--goose);">${escHtml(item.zohoCode || '-')}</td>
+                  <td style="padding: 0.75rem 1rem;">
+                    <div style="font-weight: 600; color: var(--text-primary);">${escHtml(item.name)}</div>
+                    ${item.specification ? `<div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.1rem;">${escHtml(item.specification)}</div>` : ''}
+                  </td>
+                  <td style="padding: 0.75rem 1rem;">
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">${escHtml(item.category || 'General')}</div>
+                    <div style="font-size: 0.72rem; color: var(--text-tertiary); font-family: var(--font-mono);">Shelf: ${escHtml(item.location || 'A1')}</div>
+                  </td>
+                  <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700; font-family: var(--font-mono); color: var(--text-primary);">
+                    ${item.storeQty} <span style="font-weight: 400; font-size: 0.75rem; color: var(--text-tertiary);">${escHtml(item.unit || 'pcs')}</span>
+                  </td>
+                  <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700; font-family: var(--font-mono); color: var(--text-secondary);">
+                    ${item.zohoQty} <span style="font-weight: 400; font-size: 0.75rem; color: var(--text-tertiary);">${escHtml(item.unit || 'pcs')}</span>
+                  </td>
+                  <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700; font-family: var(--font-mono); color: ${varianceColor};">
+                    ${varianceStr}
+                  </td>
+                  <td style="padding: 0.75rem 1rem; text-align: center;">
+                    ${statusBadgeHtml}
+                  </td>
                 </tr>
               `;
             }).join('')}
           </tbody>
         </table>
       </div>
+      <div style="padding: 0.75rem 1.15rem; background: var(--bg-hover); border-top: 1px solid var(--border-subtle); font-size: 0.75rem; color: var(--text-tertiary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <span>Showing ${filteredItems.length} of ${summary.totalCompared} material entries</span>
+        <span>Last Comparison Refresh: ${formattedDate}</span>
+      </div>
     </div>
   `;
 }
 
 function setAnalyticsFilter(filter) {
-  analyticsState.filter = filter;
-  renderAnalyticsBody();
+  state.analytics.activeFilter = filter;
+  renderAnalyticsContent();
 }
 
-function handleAnalyticsSearch(q) {
-  analyticsState.search = q;
-  renderAnalyticsBody();
+function handleAnalyticsSearch(query) {
+  state.analytics.searchQuery = query;
+  renderAnalyticsContent();
 }
 
-function fetchLiveZohoAnalytics() {
-  openZohoModal();
-}
-
-function openAnalyticsCsvUpload() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.csv';
-  input.onchange = async (e) => {
-    const res = await handleZohoCsvFile(e);
-    if (res && res.success) {
-      await loadAnalyticsData();
-    }
-  };
-  input.click();
-}
-
-function exportAnalyticsPDF() {
-  if (!analyticsState.data || !analyticsState.data.comparison) {
-    showToast('No analytics data available to export', 'warning');
+async function exportAnalyticsPDF() {
+  if (!state.analytics.data || !state.analytics.data.items) {
+    showToast('No comparison data available to export', 'warning');
     return;
   }
 
-  showToast('Generating Inventory Analytics PDF Report...', 'info');
-
   try {
-    if (!window.jspdf || !window.jspdf.jsPDF) {
-      showToast('Preparing PDF generator... Opening print view.', 'info');
-      window.print();
-      return;
-    }
-
+    showToast('Generating Zoho Books vs Store Inventory PDF report...', 'info');
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-    const { summary, comparison } = analyticsState.data;
+    const doc = new jsPDF('p', 'mm', 'a4');
     const now = new Date();
-    const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateStr = now.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
     const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
-    // Corporate Header Banner
-    doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, 210, 28, 'F');
+    const { summary, items } = state.analytics.data;
+
+    // Header Band
+    doc.setFillColor(15, 23, 42); // Dark navy
+    doc.rect(0, 0, 210, 26, 'F');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
+    doc.setFontSize(13);
     doc.setTextColor(255, 255, 255);
     doc.text('GOOSE INDUSTRIAL SOLUTIONS PVT LTD', 14, 11);
 
     doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('helvetica', 'normal');
     doc.setTextColor(56, 189, 248);
-    doc.text('ZOHO BOOKS VS STORE INVENTORY RECONCILIATION REPORT', 14, 19);
+    doc.text('ZOHO BOOKS VS STORE INVENTORY COMPARISON REPORT', 14, 19);
 
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
     doc.setTextColor(203, 213, 225);
-    doc.text(`Audit Date: ${dateStr}, ${timeStr}`, 130, 19);
+    doc.text(`Generated: ${dateStr}, ${timeStr}`, 140, 19);
 
-    // KPI Metrics Summary Box
+    // Summary Box
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(14, 32, 182, 16, 2, 2, 'FD');
+    doc.roundedRect(14, 30, 182, 16, 2, 2, 'FD');
 
     doc.setFontSize(8.5);
+    doc.setTextColor(51, 65, 85);
     doc.setFont('helvetica', 'bold');
+    doc.text(`Total Compared: ${summary.totalCompared}`, 18, 40);
+    doc.text(`Matched: ${summary.matchedCount}`, 68, 40);
+    doc.text(`Qty Discrepancies: ${summary.discrepancyCount}`, 108, 40);
+    doc.text(`Missing in Store: ${summary.missingInStoreCount}`, 154, 40);
 
-    doc.setTextColor(15, 23, 42);
-    doc.text(`Total Audited: ${summary.totalAudited}`, 18, 42);
+    // AutoTable Data
+    const tableHeaders = [['#', 'ZOHO CODE', 'MATERIAL NAME', 'CATEGORY', 'STORE QTY', 'ZOHO QTY', 'VAR', 'STATUS']];
+    const tableRows = items.map((item, index) => {
+      let statusText = item.status;
+      if (item.status === 'MATCHED') statusText = 'MATCHED';
+      else if (item.status === 'QTY_DISCREPANCY') statusText = 'QTY MISMATCH';
+      else if (item.status === 'MISSING_IN_STORE') statusText = 'MISSING IN STORE';
+      else if (item.status === 'UNLINKED_STORE_ONLY') statusText = 'STORE ONLY';
 
-    doc.setTextColor(16, 185, 129);
-    doc.text(`In Sync: ${summary.matched}`, 65, 42);
-
-    doc.setTextColor(239, 68, 68);
-    doc.text(`Mismatches: ${summary.mismatched}`, 105, 42);
-
-    doc.setTextColor(6, 182, 212);
-    doc.text(`Local Only: ${summary.localOnly}`, 148, 42);
-
-    // Table Data
-    const tableHeaders = [['#', 'ZOHO CODE', 'MATERIAL NAME', 'LOCAL QTY', 'ZOHO QTY', 'VARIANCE', 'STATUS']];
-    const tableRows = comparison.map((item, index) => {
-      const varStr = item.variance !== null ? (item.variance > 0 ? `+${item.variance} ${item.unit}` : `${item.variance} ${item.unit}`) : '-';
-      const locStr = item.localQty !== null ? `${item.localQty} ${item.unit}` : '-';
-      const zohoStr = item.zohoQty !== null ? `${item.zohoQty} ${item.unit}` : '-';
-
-      let statusStr = item.status;
-      if (item.status === 'MATCH') statusStr = 'IN SYNC';
-      else if (item.status === 'MISMATCH') statusStr = 'QTY MISMATCH';
-      else if (item.status === 'LOCAL_ONLY') statusStr = 'LOCAL ONLY';
-      else if (item.status === 'ZOHO_ONLY') statusStr = 'ZOHO ONLY';
+      const varText = item.variance > 0 ? `+${item.variance}` : `${item.variance}`;
 
       return [
         index + 1,
-        item.code || '-',
+        item.zohoCode || '-',
         item.name.length > 28 ? item.name.slice(0, 28) + '...' : item.name,
-        locStr,
-        zohoStr,
-        varStr,
-        statusStr
+        item.category.length > 15 ? item.category.slice(0, 15) + '...' : item.category,
+        `${item.storeQty} ${item.unit || 'pcs'}`,
+        `${item.zohoQty} ${item.unit || 'pcs'}`,
+        varText,
+        statusText
       ];
     });
 
@@ -4477,7 +4463,7 @@ function exportAnalyticsPDF() {
       doc.autoTable({
         head: tableHeaders,
         body: tableRows,
-        startY: 52,
+        startY: 50,
         theme: 'grid',
         headStyles: {
           fillColor: [30, 41, 59],
@@ -4487,44 +4473,36 @@ function exportAnalyticsPDF() {
           halign: 'left'
         },
         bodyStyles: {
-          fontSize: 8,
-          textColor: [51, 65, 85]
+          fontSize: 7.5,
+          textColor: [30, 41, 59]
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252]
         },
         columnStyles: {
           0: { cellWidth: 10, halign: 'center' },
           1: { cellWidth: 32, fontStyle: 'bold' },
-          2: { cellWidth: 62 },
-          3: { cellWidth: 22, halign: 'right', fontStyle: 'bold' },
-          4: { cellWidth: 22, halign: 'right', fontStyle: 'bold' },
-          5: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
-          6: { cellWidth: 24, halign: 'center', fontStyle: 'bold' }
+          2: { cellWidth: 55 },
+          3: { cellWidth: 26 },
+          4: { cellWidth: 20, halign: 'center' },
+          5: { cellWidth: 20, halign: 'center' },
+          6: { cellWidth: 14, halign: 'center', fontStyle: 'bold' },
+          7: { cellWidth: 25, halign: 'center', fontStyle: 'bold' }
         },
-        didParseCell: function(data) {
-          if (data.section === 'body' && data.column.index === 6) {
-            const val = String(data.cell.raw);
-            if (val === 'IN SYNC') data.cell.styles.textColor = [16, 185, 129];
-            else if (val === 'QTY MISMATCH') data.cell.styles.textColor = [239, 68, 68];
-            else if (val === 'LOCAL ONLY') data.cell.styles.textColor = [6, 182, 212];
-            else if (val === 'ZOHO ONLY') data.cell.styles.textColor = [168, 85, 247];
-          }
+        didDrawPage: function (data) {
+          doc.setFontSize(7.5);
+          doc.setTextColor(148, 163, 184);
+          doc.text(`Page ${data.pageNumber} — Goose Inventory Analytics`, 14, doc.internal.pageSize.height - 8);
+          doc.text('Store Manager Sign-Off: ____________________', 125, doc.internal.pageSize.height - 8);
         }
       });
     }
 
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(7.5);
-      doc.setTextColor(148, 163, 184);
-      doc.text(`Goose Inventory System · Zoho Books Reconciliation Audit Report · Page ${i} of ${pageCount}`, 14, 287);
-    }
-
-    const cleanDate = dateStr.replace(/ /g, '_');
-    doc.save(`Goose_Zoho_Inventory_Analytics_${cleanDate}.pdf`);
-    showToast('Analytics PDF Report downloaded successfully!', 'success');
+    doc.save(`Zoho_Books_Comparison_Report_${now.toISOString().split('T')[0]}.pdf`);
+    showToast('Analytics PDF report downloaded successfully!', 'success');
   } catch (err) {
-    console.error('PDF Export Error:', err);
-    showToast('Failed to generate PDF report', 'error');
+    console.error('Analytics PDF Export Error:', err);
+    showToast('Failed to generate Analytics PDF report', 'error');
   }
 }
 
