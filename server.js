@@ -8,7 +8,6 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data', 'inventory.json');
-const ZOHO_CATALOG_FILE = path.join(__dirname, 'data', 'zoho_catalog.json');
 const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
 
 // Ensure data & uploads folders exist
@@ -93,8 +92,8 @@ function mergeDuplicateZohoItems(data) {
       const primary = map.get(key);
 
       // Sum quantities
-      const primaryQty = parseInt(primary.quantity) || 0;
-      const itemQty = parseInt(item.quantity) || 0;
+      const primaryQty = parseFloat(primary.quantity) || 0;
+      const itemQty = parseFloat(item.quantity) || 0;
       primary.quantity = primaryQty + itemQty;
 
       // Merge unique notes
@@ -169,26 +168,6 @@ function readData() {
 
 function writeData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
-}
-
-function readZohoCatalog() {
-  try {
-    if (!fs.existsSync(ZOHO_CATALOG_FILE)) return { items: [], lastSyncedAt: null };
-    const raw = fs.readFileSync(ZOHO_CATALOG_FILE, 'utf-8');
-    const catalog = JSON.parse(raw) || {};
-    if (!Array.isArray(catalog.items)) catalog.items = [];
-    return catalog;
-  } catch (e) {
-    return { items: [], lastSyncedAt: null };
-  }
-}
-
-function writeZohoCatalog(catalog) {
-  try {
-    fs.writeFileSync(ZOHO_CATALOG_FILE, JSON.stringify(catalog, null, 2), 'utf-8');
-  } catch (e) {
-    console.error('Failed to write zoho catalog file:', e);
-  }
 }
 
 // ─── Engineer OTP Authentication API ──────────────────────────────────────────
@@ -361,7 +340,7 @@ app.get('/api/auth/verify-otp', (req, res) => {
 
 // ─── Global Auth & Password Management Endpoints ─────────────────────────────
 app.post('/api/auth/login', (req, res) => {
-  const { role, pin } = req.body || {};
+  const { role, pin } = req.body;
   const data = readData();
   const settings = data.settings || {};
   const expectedManagerPin = settings.managerPin || 'Mannar@200';
@@ -371,12 +350,7 @@ app.post('/api/auth/login', (req, res) => {
   const inputPin = (pin || '').trim();
 
   if (cleanRole === 'manager') {
-    if (
-      inputPin === expectedManagerPin ||
-      inputPin === 'Mannar@200' ||
-      inputPin.toLowerCase() === expectedManagerPin.toLowerCase() ||
-      inputPin.toLowerCase() === 'mannar@200'
-    ) {
+    if (inputPin === expectedManagerPin || inputPin === 'Mannar@200') {
       return res.json({
         success: true,
         user: { role: 'manager', name: 'Store Manager', title: 'Store Manager' }
@@ -385,12 +359,7 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid Manager Password' });
     }
   } else {
-    if (
-      inputPin === expectedEngineerPin ||
-      inputPin === '5678' ||
-      inputPin.toLowerCase() === expectedEngineerPin.toLowerCase() ||
-      inputPin === '5678'
-    ) {
+    if (inputPin === expectedEngineerPin || inputPin === '5678') {
       return res.json({
         success: true,
         user: { role: 'engineer', name: 'Er. Engineer', title: 'Site Engineer' }
@@ -556,9 +525,9 @@ app.post('/api/items', (req, res) => {
     sku: primarySku,
     zone: req.body.zone || 'mechanical',
     category: req.body.category || 'General',
-    quantity: parseInt(req.body.quantity) || 0,
+    quantity: parseFloat(req.body.quantity) || 0,
     unit: req.body.unit || 'pcs',
-    minStock: parseInt(req.body.minStock) || 0,
+    minStock: parseFloat(req.body.minStock) || 0,
     location: req.body.location || 'A1',
     barcode: req.body.barcode || primarySku,
     rate: parseFloat(req.body.rate) || 0,
@@ -636,8 +605,8 @@ app.post('/api/items/:id/adjust-stock', (req, res) => {
   if (!item) return res.status(404).json({ error: 'Item not found' });
 
   const { delta, type, notes, recipientName, projectName, allocationType } = req.body;
-  const qtyChange = parseInt(delta) || 0;
-  const currentQty = parseInt(item.quantity) || 0;
+  const qtyChange = parseFloat(delta) || 0;
+  const currentQty = parseFloat(item.quantity) || 0;
   const newQty = Math.max(0, currentQty + qtyChange);
 
   item.quantity = newQty;
@@ -783,6 +752,22 @@ app.put('/api/requests/:id', (req, res) => {
   res.json(data.requests[idx]);
 });
 
+app.delete('/api/requests/:id', (req, res) => {
+  const data = readData();
+  if (!data.requests) return res.json({ success: true });
+  const before = data.requests.length;
+  data.requests = data.requests.filter(r => r.id !== req.params.id);
+  writeData(data);
+  res.json({ success: true, removed: before - data.requests.length });
+});
+
+app.delete('/api/requests', (req, res) => {
+  const data = readData();
+  data.requests = [];
+  writeData(data);
+  res.json({ success: true, message: 'All material requests cleared' });
+});
+
 // ─── Image Upload API ────────────────────────────────────────────────────────
 app.post('/api/upload', (req, res) => {
   try {
@@ -810,7 +795,7 @@ app.post('/api/upload', (req, res) => {
 // ─── Zoho Books Integration APIs ─────────────────────────────────────────────
 function autoDetectZone(name = '', category = '') {
   const combined = (name + ' ' + category).toLowerCase();
-  if (combined.match(/panel|wire|cable|relay|sensor|terminal|breaker|vfd|switch|fuse|transformer|electric/)) return 'electrical';
+  if (combined.match(/panel|wire|cable|relay|sensor|terminal|breaker|vfd|switch|fuse|transformer|electric|mcb|mccb|rccb|smps|contactor|isolator|gland|lugs|ferrule|connector|choke|led|indicator|meter|busbar|starter|inverter|drive|plc|conduit|tape|crimping|pushbutton/)) return 'electrical';
   if (combined.match(/valve|gasket|fitting|clamp|pipe|flange|bolt|nut|pump|bearing|motor|pneumatic|mechanical/)) return 'mechanical';
   return 'consumables';
 }
@@ -855,7 +840,6 @@ app.post('/api/zoho/import-csv', (req, res) => {
     }
 
     const data = readData();
-    const catalogItems = [];
     let importedCount = 0;
 
     itemsToProcess.forEach(raw => {
@@ -897,26 +881,10 @@ app.post('/api/zoho/import-csv', (req, res) => {
       } else {
         data.items.push(mappedItem);
       }
-
-      catalogItems.push({
-        id: itemId,
-        name: itemName,
-        sku: skuVal,
-        zohoCode: skuVal,
-        zohoQuantity: stockVal,
-        rate: rateVal || purchaseVal,
-        purchaseRate: purchaseVal,
-        unit: unitVal,
-        category: catVal,
-        updatedAt: new Date().toISOString()
-      });
-
       importedCount++;
     });
 
     writeData(data);
-    writeZohoCatalog({ lastSyncedAt: new Date().toISOString(), items: catalogItems });
-
     res.json({ success: true, count: importedCount, message: `Successfully imported ${importedCount} item(s) from Zoho Books!` });
   } catch (err) {
     console.error('Zoho Import Error:', err);
@@ -963,7 +931,6 @@ app.post('/api/zoho/sync-api', async (req, res) => {
     }
 
     const data = readData();
-    const catalogItems = [];
     let importedCount = 0;
 
     allZohoItems.forEach(item => {
@@ -994,167 +961,14 @@ app.post('/api/zoho/sync-api', async (req, res) => {
       } else {
         data.items.push(mapped);
       }
-
-      catalogItems.push({
-        id: itemId,
-        name: item.name || 'Zoho Item',
-        sku: item.sku || item.item_id || itemId,
-        zohoCode: item.sku || item.item_id || itemId,
-        zohoQuantity: item.actual_available_stock ?? item.stock_on_hand ?? 0,
-        rate: item.rate || item.purchase_rate || 0,
-        purchaseRate: item.purchase_rate || 0,
-        unit: item.unit || 'pcs',
-        category: item.category_name || item.product_type || 'Zoho Catalog',
-        updatedAt: new Date().toISOString()
-      });
-
       importedCount++;
     });
 
     writeData(data);
-    writeZohoCatalog({ lastSyncedAt: new Date().toISOString(), items: catalogItems });
-
     res.json({ success: true, count: importedCount, message: `Synced ${importedCount} items directly from Zoho Books API!` });
   } catch (err) {
     console.error('Zoho API Sync Error:', err);
     res.status(500).json({ error: 'Zoho API connection failed', details: err.message });
-  }
-});
-
-// ─── Zoho Books vs Store Inventory Comparison Analytics API ─────────────────
-app.get('/api/zoho/comparison', (req, res) => {
-  try {
-    const storeData = readData();
-    const zohoCatalog = readZohoCatalog();
-    const storeItems = storeData.items || [];
-    const zohoItems = zohoCatalog.items || [];
-
-    const comparisonMap = new Map();
-
-    // 1. Process catalog items from Zoho Books
-    zohoItems.forEach(zItem => {
-      const rawCode = (zItem.sku || zItem.zohoCode || zItem.id || '').trim();
-      const normCode = rawCode.toLowerCase();
-      const key = isMergeableZohoCode(rawCode) ? normCode : `name::${(zItem.name || '').trim().toLowerCase()}`;
-
-      comparisonMap.set(key, {
-        zohoCode: rawCode || '-',
-        name: zItem.name || 'Zoho Item',
-        specification: zItem.specification || '',
-        category: zItem.category || 'Zoho Catalog',
-        unit: zItem.unit || 'pcs',
-        storeQty: 0,
-        zohoQty: parseInt(zItem.zohoQuantity ?? zItem.quantity ?? 0) || 0,
-        variance: 0,
-        location: 'Unassigned',
-        storeRate: 0,
-        zohoRate: parseFloat(zItem.rate || zItem.purchaseRate || 0) || 0,
-        foundInStore: false,
-        foundInZoho: true
-      });
-    });
-
-    // 2. Process Store Inventory items
-    storeItems.forEach(sItem => {
-      const rawCode = (sItem.zohoCode || sItem.sku || '').trim();
-      const normCode = rawCode.toLowerCase();
-      const key = isMergeableZohoCode(rawCode) ? normCode : `name::${(sItem.name || '').trim().toLowerCase()}`;
-
-      const sQty = parseInt(sItem.quantity) || 0;
-      const sRate = parseFloat(sItem.rate || sItem.purchaseRate || 0) || 0;
-
-      if (comparisonMap.has(key)) {
-        const existing = comparisonMap.get(key);
-        existing.storeQty += sQty;
-        if (sRate > 0) existing.storeRate = sRate;
-        if (sItem.location) existing.location = sItem.location;
-        if (sItem.specification) existing.specification = sItem.specification;
-        if (sItem.zohoCode && sItem.zohoCode !== '-') existing.zohoCode = sItem.zohoCode;
-        existing.foundInStore = true;
-      } else {
-        comparisonMap.set(key, {
-          zohoCode: sItem.zohoCode || sItem.sku || '-',
-          name: sItem.name || 'Store Item',
-          specification: sItem.specification || '',
-          category: sItem.category || 'Store Inventory',
-          unit: sItem.unit || 'pcs',
-          storeQty: sQty,
-          zohoQty: 0,
-          variance: sQty,
-          location: sItem.location || 'A1',
-          storeRate: sRate,
-          zohoRate: 0,
-          foundInStore: true,
-          foundInZoho: isMergeableZohoCode(sItem.zohoCode || sItem.sku)
-        });
-      }
-    });
-
-    // 3. Classify statuses and calculate summary metrics
-    const items = [];
-    let matchedCount = 0;
-    let discrepancyCount = 0;
-    let missingInStoreCount = 0;
-    let unlinkedStoreCount = 0;
-    let rateMismatchCount = 0;
-    let netUnitVariance = 0;
-    let netValueVariance = 0;
-
-    comparisonMap.forEach(item => {
-      // Variance = Store Qty - Zoho Qty
-      item.variance = item.storeQty - item.zohoQty;
-
-      if (!item.foundInStore) {
-        item.status = 'MISSING_IN_STORE';
-        missingInStoreCount++;
-      } else if (!item.foundInZoho && !isMergeableZohoCode(item.zohoCode)) {
-        item.status = 'UNLINKED_STORE_ONLY';
-        unlinkedStoreCount++;
-      } else if (item.storeQty !== item.zohoQty) {
-        item.status = 'QTY_DISCREPANCY';
-        discrepancyCount++;
-      } else if (item.storeRate > 0 && item.zohoRate > 0 && Math.abs(item.storeRate - item.zohoRate) > 0.01) {
-        item.status = 'RATE_MISMATCH';
-        rateMismatchCount++;
-      } else {
-        item.status = 'MATCHED';
-        matchedCount++;
-      }
-
-      netUnitVariance += item.variance;
-      const storeVal = item.storeQty * item.storeRate;
-      const zohoVal = item.zohoQty * (item.zohoRate || item.storeRate);
-      netValueVariance += (storeVal - zohoVal);
-
-      items.push(item);
-    });
-
-    // Sort: Discrepancies & Missing first, then alphabetical
-    const statusPriority = {
-      'QTY_DISCREPANCY': 1,
-      'MISSING_IN_STORE': 2,
-      'UNLINKED_STORE_ONLY': 3,
-      'RATE_MISMATCH': 4,
-      'MATCHED': 5
-    };
-    items.sort((a, b) => (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99) || a.name.localeCompare(b.name));
-
-    const summary = {
-      totalCompared: items.length,
-      matchedCount,
-      discrepancyCount,
-      missingInStoreCount,
-      unlinkedStoreCount,
-      rateMismatchCount,
-      netUnitVariance,
-      netValueVariance,
-      lastSyncedAt: zohoCatalog.lastSyncedAt || new Date().toISOString()
-    };
-
-    res.json({ success: true, summary, items });
-  } catch (err) {
-    console.error('Zoho Comparison Error:', err);
-    res.status(500).json({ error: 'Failed to generate comparison data', details: err.message });
   }
 });
 

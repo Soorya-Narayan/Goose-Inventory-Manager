@@ -21,7 +21,6 @@ const state = {
   // Issue checklist
   activeChecklistRequestId: null,
   activeChecklist: [],
-  analytics: { data: null, activeFilter: 'all', searchQuery: '' },
 };
 
 // ─── API Helpers ─────────────────────────────────────────────────────────────
@@ -867,32 +866,20 @@ async function handleLogin(e) {
   const isManager = document.getElementById('role-btn-manager').classList.contains('selected');
   const errorEl = document.getElementById('login-error');
 
-  if (errorEl) errorEl.classList.add('hidden');
-
   if (isManager) {
-    const pin = (document.getElementById('manager-pin')?.value || '').trim();
-    if (!pin) {
-      if (errorEl) {
-        errorEl.textContent = 'Please enter Store Manager Password';
-        errorEl.classList.remove('hidden');
-      }
-      return;
-    }
+    const pin = document.getElementById('manager-pin').value;
     try {
-      showLoadingScreen('Authenticating Store Manager...');
       const res = await api.post('/api/auth/login', { role: 'manager', pin });
       if (res && res.success) {
-        await setUser({ role: 'manager', name: 'Store Manager' });
+        setUser({ role: 'manager', name: 'Store Manager' });
         if (errorEl) errorEl.classList.add('hidden');
       } else {
-        hideLoadingScreen();
         if (errorEl) {
           errorEl.textContent = res.error || 'Invalid Manager Password';
           errorEl.classList.remove('hidden');
         }
       }
     } catch (err) {
-      hideLoadingScreen();
       if (errorEl) {
         errorEl.textContent = err.message || 'Invalid Manager Password';
         errorEl.classList.remove('hidden');
@@ -945,9 +932,6 @@ function applyRoleNavigationVisibility() {
 
   const labelLink = document.getElementById('nav-labeldesigner-link');
   if (labelLink) labelLink.style.display = isManager ? 'flex' : 'none';
-
-  const analyticsLink = document.getElementById('nav-analytics-link');
-  if (analyticsLink) analyticsLink.style.display = isManager ? 'flex' : 'none';
 
   // Bottom Nav (Mobile)
   const bnavReq = document.getElementById('bnav-requests-btn');
@@ -1024,7 +1008,7 @@ function logout() {
 function navigateTo(view) {
   const isManager = state.user?.role === 'manager';
   // Engineers can only view Overview (dashboard), Store Inventory (inventory), and Store Layout (storemap)
-  if (!isManager && ['requests', 'transactions', 'engineer-history', 'labeldesigner', 'analytics'].includes(view)) {
+  if (!isManager && ['requests', 'transactions', 'engineer-history', 'labeldesigner'].includes(view)) {
     view = 'dashboard';
   }
 
@@ -1050,7 +1034,6 @@ function renderView(view) {
     case 'transactions':     renderTransactions();    break;
     case 'engineer-history': renderEngineerHistory(); break;
     case 'labeldesigner':    renderLabelDesigner();   break;
-    case 'analytics':        renderAnalytics();       break;
   }
 }
 
@@ -1810,7 +1793,7 @@ function renderStoreMap() {
       ${activeGroups.map(group => {
         const visibleRacks = group.racks.filter(r => {
           if (!searchQuery) return true;
-          return r.name.toLowerCase().includes(searchQuery) || r.shelves.some(s => s.toLowerCase().includes(searchQuery));
+          return (r.name || '').toLowerCase().includes(searchQuery) || r.shelves.some(s => (s || '').toLowerCase().includes(searchQuery));
         });
 
         if (visibleRacks.length === 0) return '';
@@ -1982,7 +1965,7 @@ function exportInventoryCSV() {
       escapeCSV(item.location || ''),
       escapeCSV(item.hsn || ''),
       escapeCSV(item.notes || ''),
-      escapeCSV(item.addedAt ? item.addedAt.split('T')[0] : '')
+      escapeCSV(item.addedAt ? String(item.addedAt).split('T')[0] : '')
     ].join(',');
   });
 
@@ -2331,10 +2314,13 @@ function renderRequests() {
           <div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.875rem;display:flex;flex-direction:column;gap:0.5rem">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
               <div>
-                <strong style="font-size:0.95rem;color:var(--text-primary);display:block;margin-bottom:0.15rem">${escHtml(r.name || r.engineerName)}</strong>
-                <span style="font-size:0.72rem;color:var(--text-tertiary)">EID: ${escHtml(r.employeeId || '—')} &nbsp;|&nbsp; Project: ${escHtml(r.projectName)}</span>
+                <strong style="font-size:0.95rem;color:var(--text-primary);display:block;margin-bottom:0.15rem">${escHtml(r.name || r.engineerName || r.engineer || 'Engineer')}</strong>
+                <span style="font-size:0.72rem;color:var(--text-tertiary)">EID: ${escHtml(r.employeeId || '—')} &nbsp;|&nbsp; Project: ${escHtml(r.projectName || r.project || 'General')}</span>
               </div>
-              ${reqStatusTag(r.status)}
+              <div style="display:flex;align-items:center;gap:0.4rem">
+                ${reqStatusTag(r.status)}
+                ${isManager ? `<button class="btn btn-ghost btn-sm" onclick="deleteRequest('${r.id}')" title="Delete request" style="color:var(--text-tertiary);padding:0.2rem 0.35rem"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+              </div>
             </div>
             <div style="background:var(--bg-surface);padding:0.4rem 0.625rem;border-radius:var(--radius);border:1px solid var(--border-muted);display:flex;flex-direction:column;gap:0.15rem">
               ${matsHtml}
@@ -2400,33 +2386,34 @@ function renderRequests() {
               <tr>
                 <td style="font-size:0.75rem;color:var(--text-tertiary)">${new Date(r.requestedAt).toLocaleString('en-IN')}</td>
                 <td>
-                  <strong>${escHtml(r.name || r.engineerName)}</strong>
+                  <strong>${escHtml(r.name || r.engineerName || r.engineer || 'Engineer')}</strong>
                   ${r.employeeId ? `<div style="font-size:0.72rem;color:var(--text-tertiary)">${escHtml(r.employeeId)}</div>` : ''}
                 </td>
                 <td style="max-width:240px">${matsHtml}</td>
-                <td>${escHtml(r.projectName)}</td>
+                <td>${escHtml(r.projectName || r.project || 'General')}</td>
                 <td>${reqStatusTag(r.status)}</td>
                 ${isManager ? `
                   <td style="white-space:nowrap">
-                    ${r.status === 'pending' ? `
-                      <div style="display:flex;gap:0.5rem;align-items:center">
+                    <div style="display:flex;gap:0.4rem;align-items:center">
+                      ${r.status === 'pending' ? `
                         <button class="btn btn-primary btn-sm" onclick="processRequest('${r.id}', 'approved')">Approve</button>
                         <button class="btn btn-danger btn-sm" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
-                      </div>
-                    ` : r.status === 'approved' ? `
-                      <div style="display:flex;gap:0.5rem;align-items:center">
+                      ` : r.status === 'approved' ? `
                         <button class="btn btn-primary btn-sm" style="gap:0.3rem" onclick="openChecklistModal('${r.id}')" title="Open Issue Checklist">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
                           Issue
                         </button>
                         <button class="btn btn-ghost btn-sm" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>
-                      </div>
-                    ` : r.status === 'issued' ? `
-                      <button class="btn btn-ghost btn-sm" style="gap:0.3rem;opacity:0.6" onclick="openChecklistModal('${r.id}', true)" title="View Issue Record">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-                        View Record
+                      ` : r.status === 'issued' ? `
+                        <button class="btn btn-ghost btn-sm" style="gap:0.3rem;opacity:0.6" onclick="openChecklistModal('${r.id}', true)" title="View Issue Record">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                          View Record
+                        </button>
+                      ` : `<span style="font-size:0.75rem;color:var(--text-tertiary)">—</span>`}
+                      <button class="btn btn-ghost btn-sm" onclick="deleteRequest('${r.id}')" title="Delete Material Request" style="color:var(--text-tertiary);padding:0.25rem 0.4rem">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                       </button>
-                    ` : `<span style="font-size:0.75rem;color:var(--text-tertiary)">—</span>`}
+                    </div>
                   </td>
                 ` : ''}
               </tr>`;
@@ -2457,12 +2444,28 @@ function renderRequests() {
 async function processRequest(reqId, status) {
   try {
     await api.put(`/api/requests/${reqId}`, { status, processedBy: state.user?.name });
-    const labels = { approved: 'Offer approved', rejected: 'Offer rejected', pending: 'Reverted to pending' };
+    const labels = { approved: 'Request approved', rejected: 'Request rejected', pending: 'Reverted to pending' };
     showToast(labels[status] || `Status: ${status}`, 'success');
     await loadAll();
     renderView('requests');
   } catch (err) {
     showToast('Failed to process request', 'error');
+  }
+}
+
+async function deleteRequest(reqId) {
+  if (!state.user || state.user.role !== 'manager') {
+    showToast('Access Denied: Only Store Manager can delete requests', 'error');
+    return;
+  }
+  if (!confirm('Are you sure you want to delete this material request record?')) return;
+  try {
+    await api.delete(`/api/requests/${reqId}`);
+    showToast('Material request record deleted', 'success');
+    await loadAll();
+    renderView('requests');
+  } catch (err) {
+    showToast('Failed to delete request', 'error');
   }
 }
 
@@ -4149,372 +4152,11 @@ function exportEngineerActivityPDF(filterEmail = 'all') {
     }
 
     const cleanFilenameMail = engMail.replace(/[^a-zA-Z0-9]/g, '_');
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-//  ANALYTICS — Zoho Books vs Store Inventory Comparison
-// ═══════════════════════════════════════════════════════════════════════════════
-async function renderAnalytics() {
-  const container = document.getElementById('view-analytics');
-  if (!container) return;
-
-  const isManager = state.user?.role === 'manager';
-  if (!isManager) {
-    showToast('Access Denied: Analytics is restricted to Store Manager only', 'error');
-    navigateTo('dashboard');
-    return;
-  }
-
-  container.innerHTML = `
-    <div class="page-hdr">
-      <div>
-        <h1 class="page-title">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          Zoho Books vs Store Inventory Analytics
-        </h1>
-        <p class="page-sub">Live stock quantity, valuation, and item alignment comparison between Zoho Books &amp; Store Inventory</p>
-      </div>
-      <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-ghost" onclick="renderAnalytics()" title="Refresh Comparison Data">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6"/><path d="M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.3L2.5 16"/></svg>
-          <span>Refresh Data</span>
-        </button>
-        <button class="btn btn-primary" onclick="exportAnalyticsPDF()" title="Export Comparison Report as PDF">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span>Export PDF</span>
-        </button>
-      </div>
-    </div>
-
-    <div style="padding: 3rem 0; text-align: center; color: var(--text-tertiary);" id="analytics-loading">
-      <div class="spinner" style="margin: 0 auto 1rem; width: 32px; height: 32px; border-width: 3px;"></div>
-      Fetching comparison data between Store Inventory &amp; Zoho Books...
-    </div>
-    <div id="analytics-content" class="hidden"></div>
-  `;
-
-  try {
-    const res = await api.get('/api/zoho/comparison');
-    if (!res.success) throw new Error(res.error || 'Failed to load comparison data');
-
-    state.analytics.data = res;
-    renderAnalyticsContent();
+    doc.save(`Engineer_Activity_${cleanFilenameMail}_${dateStr.replace(/ /g, '_')}.pdf`);
+    showToast('Engineer Activity PDF Report downloaded!', 'success');
   } catch (err) {
-    console.error('Analytics fetch error:', err);
-    const loadingEl = document.getElementById('analytics-loading');
-    if (loadingEl) {
-      loadingEl.innerHTML = `
-        <div style="color: var(--danger); font-weight: 600; margin-bottom: 0.5rem;">Failed to load comparison data</div>
-        <div style="font-size: 0.85rem; color: var(--text-secondary);">${escHtml(err.message || 'Error communicating with server')}</div>
-        <button class="btn btn-primary btn-sm" onclick="renderAnalytics()" style="margin-top: 1rem;">Retry</button>
-      `;
-    }
-  }
-}
-
-function renderAnalyticsContent() {
-  const contentEl = document.getElementById('analytics-content');
-  const loadingEl = document.getElementById('analytics-loading');
-  if (!contentEl || !state.analytics.data) return;
-
-  if (loadingEl) loadingEl.classList.add('hidden');
-  contentEl.classList.remove('hidden');
-
-  const { summary, items } = state.analytics.data;
-  const currentFilter = state.analytics.activeFilter || 'all';
-  const searchQuery = (state.analytics.searchQuery || '').trim().toLowerCase();
-
-  // Filter items
-  let filteredItems = items.filter(item => {
-    if (currentFilter === 'discrepancy' && item.status !== 'QTY_DISCREPANCY') return false;
-    if (currentFilter === 'missing' && item.status !== 'MISSING_IN_STORE') return false;
-    if (currentFilter === 'unlinked' && item.status !== 'UNLINKED_STORE_ONLY') return false;
-    if (currentFilter === 'matched' && item.status !== 'MATCHED') return false;
-
-    if (searchQuery) {
-      const matchName = (item.name || '').toLowerCase().includes(searchQuery);
-      const matchCode = (item.zohoCode || '').toLowerCase().includes(searchQuery);
-      const matchSpec = (item.specification || '').toLowerCase().includes(searchQuery);
-      const matchCat = (item.category || '').toLowerCase().includes(searchQuery);
-      return matchName || matchCode || matchSpec || matchCat;
-    }
-
-    return true;
-  });
-
-  const formattedDate = new Date(summary.lastSyncedAt).toLocaleString('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  });
-
-  contentEl.innerHTML = `
-    <!-- Summary Cards -->
-    <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 1.5rem;">
-      <div class="metric-card" style="border-left: 4px solid var(--success);">
-        <div class="metric-hdr">
-          <span class="metric-title">Matched Materials</span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </div>
-        <div class="metric-val">${summary.matchedCount}</div>
-        <div class="metric-sub">Perfect stock alignment</div>
-      </div>
-
-      <div class="metric-card" style="border-left: 4px solid var(--warning);">
-        <div class="metric-hdr">
-          <span class="metric-title">Stock Discrepancies</span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </div>
-        <div class="metric-val" style="color: var(--warning);">${summary.discrepancyCount}</div>
-        <div class="metric-sub">Store Qty &ne; Zoho Qty</div>
-      </div>
-
-      <div class="metric-card" style="border-left: 4px solid var(--danger);">
-        <div class="metric-hdr">
-          <span class="metric-title">Missing in Store</span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-        </div>
-        <div class="metric-val" style="color: var(--danger);">${summary.missingInStoreCount}</div>
-        <div class="metric-sub">In Zoho catalog, 0 in store</div>
-      </div>
-
-      <div class="metric-card" style="border-left: 4px solid var(--goose);">
-        <div class="metric-hdr">
-          <span class="metric-title">Store Only / Unlinked</span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--goose)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        </div>
-        <div class="metric-val" style="color: var(--goose);">${summary.unlinkedStoreCount}</div>
-        <div class="metric-sub">Local items with no Zoho code</div>
-      </div>
-    </div>
-
-    <!-- Filter Pills & Search Bar -->
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.25rem; background: var(--bg-card); padding: 0.85rem 1.15rem; border-radius: 8px; border: 1px solid var(--border-subtle);">
-      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-        <button class="btn btn-sm ${currentFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('all')">
-          All Materials (${summary.totalCompared})
-        </button>
-        <button class="btn btn-sm ${currentFilter === 'discrepancy' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('discrepancy')" style="${currentFilter === 'discrepancy' ? 'background: var(--warning); color: #000;' : ''}">
-          Quantity Discrepancies (${summary.discrepancyCount})
-        </button>
-        <button class="btn btn-sm ${currentFilter === 'missing' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('missing')" style="${currentFilter === 'missing' ? 'background: var(--danger); color: #fff;' : ''}">
-          Missing in Store (${summary.missingInStoreCount})
-        </button>
-        <button class="btn btn-sm ${currentFilter === 'unlinked' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('unlinked')">
-          Store Only (${summary.unlinkedStoreCount})
-        </button>
-        <button class="btn btn-sm ${currentFilter === 'matched' ? 'btn-primary' : 'btn-ghost'}" onclick="setAnalyticsFilter('matched')">
-          Matched (${summary.matchedCount})
-        </button>
-      </div>
-
-      <div style="position: relative; min-width: 240px;">
-        <input type="text" id="analytics-search-input" class="field-input" placeholder="Search by code, name, spec..." value="${escHtml(state.analytics.searchQuery || '')}" oninput="handleAnalyticsSearch(this.value)" style="padding-left: 2.2rem; font-size: 0.85rem; height: 36px;" />
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      </div>
-    </div>
-
-    <!-- Data Table -->
-    <div class="card" style="padding: 0; overflow: hidden;">
-      <div style="overflow-x: auto;">
-        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-          <thead>
-            <tr style="background: var(--bg-hover); border-bottom: 1px solid var(--border-subtle); text-align: left;">
-              <th style="padding: 0.75rem 1rem; width: 40px;">#</th>
-              <th style="padding: 0.75rem 1rem;">Zoho Code / SKU</th>
-              <th style="padding: 0.75rem 1rem;">Material Name &amp; Specification</th>
-              <th style="padding: 0.75rem 1rem;">Category &amp; Location</th>
-              <th style="padding: 0.75rem 1rem; text-align: center;">Store Stock</th>
-              <th style="padding: 0.75rem 1rem; text-align: center;">Zoho Stock</th>
-              <th style="padding: 0.75rem 1rem; text-align: center;">Variance</th>
-              <th style="padding: 0.75rem 1rem; text-align: center;">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filteredItems.length === 0 ? `
-              <tr>
-                <td colspan="8" style="padding: 3rem 1rem; text-align: center; color: var(--text-tertiary);">
-                  No items match the selected filter criteria.
-                </td>
-              </tr>
-            ` : filteredItems.map((item, idx) => {
-              const varianceStr = item.variance > 0 ? `+${item.variance}` : `${item.variance}`;
-              const varianceColor = item.variance === 0 ? 'var(--text-tertiary)' : (item.variance > 0 ? 'var(--success)' : 'var(--danger)');
-
-              let statusBadgeHtml = '';
-              if (item.status === 'MATCHED') {
-                statusBadgeHtml = `<span class="status-badge" style="background: rgba(34, 197, 94, 0.15); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.3);">Matched</span>`;
-              } else if (item.status === 'QTY_DISCREPANCY') {
-                statusBadgeHtml = `<span class="status-badge" style="background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3);">Qty Discrepancy</span>`;
-              } else if (item.status === 'MISSING_IN_STORE') {
-                statusBadgeHtml = `<span class="status-badge" style="background: rgba(239, 68, 68, 0.15); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3);">Missing in Store</span>`;
-              } else if (item.status === 'UNLINKED_STORE_ONLY') {
-                statusBadgeHtml = `<span class="status-badge" style="background: rgba(56, 189, 248, 0.15); color: #0284c7; border: 1px solid rgba(56, 189, 248, 0.3);">Store Only</span>`;
-              } else {
-                statusBadgeHtml = `<span class="status-badge" style="background: rgba(148, 163, 184, 0.15); color: #64748b; border: 1px solid rgba(148, 163, 184, 0.3);">${item.status}</span>`;
-              }
-
-              return `
-                <tr style="border-bottom: 1px solid var(--border-subtle); transition: background 0.15s ease;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
-                  <td style="padding: 0.75rem 1rem; color: var(--text-tertiary); font-family: var(--font-mono);">${idx + 1}</td>
-                  <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-weight: 600; color: var(--goose);">${escHtml(item.zohoCode || '-')}</td>
-                  <td style="padding: 0.75rem 1rem;">
-                    <div style="font-weight: 600; color: var(--text-primary);">${escHtml(item.name)}</div>
-                    ${item.specification ? `<div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.1rem;">${escHtml(item.specification)}</div>` : ''}
-                  </td>
-                  <td style="padding: 0.75rem 1rem;">
-                    <div style="font-size: 0.8rem; color: var(--text-secondary);">${escHtml(item.category || 'General')}</div>
-                    <div style="font-size: 0.72rem; color: var(--text-tertiary); font-family: var(--font-mono);">Shelf: ${escHtml(item.location || 'A1')}</div>
-                  </td>
-                  <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700; font-family: var(--font-mono); color: var(--text-primary);">
-                    ${item.storeQty} <span style="font-weight: 400; font-size: 0.75rem; color: var(--text-tertiary);">${escHtml(item.unit || 'pcs')}</span>
-                  </td>
-                  <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700; font-family: var(--font-mono); color: var(--text-secondary);">
-                    ${item.zohoQty} <span style="font-weight: 400; font-size: 0.75rem; color: var(--text-tertiary);">${escHtml(item.unit || 'pcs')}</span>
-                  </td>
-                  <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700; font-family: var(--font-mono); color: ${varianceColor};">
-                    ${varianceStr}
-                  </td>
-                  <td style="padding: 0.75rem 1rem; text-align: center;">
-                    ${statusBadgeHtml}
-                  </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-      <div style="padding: 0.75rem 1.15rem; background: var(--bg-hover); border-top: 1px solid var(--border-subtle); font-size: 0.75rem; color: var(--text-tertiary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-        <span>Showing ${filteredItems.length} of ${summary.totalCompared} material entries</span>
-        <span>Last Comparison Refresh: ${formattedDate}</span>
-      </div>
-    </div>
-  `;
-}
-
-function setAnalyticsFilter(filter) {
-  state.analytics.activeFilter = filter;
-  renderAnalyticsContent();
-}
-
-function handleAnalyticsSearch(query) {
-  state.analytics.searchQuery = query;
-  renderAnalyticsContent();
-}
-
-async function exportAnalyticsPDF() {
-  if (!state.analytics.data || !state.analytics.data.items) {
-    showToast('No comparison data available to export', 'warning');
-    return;
-  }
-
-  try {
-    showToast('Generating Zoho Books vs Store Inventory PDF report...', 'info');
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
-    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-
-    const { summary, items } = state.analytics.data;
-
-    // Header Band
-    doc.setFillColor(15, 23, 42); // Dark navy
-    doc.rect(0, 0, 210, 26, 'F');
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(255, 255, 255);
-    doc.text('GOOSE INDUSTRIAL SOLUTIONS PVT LTD', 14, 11);
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(56, 189, 248);
-    doc.text('ZOHO BOOKS VS STORE INVENTORY COMPARISON REPORT', 14, 19);
-
-    doc.setFontSize(8);
-    doc.setTextColor(203, 213, 225);
-    doc.text(`Generated: ${dateStr}, ${timeStr}`, 140, 19);
-
-    // Summary Box
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(14, 30, 182, 16, 2, 2, 'FD');
-
-    doc.setFontSize(8.5);
-    doc.setTextColor(51, 65, 85);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Total Compared: ${summary.totalCompared}`, 18, 40);
-    doc.text(`Matched: ${summary.matchedCount}`, 68, 40);
-    doc.text(`Qty Discrepancies: ${summary.discrepancyCount}`, 108, 40);
-    doc.text(`Missing in Store: ${summary.missingInStoreCount}`, 154, 40);
-
-    // AutoTable Data
-    const tableHeaders = [['#', 'ZOHO CODE', 'MATERIAL NAME', 'CATEGORY', 'STORE QTY', 'ZOHO QTY', 'VAR', 'STATUS']];
-    const tableRows = items.map((item, index) => {
-      let statusText = item.status;
-      if (item.status === 'MATCHED') statusText = 'MATCHED';
-      else if (item.status === 'QTY_DISCREPANCY') statusText = 'QTY MISMATCH';
-      else if (item.status === 'MISSING_IN_STORE') statusText = 'MISSING IN STORE';
-      else if (item.status === 'UNLINKED_STORE_ONLY') statusText = 'STORE ONLY';
-
-      const varText = item.variance > 0 ? `+${item.variance}` : `${item.variance}`;
-
-      return [
-        index + 1,
-        item.zohoCode || '-',
-        item.name.length > 28 ? item.name.slice(0, 28) + '...' : item.name,
-        item.category.length > 15 ? item.category.slice(0, 15) + '...' : item.category,
-        `${item.storeQty} ${item.unit || 'pcs'}`,
-        `${item.zohoQty} ${item.unit || 'pcs'}`,
-        varText,
-        statusText
-      ];
-    });
-
-    if (doc.autoTable) {
-      doc.autoTable({
-        head: tableHeaders,
-        body: tableRows,
-        startY: 50,
-        theme: 'grid',
-        headStyles: {
-          fillColor: [30, 41, 59],
-          textColor: [255, 255, 255],
-          fontSize: 8,
-          fontStyle: 'bold',
-          halign: 'left'
-        },
-        bodyStyles: {
-          fontSize: 7.5,
-          textColor: [30, 41, 59]
-        },
-        alternateRowStyles: {
-          fillColor: [248, 250, 252]
-        },
-        columnStyles: {
-          0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 32, fontStyle: 'bold' },
-          2: { cellWidth: 55 },
-          3: { cellWidth: 26 },
-          4: { cellWidth: 20, halign: 'center' },
-          5: { cellWidth: 20, halign: 'center' },
-          6: { cellWidth: 14, halign: 'center', fontStyle: 'bold' },
-          7: { cellWidth: 25, halign: 'center', fontStyle: 'bold' }
-        },
-        didDrawPage: function (data) {
-          doc.setFontSize(7.5);
-          doc.setTextColor(148, 163, 184);
-          doc.text(`Page ${data.pageNumber} — Goose Inventory Analytics`, 14, doc.internal.pageSize.height - 8);
-          doc.text('Store Manager Sign-Off: ____________________', 125, doc.internal.pageSize.height - 8);
-        }
-      });
-    }
-
-    doc.save(`Zoho_Books_Comparison_Report_${now.toISOString().split('T')[0]}.pdf`);
-    showToast('Analytics PDF report downloaded successfully!', 'success');
-  } catch (err) {
-    console.error('Analytics PDF Export Error:', err);
-    showToast('Failed to generate Analytics PDF report', 'error');
+    console.error('PDF Export Error:', err);
+    showToast('Failed to generate PDF report', 'error');
   }
 }
 
@@ -4526,14 +4168,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const saved = sessionStorage.getItem('ims_user');
   if (saved) {
-    try {
-      await setUser(JSON.parse(saved));
-      return;
-    } catch (err) {
-      console.error('Session restoration failed:', err);
-      sessionStorage.removeItem('ims_user');
-      hideLoadingScreen();
-    }
+    try { await setUser(JSON.parse(saved)); return; } catch {}
   }
   hideLoadingScreen();
 });
