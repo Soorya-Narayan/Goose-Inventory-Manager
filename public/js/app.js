@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.0.5',
+  currentVersion: '3.0.6',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -951,6 +951,9 @@ function applyRoleNavigationVisibility() {
   const engLink = document.getElementById('nav-engineer-history-link');
   if (engLink) engLink.style.display = isManager ? 'flex' : 'none';
 
+  const analyticsLink = document.getElementById('nav-analytics-link');
+  if (analyticsLink) analyticsLink.style.display = isManager ? 'flex' : 'none';
+
   const labelLink = document.getElementById('nav-labeldesigner-link');
   if (labelLink) labelLink.style.display = isManager ? 'flex' : 'none';
 
@@ -960,6 +963,9 @@ function applyRoleNavigationVisibility() {
 
   const bnavTx = document.getElementById('bnav-transactions-btn');
   if (bnavTx) bnavTx.style.display = isManager ? 'flex' : 'none';
+
+  const bnavAnalytics = document.getElementById('bnav-analytics-btn');
+  if (bnavAnalytics) bnavAnalytics.style.display = isManager ? 'flex' : 'none';
 }
 
 async function setUser(user) {
@@ -1029,7 +1035,7 @@ function logout() {
 function navigateTo(view) {
   const isManager = state.user?.role === 'manager';
   // Engineers can only view Overview (dashboard), Store Inventory (inventory), and Store Layout (storemap)
-  if (!isManager && ['requests', 'transactions', 'engineer-history', 'labeldesigner'].includes(view)) {
+  if (!isManager && ['analytics', 'requests', 'transactions', 'engineer-history', 'labeldesigner'].includes(view)) {
     view = 'dashboard';
   }
 
@@ -1393,9 +1399,19 @@ function renderAnalytics() {
   const container = document.getElementById('view-analytics');
   if (!container) return;
 
+  const isManager = state.user?.role === 'manager';
+  if (!isManager) {
+    container.innerHTML = `
+      <div style="padding:4rem 1.5rem;text-align:center;color:var(--text-tertiary)">
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:0.5rem">Access Restricted</div>
+        <div>Analytics &amp; Zoho Books Audit Reconciliation is strictly restricted to Store Managers.</div>
+      </div>
+    `;
+    return;
+  }
+
   loadSavedAnalyticsAudit();
 
-  const isManager = state.user?.role === 'manager';
   const { auditResults, summary, activeTab, searchQuery, sourceType, sourceName, lastRunAt } = state.analyticsAudit;
 
   // Filter items
