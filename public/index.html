@@ -24,7 +24,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <!-- Chart.js CDN for Overview Stock Analytics Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="/css/style.css?v=3.0.4" />
+  <link rel="stylesheet" href="/css/style.css?v=3.0.5" />
   <style>
     /* Critical Inline Safety Rules — Prevents SVG size explosions */
     svg { max-width: 100%; height: auto; display: inline-block; }
@@ -175,7 +175,7 @@
       </form>
 
       <div class="login-footer">
-        <span>INVENTORY v3.0.4 &middot; GOOSE INDUSTRIAL SOLUTIONS PVT LTD</span>
+        <span>INVENTORY v3.0.5 &middot; GOOSE INDUSTRIAL SOLUTIONS PVT LTD</span>
       </div>
     </div>
   </div>
@@ -293,7 +293,7 @@
           </a>
         </div>
         <div style="padding:0.75rem 1rem;margin-top:auto;border-top:1px solid var(--border-subtle);font-size:0.7rem;color:var(--text-tertiary);font-family:var(--font-mono)">
-          System v3.0.4
+          System v3.0.5
         </div>
       </nav>
 
@@ -1120,7 +1120,7 @@
           <span class="status-dot pulse" style="background:#eab308;width:8px;height:8px;border-radius:50%;display:inline-block"></span>
           <span id="system-update-status-text">Reconnecting to store server...</span>
         </div>
-        <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)" id="system-update-version-tag">v3.0.4</span>
+        <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)" id="system-update-version-tag">v3.0.5</span>
       </div>
 
       <div style="display:flex;gap:0.75rem;justify-content:center;width:100%">
@@ -1170,6 +1170,81 @@
     </div>
   </div>
 
-  <script src="/js/app.js?v=3.0.4"></script>
+  <!-- FULL CSV AUDIT MASTER LIST EXPLORER MODAL -->
+  <div class="modal-backdrop hidden" id="modal-csv-audit-explorer" style="z-index:99990;background:rgba(8,12,20,0.85);backdrop-filter:blur(6px)">
+    <div class="modal card" style="max-width:1150px;width:95vw;max-height:92vh;padding:1.5rem;display:flex;flex-direction:column;gap:1rem;border:1px solid var(--border-highlight);box-shadow:0 24px 48px rgba(0,0,0,0.6)">
+      
+      <!-- Modal Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;border-bottom:1px solid var(--border-subtle);padding-bottom:1rem">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.6rem">
+            <h2 style="font-size:1.35rem;font-weight:800;color:var(--text-primary);margin:0">CSV Audit Master List Explorer</h2>
+            <span class="picker-stock-badge in" id="explorer-total-badge" style="font-family:var(--font-mono)">0 Items</span>
+          </div>
+          <div style="font-size:0.8rem;color:var(--text-tertiary);margin-top:0.2rem">
+            Traverse, search, filter, and reconcile all items parsed from your Zoho Books CSV file
+          </div>
+        </div>
+        <button type="button" class="modal-close" onclick="closeCSVAuditExplorerModal()" title="Close Explorer">&times;</button>
+      </div>
+
+      <!-- Controls & Filter Toolbar -->
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+        <!-- Filter Tabs -->
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap" id="explorer-tabs-container">
+          <button class="btn btn-sm btn-primary" onclick="setCSVEplorerTab('all')" id="exp-tab-all">All (0)</button>
+          <button class="btn btn-sm btn-ghost" onclick="setCSVEplorerTab('mismatch')" id="exp-tab-mismatch" style="color:#f59e0b">Mismatches (0)</button>
+          <button class="btn btn-sm btn-ghost" onclick="setCSVEplorerTab('missing_store')" id="exp-tab-missing_store" style="color:#ef4444">Missing in Store (0)</button>
+          <button class="btn btn-sm btn-ghost" onclick="setCSVEplorerTab('extra_store')" id="exp-tab-extra_store" style="color:#06b6d4">Extra in Store (0)</button>
+          <button class="btn btn-sm btn-ghost" onclick="setCSVEplorerTab('synced')" id="exp-tab-synced" style="color:#10b981">Synced (0)</button>
+        </div>
+
+        <!-- Search Bar -->
+        <div style="position:relative;width:280px">
+          <input type="text" id="explorer-search-input" class="field-input" placeholder="Search by Name, SKU, Spec..." oninput="onCSVEplorerSearchInput(this.value)" style="padding-left:2.2rem;font-size:0.82rem" />
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-tertiary)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+      </div>
+
+      <!-- Explorer Table Container -->
+      <div style="flex:1;overflow-y:auto;min-height:360px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md)">
+        <div class="table-wrap">
+          <table style="width:100%">
+            <thead>
+              <tr>
+                <th style="width:50px">#</th>
+                <th style="width:160px">Zoho Code / SKU</th>
+                <th>Material Name &amp; Spec</th>
+                <th style="width:110px">Store Stock</th>
+                <th style="width:120px">Zoho Stock</th>
+                <th style="width:110px">Variance</th>
+                <th style="width:130px">Audit Status</th>
+                <th style="width:130px">Action</th>
+              </tr>
+            </thead>
+            <tbody id="explorer-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;border-top:1px solid var(--border-subtle);padding-top:0.75rem">
+        <div style="font-size:0.8rem;color:var(--text-tertiary);font-family:var(--font-mono)" id="explorer-pagination-info">
+          Showing 0-0 of 0 records
+        </div>
+
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <button class="btn btn-ghost btn-sm" onclick="changeCSVEplorerPage(-1)" id="explorer-prev-btn">&laquo; Previous</button>
+          <span style="font-size:0.8rem;font-family:var(--font-mono);font-weight:700;color:var(--text-primary)" id="explorer-page-label">Page 1 of 1</span>
+          <button class="btn btn-ghost btn-sm" onclick="changeCSVEplorerPage(1)" id="explorer-next-btn">Next &raquo;</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/js/app.js?v=3.0.5"></script>
 </body>
 </html>

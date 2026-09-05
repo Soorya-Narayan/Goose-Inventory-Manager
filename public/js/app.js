@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.0.4',
+  currentVersion: '3.0.5',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -35,6 +35,13 @@ const state = {
     auditResults: [],
     summary: { totalZohoItems: 0, totalStoreItems: 0, totalChecked: 0, matchedCount: 0, mismatchCount: 0, missingInStoreCount: 0, extraInStoreCount: 0 }
   },
+  // CSV Audit Master List Explorer
+  csvExplorer: {
+    activeTab: 'all',
+    searchQuery: '',
+    currentPage: 1,
+    pageSize: 50
+  }
 };
 
 // ─── API Helpers ─────────────────────────────────────────────────────────────
@@ -1066,6 +1073,11 @@ function isMergeableZohoCode(code) {
   return !IGNORED_ZOHO_CODES.has(clean);
 }
 
+function sanitizeCode(str) {
+  if (!str) return '';
+  return String(str).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
 function getCSVValue(rowObj, candidateKeys, defaultValue = '') {
   if (!rowObj) return defaultValue;
   const keys = Object.keys(rowObj);
@@ -1216,9 +1228,11 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
   rawZohoItems.forEach((z, index) => {
     const rawCode = getCSVValue(z, skuCandidates, z.SKU || z.sku || z.zohoCode || z.code || '');
     const zohoCode = String(rawCode).trim();
-    const hasValidSku = isMergeableZohoCode(zohoCode);
+    const cleanZohoCode = sanitizeCode(zohoCode);
+    const hasValidSku = cleanZohoCode.length >= 2 && !IGNORED_ZOHO_CODES.has(cleanZohoCode);
 
     const itemName = getCSVValue(z, nameCandidates, z.name || z.itemName || `Zoho Item #${index + 1}`);
+    const cleanItemName = sanitizeCode(itemName);
     const spec = getCSVValue(z, specCandidates, z.specification || z.spec || '');
     const rawQty = getCSVValue(z, qtyCandidates, '0');
     const zohoQty = parseFloat(rawQty) || 0;
@@ -1227,27 +1241,26 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
     const rate = parseFloat(rawRate) || 0;
     const category = getCSVValue(z, catCandidates, z.category || 'Zoho Import');
 
-    // Skip empty lines/placeholders without name or valid SKU
     if (!hasValidSku && (!itemName || itemName.startsWith('Zoho Item #'))) return;
 
     let storeMatch = null;
 
+    // 1. Try Code / SKU match (checking zohoCode, sku, barcode, id)
     if (hasValidSku) {
-      const cleanCode = zohoCode.toLowerCase();
-      processedZohoCodes.add(cleanCode);
+      processedZohoCodes.add(cleanZohoCode);
       storeMatch = storeItems.find(i => {
-        const iCode = (i.zohoCode || i.sku || '').trim().toLowerCase();
-        return isMergeableZohoCode(iCode) && iCode === cleanCode;
+        if (processedStoreItemIds.has(i.id)) return false;
+        const candidateCodes = [i.zohoCode, i.sku, i.barcode, i.id].map(sanitizeCode).filter(Boolean);
+        return candidateCodes.includes(cleanZohoCode);
       });
     }
 
-    // Name fallback matching if no SKU match found
-    if (!storeMatch && itemName) {
-      const normZohoName = itemName.trim().toLowerCase();
+    // 2. Fallback: Try Name match (exact or sanitized)
+    if (!storeMatch && cleanItemName) {
       storeMatch = storeItems.find(i => {
         if (processedStoreItemIds.has(i.id)) return false;
-        const iName = (i.name || '').trim().toLowerCase();
-        return iName === normZohoName;
+        const candidateNames = [i.name, i.specification ? `${i.name} ${i.specification}` : ''].map(sanitizeCode).filter(Boolean);
+        return candidateNames.some(c => c === cleanItemName || (c.length > 5 && (c.includes(cleanItemName) || cleanItemName.includes(c))));
       });
     }
 
@@ -1255,8 +1268,10 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
 
     if (storeMatch) {
       processedStoreItemIds.add(storeMatch.id);
-      if (storeMatch.zohoCode) processedZohoCodes.add(String(storeMatch.zohoCode).trim().toLowerCase());
-      if (storeMatch.sku) processedZohoCodes.add(String(storeMatch.sku).trim().toLowerCase());
+      [storeMatch.zohoCode, storeMatch.sku, storeMatch.barcode, storeMatch.id].forEach(c => {
+        const s = sanitizeCode(c);
+        if (s) processedZohoCodes.add(s);
+      });
 
       const storeQty = parseFloat(storeMatch.quantity) || 0;
       const diff = storeQty - zohoQty;
@@ -1317,21 +1332,19 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
     }
   });
 
-  // 2. Identify Store items not present in Zoho list
+  // 2. Identify Store items not matched in Zoho
   let extraInStoreCount = 0;
   storeItems.forEach(item => {
     if (processedStoreItemIds.has(item.id)) return;
 
-    const rawCode = item.zohoCode || item.sku || '';
-    const cleanCode = String(rawCode).trim().toLowerCase();
-
-    if (cleanCode && processedZohoCodes.has(cleanCode)) return;
+    const candidateCodes = [item.zohoCode, item.sku, item.barcode, item.id].map(sanitizeCode).filter(Boolean);
+    if (candidateCodes.some(c => processedZohoCodes.has(c))) return;
 
     extraInStoreCount++;
     const storeQty = parseFloat(item.quantity) || 0;
     auditResults.push({
       id: `audit_extra_${item.id}`,
-      zohoCode: rawCode || '—',
+      zohoCode: item.zohoCode || item.sku || '—',
       name: item.name,
       specification: item.specification || '',
       category: item.category || 'General',
@@ -1409,6 +1422,10 @@ function renderAnalytics() {
         <div class="page-subtitle">Zoho Books Master vs Physical Store Stock Reconciliation &amp; Mismatch Analysis</div>
       </div>
       <div style="display:flex;gap:0.625rem;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="openCSVAuditExplorerModal()" style="gap:0.4rem;background:rgba(0,114,255,0.1);color:var(--goose);border-color:rgba(0,114,255,0.3)" title="Browse, search and traverse through all audit items in a full view">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Browse Full CSV Audit List (${summary.totalChecked || 0})
+        </button>
         <button class="btn btn-primary" onclick="exportAnalyticsAuditPDF()" style="gap:0.4rem">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export Audit PDF
@@ -1770,6 +1787,160 @@ function renderAnalyticsPieChart(summary) {
   window._analyticsAuditPieChartInstance = chartObj;
 }
 
+// ─── CSV Audit Master List Explorer Modal Logic ─────────────────────────────
+function openCSVAuditExplorerModal() {
+  const modal = document.getElementById('modal-csv-audit-explorer');
+  if (!modal) return;
+  state.csvExplorer.currentPage = 1;
+  modal.classList.remove('hidden');
+  renderCSVAuditExplorer();
+}
+
+function closeCSVAuditExplorerModal() {
+  const modal = document.getElementById('modal-csv-audit-explorer');
+  if (modal) modal.classList.add('hidden');
+}
+
+function setCSVEplorerTab(tabName) {
+  state.csvExplorer.activeTab = tabName;
+  state.csvExplorer.currentPage = 1;
+  renderCSVAuditExplorer();
+}
+
+function onCSVEplorerSearchInput(query) {
+  state.csvExplorer.searchQuery = query;
+  state.csvExplorer.currentPage = 1;
+  renderCSVAuditExplorer();
+}
+
+function changeCSVEplorerPage(delta) {
+  state.csvExplorer.currentPage += delta;
+  renderCSVAuditExplorer();
+}
+
+function renderCSVAuditExplorer() {
+  const { auditResults, summary } = state.analyticsAudit;
+  const { activeTab, searchQuery, currentPage, pageSize } = state.csvExplorer;
+
+  const totalBadge = document.getElementById('explorer-total-badge');
+  if (totalBadge) totalBadge.textContent = `${summary.totalChecked || auditResults.length} Items`;
+
+  // Update tab counts
+  ['all', 'mismatch', 'missing_store', 'extra_store', 'synced'].forEach(t => {
+    const btn = document.getElementById(`exp-tab-${t}`);
+    if (btn) {
+      const isSelected = activeTab === t;
+      btn.className = `btn btn-sm ${isSelected ? 'btn-primary' : 'btn-ghost'}`;
+      let count = summary.totalChecked;
+      if (t === 'mismatch') count = summary.mismatchCount;
+      else if (t === 'missing_store') count = summary.missingInStoreCount;
+      else if (t === 'extra_store') count = summary.extraInStoreCount;
+      else if (t === 'synced') count = summary.matchedCount;
+      
+      const labelMap = { all: 'All', mismatch: 'Mismatches', missing_store: 'Missing in Store', extra_store: 'Extra in Store', synced: 'Synced' };
+      btn.textContent = `${labelMap[t]} (${count || 0})`;
+    }
+  });
+
+  // Filter items
+  const filtered = auditResults.filter(r => {
+    if (activeTab === 'mismatch' && r.status !== 'mismatch') return false;
+    if (activeTab === 'missing_store' && r.status !== 'missing_store') return false;
+    if (activeTab === 'extra_store' && r.status !== 'extra_store') return false;
+    if (activeTab === 'synced' && r.status !== 'synced') return false;
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return (r.name || '').toLowerCase().includes(q) ||
+             (r.zohoCode || '').toLowerCase().includes(q) ||
+             (r.specification || '').toLowerCase().includes(q) ||
+             (r.category || '').toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const totalRecords = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const validPage = Math.min(totalPages, Math.max(1, currentPage));
+  state.csvExplorer.currentPage = validPage;
+
+  const startIdx = (validPage - 1) * pageSize;
+  const endIdx = Math.min(totalRecords, startIdx + pageSize);
+  const pageItems = filtered.slice(startIdx, endIdx);
+
+  const isManager = state.user?.role === 'manager';
+  const tbody = document.getElementById('explorer-table-body');
+
+  if (tbody) {
+    if (pageItems.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="padding:3rem 1rem;text-align:center;color:var(--text-tertiary)">
+            No audit records match your filter criteria.
+          </td>
+        </tr>
+      `;
+    } else {
+      tbody.innerHTML = pageItems.map((r, idx) => {
+        const itemNum = startIdx + idx + 1;
+        const diffFormatted = r.diff > 0 ? `+${r.diff}` : `${r.diff}`;
+        const diffColor = r.diff === 0 ? 'var(--text-tertiary)' : (r.diff > 0 ? '#10b981' : '#ef4444');
+
+        let badgeHtml = '';
+        if (r.status === 'synced') badgeHtml = `<span class="picker-stock-badge in">Matched</span>`;
+        else if (r.status === 'mismatch') badgeHtml = `<span class="picker-stock-badge low" style="color:#f59e0b;background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.35)">Qty Mismatch</span>`;
+        else if (r.status === 'missing_store') badgeHtml = `<span class="picker-stock-badge out">Missing in Store</span>`;
+        else if (r.status === 'extra_store') badgeHtml = `<span class="picker-stock-badge" style="color:#06b6d4;background:rgba(6,182,212,0.15);border:1px solid rgba(6,182,212,0.35)">Extra in Store</span>`;
+
+        return `
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-tertiary)">${itemNum}</td>
+            <td style="font-family:var(--font-mono);font-size:0.78rem;font-weight:700;color:var(--goose)">${escHtml(r.zohoCode)}</td>
+            <td>
+              <strong style="color:var(--text-primary);display:block">${escHtml(r.name)}</strong>
+              ${r.specification ? `<span style="font-size:0.72rem;color:var(--text-tertiary)">${escHtml(r.specification)}</span>` : ''}
+            </td>
+            <td style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary)">
+              ${r.storeQty} ${r.unit}
+            </td>
+            <td style="font-family:var(--font-mono);font-weight:700;color:var(--text-secondary)">
+              ${r.zohoQty} ${r.unit}
+            </td>
+            <td style="font-family:var(--font-mono);font-weight:700;color:${diffColor}">
+              ${diffFormatted} ${r.unit}
+            </td>
+            <td>${badgeHtml}</td>
+            <td style="white-space:nowrap">
+              ${isManager && r.status === 'mismatch' && r.storeId ? `
+                <button class="btn btn-ghost btn-sm" onclick="syncStoreQtyToZoho('${r.storeId}', ${r.zohoQty})" title="Set Store Qty to Zoho Qty (${r.zohoQty})" style="color:var(--goose);font-size:0.75rem;padding:0.25rem 0.5rem">
+                  Sync Qty
+                </button>
+              ` : isManager && r.status === 'missing_store' ? `
+                <button class="btn btn-primary btn-sm" onclick="importMissingZohoItemToStore('${r.zohoCode}', '${escHtml((r.name || '').replace(/'/g, "\\'"))}', ${r.zohoQty}, '${r.unit}', '${escHtml((r.specification || '').replace(/'/g, "\\'"))}')" style="font-size:0.75rem;padding:0.25rem 0.5rem">
+                  + Add to Store
+                </button>
+              ` : `<span style="font-size:0.75rem;color:var(--text-tertiary)">—</span>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  // Update Pagination Controls
+  const infoEl = document.getElementById('explorer-pagination-info');
+  if (infoEl) infoEl.textContent = `Showing ${totalRecords === 0 ? 0 : startIdx + 1}–${endIdx} of ${totalRecords} records`;
+
+  const pageLabel = document.getElementById('explorer-page-label');
+  if (pageLabel) pageLabel.textContent = `Page ${validPage} of ${totalPages}`;
+
+  const prevBtn = document.getElementById('explorer-prev-btn');
+  if (prevBtn) prevBtn.disabled = validPage <= 1;
+
+  const nextBtn = document.getElementById('explorer-next-btn');
+  if (nextBtn) nextBtn.disabled = validPage >= totalPages;
+}
+
 function setAnalyticsTab(tabName) {
   state.analyticsAudit.activeTab = tabName;
   renderAnalytics();
@@ -2102,7 +2273,7 @@ function exportAnalyticsAuditPDF() {
       doc.autoTable({
         head: tableHeaders,
         body: tableRows,
-        startY: 66,
+        startY: startTableY + 4,
         theme: 'grid',
         headStyles: {
           fillColor: [15, 23, 42],
