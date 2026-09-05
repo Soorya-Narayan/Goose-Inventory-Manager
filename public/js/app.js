@@ -3625,29 +3625,41 @@ function switchZohoTab(tab) {
   }
 }
 
-async function handleZohoCsvFile(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = async (event) => {
-    const csvContent = event.target.result;
-    try {
-      showToast('Importing items from Zoho CSV...', 'info');
-      const res = await api.post('/api/zoho/import-csv', { csvContent });
-      if (res.success) {
-        showToast(res.message, 'success');
-        closeZohoModal();
-        await loadAll();
-        renderView(state.currentView);
-      } else {
-        showToast(res.error || 'Failed to import CSV', 'error');
-      }
-    } catch (err) {
-      showToast('CSV processing failed', 'error');
+function handleZohoCsvFile(e) {
+  return new Promise((resolve, reject) => {
+    const file = e.target?.files?.[0];
+    if (!file) {
+      resolve({ success: false, error: 'No file selected' });
+      return;
     }
-  };
-  reader.readAsText(file);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const csvContent = event.target.result;
+      try {
+        showToast('Importing & parsing items from Zoho CSV...', 'info');
+        const res = await api.post('/api/zoho/import-csv', { csvContent });
+        if (res && res.success) {
+          showToast(res.message || 'CSV imported successfully!', 'success');
+          closeZohoModal();
+          await loadAll();
+          renderView(state.currentView);
+          resolve(res);
+        } else {
+          showToast(res?.error || 'Failed to import CSV', 'error');
+          resolve(res || { success: false });
+        }
+      } catch (err) {
+        showToast('CSV processing failed: ' + (err.message || 'Server error'), 'error');
+        resolve({ success: false, error: err.message });
+      }
+    };
+    reader.onerror = (err) => {
+      showToast('Error reading CSV file', 'error');
+      reject(err);
+    };
+    reader.readAsText(file);
+  });
 }
 
 async function handleZohoApiSync(e) {
@@ -4367,8 +4379,10 @@ function openAnalyticsCsvUpload() {
   input.type = 'file';
   input.accept = '.csv';
   input.onchange = async (e) => {
-    await handleZohoCsvFile(e);
-    await loadAnalyticsData();
+    const res = await handleZohoCsvFile(e);
+    if (res && res.success) {
+      await loadAnalyticsData();
+    }
   };
   input.click();
 }

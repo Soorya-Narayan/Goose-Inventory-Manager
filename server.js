@@ -786,36 +786,70 @@ function autoDetectZone(name = '', category = '') {
 
 app.post('/api/zoho/import-csv', (req, res) => {
   try {
-    const { csvContent, rawItems } = req.body;
+    let { csvContent, rawItems } = req.body;
     let itemsToProcess = [];
 
     if (Array.isArray(rawItems) && rawItems.length > 0) {
       itemsToProcess = rawItems;
     } else if (csvContent) {
-      // Parse CSV
-      const lines = csvContent.split(/\r?\n/).filter(line => line.trim().length > 0);
-      if (lines.length <= 1) return res.status(400).json({ error: 'CSV file is empty or missing data rows' });
+      // Strip UTF-8 BOM if present
+      if (typeof csvContent === 'string' && csvContent.charCodeAt(0) === 0xFEFF) {
+        csvContent = csvContent.slice(1);
+      }
 
-      const parseCSVRow = (text) => {
-        const row = [];
-        let curr = '', inQ = false;
-        for (let i = 0; i < text.length; i++) {
-          const ch = text[i];
-          if (ch === '"') inQ = !inQ;
-          else if (ch === ',' && !inQ) { row.push(curr); curr = ''; }
-          else curr += ch;
+      // Robust multi-line quote-aware CSV parser
+      const rows = [];
+      let currentRow = [];
+      let currentVal = '';
+      let insideQuotes = false;
+
+      for (let i = 0; i < csvContent.length; i++) {
+        const char = csvContent[i];
+        const nextChar = csvContent[i + 1];
+
+        if (char === '"') {
+          if (insideQuotes && nextChar === '"') {
+            currentVal += '"';
+            i++;
+          } else {
+            insideQuotes = !insideQuotes;
+          }
+        } else if (char === ',' && !insideQuotes) {
+          currentRow.push(currentVal.trim());
+          currentVal = '';
+        } else if ((char === '\r' || char === '\n') && !insideQuotes) {
+          if (char === '\r' && nextChar === '\n') i++;
+          currentRow.push(currentVal.trim());
+          currentVal = '';
+          if (currentRow.some(cell => cell.length > 0)) {
+            rows.push(currentRow);
+          }
+          currentRow = [];
+        } else {
+          currentVal += char;
         }
-        row.push(curr);
-        return row;
-      };
+      }
+      if (currentVal.length > 0 || currentRow.length > 0) {
+        currentRow.push(currentVal.trim());
+        if (currentRow.some(cell => cell.length > 0)) {
+          rows.push(currentRow);
+        }
+      }
 
-      const headers = parseCSVRow(lines[0]).map(h => h.trim().replace(/^"/, '').replace(/"$/, ''));
-      for (let i = 1; i < lines.length; i++) {
-        const row = parseCSVRow(lines[i]);
-        if (row.length === 0) continue;
+      if (rows.length <= 1) {
+        return res.status(400).json({ error: 'CSV file is empty or missing data rows' });
+      }
+
+      const headers = rows[0].map(h => h.replace(/^"/, '').replace(/"$/, '').trim());
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.length === 0) continue;
         const obj = {};
         headers.forEach((h, idx) => {
-          obj[h] = row[idx] ? row[idx].trim().replace(/^"/, '').replace(/"$/, '') : '';
+          if (h) {
+            obj[h] = row[idx] ? row[idx].replace(/^"/, '').replace(/"$/, '').trim() : '';
+          }
         });
         itemsToProcess.push(obj);
       }
@@ -823,38 +857,84 @@ app.post('/api/zoho/import-csv', (req, res) => {
       return res.status(400).json({ error: 'No CSV content or items provided' });
     }
 
+    if (itemsToProcess.length === 0) {
+      return res.status(400).json({ error: 'No valid data rows found in CSV' });
+    }
+
+    // Helper to flexibly match column names regardless of casing or symbols
+    const getVal = (rowObj, candidateKeys, defaultVal = '') => {
+      const keys = Object.keys(rowObj);
+      for (const candidate of candidateKeys) {
+        const normCandidate = candidate.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const matchKey = keys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '') === normCandidate);
+        if (matchKey && rowObj[matchKey] !== undefined && rowObj[matchKey] !== '') {
+          return rowObj[matchKey];
+        }
+      }
+      return defaultVal;
+    };
+
     const data = readData();
     let importedCount = 0;
+    const mappedZohoItems = [];
 
-    itemsToProcess.forEach(raw => {
-      const itemId = raw['Item ID'] || raw['ID'] || raw['sku'] || raw['barcode'] || uuidv4();
-      const itemName = raw['Item Name'] || raw['Name'] || raw['name'] || 'Zoho Item';
-      const skuVal = raw['SKU'] || raw['barcode'] || itemId;
-      const rateVal = parseFloat((raw['Rate'] || raw['rate'] || '0').replace(/[^0-9\.]/g, '')) || 0;
-      const purchaseVal = parseFloat((raw['Purchase Rate'] || raw['purchaseRate'] || '0').replace(/[^0-9\.]/g, '')) || 0;
-      const stockVal = parseInt(raw['Stock On Hand'] || raw['quantity'] || '0') || 0;
-      const hsnVal = raw['HSN/SAC'] || raw['hsn'] || '';
-      const unitVal = raw['Usage Unit'] || raw['Unit Name'] || raw['unit'] || 'pcs';
-      const catVal = raw['Product Type'] || raw['Category'] || raw['category'] || 'Zoho Import';
-      const locationVal = raw['Location Name'] || raw['Stock Location'] || raw['location'] || 'A1';
+    itemsToProcess.forEach((raw, idx) => {
+      const itemName = getVal(raw, ['Item Name', 'Name', 'ItemName', 'Product Name', 'Item', 'Title'], 'Zoho Item');
+      const skuVal = getVal(raw, ['SKU', 'Zoho Code', 'Item SKU', 'Item Code', 'Barcode', 'Code', 'Item ID', 'ID'], '');
+      const itemId = getVal(raw, ['Item ID', 'ID', 'SKU', 'barcode']) || skuVal || `ZOHO-CSV-${idx + 1}`;
 
-      const existingIdx = data.items.findIndex(i => i.id === itemId || i.sku === skuVal || (i.barcode && i.barcode === skuVal));
-      
+      const rawStock = getVal(raw, ['Stock On Hand', 'StockOnHand', 'Stock', 'Quantity', 'Qty', 'Opening Stock', 'Available Stock', 'Actual Stock'], '0');
+      const stockVal = parseInt(String(rawStock).replace(/[^0-9\-]/g, '')) || 0;
+
+      const rawRate = getVal(raw, ['Rate', 'Selling Price', 'Price', 'Purchase Rate'], '0');
+      const rateVal = parseFloat(String(rawRate).replace(/[^0-9\.]/g, '')) || 0;
+
+      const rawPurchaseRate = getVal(raw, ['Purchase Rate', 'Cost Price', 'Rate'], '0');
+      const purchaseVal = parseFloat(String(rawPurchaseRate).replace(/[^0-9\.]/g, '')) || 0;
+
+      const unitVal = getVal(raw, ['Usage Unit', 'Unit Name', 'Unit'], 'pcs');
+      const catVal = getVal(raw, ['Product Type', 'Category Name', 'Category', 'Item Type'], 'Zoho Import');
+      const locationVal = getVal(raw, ['Location Name', 'Stock Location', 'Location', 'Shelf'], 'A1');
+      const hsnVal = getVal(raw, ['HSN/SAC', 'HSN', 'SAC'], '');
+      const notesVal = getVal(raw, ['Description', 'Purchase Description', 'Notes'], '');
+      const reorderVal = parseInt(getVal(raw, ['Reorder Point', 'Reorder Level', 'Min Stock'], '1')) || 1;
+
+      mappedZohoItems.push({
+        id: itemId,
+        name: itemName,
+        sku: skuVal || itemId,
+        zohoCode: skuVal || itemId,
+        quantity: stockVal,
+        unit: unitVal,
+        rate: rateVal,
+        purchaseRate: purchaseVal,
+        location: locationVal,
+        category: catVal,
+        hsn: hsnVal,
+        notes: notesVal
+      });
+
+      const existingIdx = data.items.findIndex(i =>
+        (i.id && i.id === itemId) ||
+        (skuVal && (i.sku === skuVal || i.zohoCode === skuVal || i.barcode === skuVal))
+      );
+
       const mappedItem = {
         id: itemId,
         name: itemName,
-        sku: skuVal,
-        barcode: skuVal,
+        sku: skuVal || itemId,
+        zohoCode: skuVal || itemId,
+        barcode: skuVal || itemId,
         zone: autoDetectZone(itemName, catVal),
         category: catVal,
         quantity: stockVal,
         unit: unitVal,
-        minStock: parseInt(raw['Reorder Point'] || '1') || 1,
+        minStock: reorderVal,
         location: locationVal,
         rate: rateVal,
         purchaseRate: purchaseVal,
         hsn: hsnVal,
-        notes: raw['Description'] || raw['Purchase Description'] || '',
+        notes: notesVal,
         imageUrl: '',
         addedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -868,20 +948,14 @@ app.post('/api/zoho/import-csv', (req, res) => {
       importedCount++;
     });
 
-    data.zohoItems = itemsToProcess.map(raw => ({
-      id: raw['Item ID'] || raw['ID'] || raw['sku'] || raw['barcode'] || uuidv4(),
-      name: raw['Item Name'] || raw['Name'] || raw['name'] || 'Zoho Item',
-      sku: raw['SKU'] || raw['barcode'] || raw['Item ID'] || '',
-      zohoCode: raw['SKU'] || raw['barcode'] || raw['Item ID'] || '',
-      quantity: parseInt(raw['Stock On Hand'] || raw['quantity'] || '0') || 0,
-      unit: raw['Usage Unit'] || raw['Unit Name'] || raw['unit'] || 'pcs',
-      rate: parseFloat((raw['Rate'] || raw['rate'] || '0').replace(/[^0-9\.]/g, '')) || 0,
-      purchaseRate: parseFloat((raw['Purchase Rate'] || raw['purchaseRate'] || '0').replace(/[^0-9\.]/g, '')) || 0,
-      location: raw['Location Name'] || raw['Stock Location'] || raw['location'] || 'A1'
-    }));
-
+    data.zohoItems = mappedZohoItems;
     writeData(data);
-    res.json({ success: true, count: importedCount, message: `Successfully imported ${importedCount} item(s) from Zoho Books!` });
+
+    res.json({
+      success: true,
+      count: importedCount,
+      message: `Successfully imported & processed ${importedCount} item(s) from Zoho CSV!`
+    });
   } catch (err) {
     console.error('Zoho Import Error:', err);
     res.status(500).json({ error: 'Failed to process Zoho Books import', details: err.message });

@@ -7566,6 +7566,26 @@
       "poNumber": "",
       "addedAt": "2026-09-04T04:48:58.665Z",
       "updatedAt": "2026-09-04T04:48:58.665Z"
+    },
+    {
+      "id": "RELAY-24V",
+      "name": "Sample Relay 24V",
+      "sku": "RELAY-24V",
+      "zohoCode": "RELAY-24V",
+      "barcode": "RELAY-24V",
+      "zone": "electrical",
+      "category": "Zoho Import",
+      "quantity": 10,
+      "unit": "pcs",
+      "minStock": 1,
+      "location": "A1",
+      "rate": 250,
+      "purchaseRate": 250,
+      "hsn": "",
+      "notes": "",
+      "imageUrl": "",
+      "addedAt": "2026-09-05T06:07:50.245Z",
+      "updatedAt": "2026-09-05T06:07:50.246Z"
     }
   ],
   "requests": [],
@@ -7573,5 +7593,21 @@
   "settings": {
     "managerPin": "Mannar@200",
     "engineerPin": "5678"
-  }
+  },
+  "zohoItems": [
+    {
+      "id": "RELAY-24V",
+      "name": "Sample Relay 24V",
+      "sku": "RELAY-24V",
+      "zohoCode": "RELAY-24V",
+      "quantity": 10,
+      "unit": "pcs",
+      "rate": 250,
+      "purchaseRate": 250,
+      "location": "A1",
+      "category": "Zoho Import",
+      "hsn": "",
+      "notes": ""
+    }
+  ]
 }
