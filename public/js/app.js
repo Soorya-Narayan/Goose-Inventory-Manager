@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.0.6',
+  currentVersion: '3.0.7',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -3220,7 +3220,7 @@ function addItemToCurrentShelf() {
 function filterTableByCurrentShelf() {
   closeShelfDetailModal();
   state.searchQuery = currentInspectedShelf;
-  const searchInput = document.getElementById('search-input');
+  const searchInput = document.getElementById('inventory-search-input') || document.getElementById('search-input');
   if (searchInput) searchInput.value = currentInspectedShelf;
   navigateTo('inventory');
 }
