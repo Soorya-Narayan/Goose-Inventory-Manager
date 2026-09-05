@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.0.2',
+  currentVersion: '3.0.3',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -1056,6 +1056,38 @@ function renderView(view) {
 //  ANALYTICS — Zoho Books vs Store Inventory Audit & Reconciliation Hub
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ─── Zoho Helpers ─────────────────────────────────────────────────────────────
+const IGNORED_ZOHO_CODES = new Set(['', 'n/a', 'na', 'none', '0', '-', '--', 'null', 'nil', 'temp', 'placeholder', 'default']);
+
+function isMergeableZohoCode(code) {
+  if (!code) return false;
+  const clean = String(code).trim().toLowerCase();
+  if (clean.length < 2) return false;
+  return !IGNORED_ZOHO_CODES.has(clean);
+}
+
+function getCSVValue(rowObj, candidateKeys, defaultValue = '') {
+  if (!rowObj) return defaultValue;
+  const keys = Object.keys(rowObj);
+  // 1. Direct key match
+  for (const candidate of candidateKeys) {
+    if (rowObj[candidate] !== undefined && rowObj[candidate] !== null && String(rowObj[candidate]).trim() !== '') {
+      return String(rowObj[candidate]).trim();
+    }
+  }
+  // 2. Case-insensitive & character-agnostic match
+  for (const candidate of candidateKeys) {
+    const candidateNorm = candidate.toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const k of keys) {
+      const keyNorm = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (keyNorm === candidateNorm && rowObj[k] !== undefined && rowObj[k] !== null && String(rowObj[k]).trim() !== '') {
+        return String(rowObj[k]).trim();
+      }
+    }
+  }
+  return defaultValue;
+}
+
 function loadSavedAnalyticsAudit() {
   try {
     const raw = localStorage.getItem('ims_analytics_audit');
@@ -1072,30 +1104,50 @@ function loadSavedAnalyticsAudit() {
 }
 
 function parseCSVTextToObjects(csvContent) {
+  if (!csvContent) return [];
+  // Strip UTF-8 BOM if present
+  csvContent = String(csvContent).replace(/^\uFEFF/, '');
+
   const lines = csvContent.split(/\r?\n/).filter(l => l.trim().length > 0);
   if (lines.length <= 1) return [];
 
-  const parseRow = (text) => {
+  const parseRow = (lineText) => {
     const row = [];
     let curr = '', inQ = false;
-    for (let i = 0; i < text.length; i++) {
-      const ch = text[i];
-      if (ch === '"') inQ = !inQ;
-      else if (ch === ',' && !inQ) { row.push(curr.trim()); curr = ''; }
-      else curr += ch;
+    for (let i = 0; i < lineText.length; i++) {
+      const ch = lineText[i];
+      const nextCh = lineText[i + 1];
+      if (ch === '"') {
+        if (inQ && nextCh === '"') {
+          curr += '"';
+          i++; // skip escaped double-quote
+        } else {
+          inQ = !inQ;
+        }
+      } else if (ch === ',' && !inQ) {
+        row.push(curr.trim());
+        curr = '';
+      } else {
+        curr += ch;
+      }
     }
     row.push(curr.trim());
     return row;
   };
 
-  const headers = parseRow(lines[0]).map(h => h.replace(/^"/, '').replace(/"$/, '').trim());
+  const rawHeaders = parseRow(lines[0]);
+  const headers = rawHeaders.map(h => h.replace(/^["'\s]+|["'\s]+$/g, '').trim());
   const results = [];
+
   for (let i = 1; i < lines.length; i++) {
     const row = parseRow(lines[i]);
     if (row.length === 0 || row.every(cell => !cell)) continue;
     const obj = {};
     headers.forEach((h, idx) => {
-      obj[h] = row[idx] ? row[idx].replace(/^"/, '').replace(/"$/, '').trim() : '';
+      if (h) {
+        const val = row[idx] ? row[idx].replace(/^["'\s]+|["'\s]+$/g, '').trim() : '';
+        obj[h] = val;
+      }
     });
     results.push(obj);
   }
@@ -1103,33 +1155,72 @@ function parseCSVTextToObjects(csvContent) {
 }
 
 function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') {
+  if (!Array.isArray(rawZohoItems)) {
+    rawZohoItems = [];
+  }
   const storeItems = state.items || [];
   const processedZohoCodes = new Set();
+  const processedStoreItemIds = new Set();
   const auditResults = [];
 
   let matchedCount = 0;
   let mismatchCount = 0;
   let missingInStoreCount = 0;
 
+  const skuCandidates = ['SKU', 'sku', 'Item Code', 'Item ID', 'Zoho Code', 'Part Number', 'Code', 'Material Code', 'Item SKU', 'Product Code'];
+  const nameCandidates = ['Item Name', 'Name', 'Item', 'Material Name', 'Product Name', 'Title', 'Item_Name'];
+  const specCandidates = ['Description', 'Purchase Description', 'Sales Description', 'Spec', 'Specification', 'Details'];
+  const qtyCandidates = ['Stock On Hand', 'Stock on Hand', 'quantity', 'Quantity', 'Stock', 'Actual Available Stock', 'Available Stock', 'Qty', 'Physical Qty', 'Store Qty', 'Stock_On_Hand'];
+  const unitCandidates = ['Usage Unit', 'Unit Name', 'Unit', 'UOM', 'Usage_Unit'];
+  const rateCandidates = ['Rate', 'Purchase Rate', 'Sales Rate', 'Price', 'Unit Price', 'Cost Price', 'Cost'];
+  const catCandidates = ['Product Type', 'Category', 'Item Type', 'Group', 'Product_Type'];
+
   // 1. Process items present in Zoho Books
-  rawZohoItems.forEach(z => {
-    const rawCode = z['SKU'] || z['sku'] || z['Item Code'] || z['Item ID'] || z.sku || z.item_id || '';
+  rawZohoItems.forEach((z, index) => {
+    const rawCode = getCSVValue(z, skuCandidates, z.SKU || z.sku || z.zohoCode || z.code || '');
     const zohoCode = String(rawCode).trim();
-    if (!isMergeableZohoCode(zohoCode)) return;
+    const hasValidSku = isMergeableZohoCode(zohoCode);
 
-    const cleanCode = zohoCode.toLowerCase();
-    processedZohoCodes.add(cleanCode);
+    const itemName = getCSVValue(z, nameCandidates, z.name || z.itemName || `Zoho Item #${index + 1}`);
+    const spec = getCSVValue(z, specCandidates, z.specification || z.spec || '');
+    const rawQty = getCSVValue(z, qtyCandidates, '0');
+    const zohoQty = parseFloat(rawQty) || 0;
+    const unit = getCSVValue(z, unitCandidates, z.unit || 'pcs');
+    const rawRate = getCSVValue(z, rateCandidates, '0');
+    const rate = parseFloat(rawRate) || 0;
+    const category = getCSVValue(z, catCandidates, z.category || 'Zoho Import');
 
-    const itemName = z['Item Name'] || z['Name'] || z.name || 'Zoho Material';
-    const spec = z['Description'] || z['Purchase Description'] || z.description || z.specification || '';
-    const zohoQty = parseFloat(z['Stock On Hand'] || z['quantity'] || z.stock_on_hand || z.actual_available_stock || '0') || 0;
-    const unit = z['Usage Unit'] || z['Unit Name'] || z.unit || 'pcs';
-    const rate = parseFloat(z['Rate'] || z.rate || '0') || 0;
+    // Skip empty lines/placeholders without name or valid SKU
+    if (!hasValidSku && (!itemName || itemName.startsWith('Zoho Item #'))) return;
 
-    // Search in Store Inventory
-    const storeMatch = storeItems.find(i => isMergeableZohoCode(i.zohoCode || i.sku) && (i.zohoCode || i.sku || '').trim().toLowerCase() === cleanCode);
+    let storeMatch = null;
+
+    if (hasValidSku) {
+      const cleanCode = zohoCode.toLowerCase();
+      processedZohoCodes.add(cleanCode);
+      storeMatch = storeItems.find(i => {
+        const iCode = (i.zohoCode || i.sku || '').trim().toLowerCase();
+        return isMergeableZohoCode(iCode) && iCode === cleanCode;
+      });
+    }
+
+    // Name fallback matching if no SKU match found
+    if (!storeMatch && itemName) {
+      const normZohoName = itemName.trim().toLowerCase();
+      storeMatch = storeItems.find(i => {
+        if (processedStoreItemIds.has(i.id)) return false;
+        const iName = (i.name || '').trim().toLowerCase();
+        return iName === normZohoName;
+      });
+    }
+
+    const effectiveCode = zohoCode || (storeMatch?.zohoCode || storeMatch?.sku || `ZOHO_${index + 1}`);
 
     if (storeMatch) {
+      processedStoreItemIds.add(storeMatch.id);
+      if (storeMatch.zohoCode) processedZohoCodes.add(String(storeMatch.zohoCode).trim().toLowerCase());
+      if (storeMatch.sku) processedZohoCodes.add(String(storeMatch.sku).trim().toLowerCase());
+
       const storeQty = parseFloat(storeMatch.quantity) || 0;
       const diff = storeQty - zohoQty;
       const isQtyMatched = Math.abs(diff) < 0.001;
@@ -1138,10 +1229,10 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
         matchedCount++;
         auditResults.push({
           id: `audit_${storeMatch.id}`,
-          zohoCode,
+          zohoCode: effectiveCode,
           name: storeMatch.name || itemName,
           specification: storeMatch.specification || spec,
-          category: storeMatch.category || z.category || 'General',
+          category: storeMatch.category || category,
           storeQty,
           zohoQty,
           diff: 0,
@@ -1155,10 +1246,10 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
         mismatchCount++;
         auditResults.push({
           id: `audit_${storeMatch.id}`,
-          zohoCode,
+          zohoCode: effectiveCode,
           name: storeMatch.name || itemName,
           specification: storeMatch.specification || spec,
-          category: storeMatch.category || z.category || 'General',
+          category: storeMatch.category || category,
           storeQty,
           zohoQty,
           diff,
@@ -1172,11 +1263,11 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
     } else {
       missingInStoreCount++;
       auditResults.push({
-        id: `audit_missing_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,
-        zohoCode,
+        id: `audit_missing_${Date.now()}_${index}_${Math.random().toString(36).slice(2,6)}`,
+        zohoCode: effectiveCode,
         name: itemName,
         specification: spec,
-        category: z['Product Type'] || z['Category'] || z.category || 'Zoho Import',
+        category,
         storeQty: 0,
         zohoQty,
         diff: -zohoQty,
@@ -1192,29 +1283,30 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
   // 2. Identify Store items not present in Zoho list
   let extraInStoreCount = 0;
   storeItems.forEach(item => {
+    if (processedStoreItemIds.has(item.id)) return;
+
     const rawCode = item.zohoCode || item.sku || '';
-    if (!isMergeableZohoCode(rawCode)) return;
     const cleanCode = String(rawCode).trim().toLowerCase();
 
-    if (!processedZohoCodes.has(cleanCode)) {
-      extraInStoreCount++;
-      const storeQty = parseFloat(item.quantity) || 0;
-      auditResults.push({
-        id: `audit_extra_${item.id}`,
-        zohoCode: rawCode,
-        name: item.name,
-        specification: item.specification || '',
-        category: item.category || 'General',
-        storeQty,
-        zohoQty: 0,
-        diff: storeQty,
-        unit: item.unit || 'pcs',
-        status: 'extra_store',
-        statusLabel: 'Extra in Store',
-        storeId: item.id,
-        rate: item.rate || 0
-      });
-    }
+    if (cleanCode && processedZohoCodes.has(cleanCode)) return;
+
+    extraInStoreCount++;
+    const storeQty = parseFloat(item.quantity) || 0;
+    auditResults.push({
+      id: `audit_extra_${item.id}`,
+      zohoCode: rawCode || '—',
+      name: item.name,
+      specification: item.specification || '',
+      category: item.category || 'General',
+      storeQty,
+      zohoQty: 0,
+      diff: storeQty,
+      unit: item.unit || 'pcs',
+      status: 'extra_store',
+      statusLabel: 'Extra in Store',
+      storeId: item.id,
+      rate: item.rate || 0
+    });
   });
 
   const summary = {
@@ -1237,7 +1329,9 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
       sourceName,
       lastRunAt: state.analyticsAudit.lastRunAt
     }));
-  } catch (e) {}
+  } catch (e) {
+    console.error('Failed to write audit results to localStorage:', e);
+  }
 
   showToast(`Audit complete: ${summary.totalChecked} items evaluated (${mismatchCount} mismatches, ${missingInStoreCount} missing)`, 'success');
   renderAnalytics();
