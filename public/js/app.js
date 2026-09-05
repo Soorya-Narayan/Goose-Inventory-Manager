@@ -1108,49 +1108,78 @@ function parseCSVTextToObjects(csvContent) {
   // Strip UTF-8 BOM if present
   csvContent = String(csvContent).replace(/^\uFEFF/, '');
 
-  const lines = csvContent.split(/\r?\n/).filter(l => l.trim().length > 0);
-  if (lines.length <= 1) return [];
+  const rows = [];
+  let currentRow = [];
+  let currentCell = '';
+  let inQuotes = false;
+  let i = 0;
+  const len = csvContent.length;
 
-  const parseRow = (lineText) => {
-    const row = [];
-    let curr = '', inQ = false;
-    for (let i = 0; i < lineText.length; i++) {
-      const ch = lineText[i];
-      const nextCh = lineText[i + 1];
-      if (ch === '"') {
-        if (inQ && nextCh === '"') {
-          curr += '"';
-          i++; // skip escaped double-quote
-        } else {
-          inQ = !inQ;
-        }
-      } else if (ch === ',' && !inQ) {
-        row.push(curr.trim());
-        curr = '';
+  while (i < len) {
+    const ch = csvContent[i];
+    const nextCh = csvContent[i + 1];
+
+    if (ch === '"') {
+      if (inQuotes && nextCh === '"') {
+        currentCell += '"';
+        i += 2;
+        continue;
       } else {
-        curr += ch;
+        inQuotes = !inQuotes;
+        i++;
+        continue;
       }
     }
-    row.push(curr.trim());
-    return row;
-  };
 
-  const rawHeaders = parseRow(lines[0]);
+    if (!inQuotes && ch === ',') {
+      currentRow.push(currentCell.trim());
+      currentCell = '';
+      i++;
+      continue;
+    }
+
+    if (!inQuotes && (ch === '\r' || ch === '\n')) {
+      if (ch === '\r' && nextCh === '\n') i++;
+      currentRow.push(currentCell.trim());
+      if (currentRow.some(cell => cell.length > 0)) {
+        rows.push(currentRow);
+      }
+      currentRow = [];
+      currentCell = '';
+      i++;
+      continue;
+    }
+
+    currentCell += ch;
+    i++;
+  }
+
+  if (currentCell.length > 0 || currentRow.length > 0) {
+    currentRow.push(currentCell.trim());
+    if (currentRow.some(cell => cell.length > 0)) {
+      rows.push(currentRow);
+    }
+  }
+
+  if (rows.length <= 1) return [];
+
+  const rawHeaders = rows[0];
   const headers = rawHeaders.map(h => h.replace(/^["'\s]+|["'\s]+$/g, '').trim());
-  const results = [];
 
-  for (let i = 1; i < lines.length; i++) {
-    const row = parseRow(lines[i]);
-    if (row.length === 0 || row.every(cell => !cell)) continue;
+  const results = [];
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row || row.length === 0 || row.every(cell => !cell)) continue;
     const obj = {};
     headers.forEach((h, idx) => {
       if (h) {
-        const val = row[idx] ? row[idx].replace(/^["'\s]+|["'\s]+$/g, '').trim() : '';
+        const val = row[idx] !== undefined && row[idx] !== null ? String(row[idx]).replace(/^["'\s]+|["'\s]+$/g, '').trim() : '';
         obj[h] = val;
       }
     });
     results.push(obj);
   }
+
   return results;
 }
 
