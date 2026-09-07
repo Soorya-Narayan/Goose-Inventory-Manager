@@ -1868,6 +1868,30 @@ window.closePrivacyPolicyModal = closePrivacyPolicyModal;
 window.openTermsConditionsModal = openTermsConditionsModal;
 window.closeTermsConditionsModal = closeTermsConditionsModal;
 
+function checkCookieConsent() {
+  const consent = localStorage.getItem('cookie_consent_choice');
+  const banner = document.getElementById('cookie-consent-banner');
+  if (!consent && banner) {
+    banner.classList.remove('hidden');
+  }
+}
+
+function acceptAllCookies() {
+  localStorage.setItem('cookie_consent_choice', 'accepted');
+  const banner = document.getElementById('cookie-consent-banner');
+  if (banner) banner.classList.add('hidden');
+}
+
+function acceptEssentialCookies() {
+  localStorage.setItem('cookie_consent_choice', 'essential');
+  const banner = document.getElementById('cookie-consent-banner');
+  if (banner) banner.classList.add('hidden');
+}
+
+window.checkCookieConsent = checkCookieConsent;
+window.acceptAllCookies = acceptAllCookies;
+window.acceptEssentialCookies = acceptEssentialCookies;
+
 function setCSVEplorerTab(tabName) {
   state.csvExplorer.activeTab = tabName;
   state.csvExplorer.currentPage = 1;
@@ -5637,6 +5661,7 @@ function updateMaintenanceSettingBtn(active) {
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   initSystemStatusPolling();
+  checkCookieConsent();
   // Pre-fetch items from server in background to warm cache
   loadAll(false).catch(() => {});
 
