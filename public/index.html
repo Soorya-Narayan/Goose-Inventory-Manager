@@ -177,9 +177,9 @@
       <div class="login-footer">
         <span>INVENTORY v3.0.7 &middot; GOOSE INDUSTRIAL SOLUTIONS PVT LTD</span>
         <span style="margin:0 0.35rem;opacity:0.4">&middot;</span>
-        <a href="#" onclick="openPrivacyPolicyModal(event)" style="color:var(--goose);text-decoration:none;font-weight:600">Privacy Policy</a>
+        <a href="javascript:void(0)" onclick="openPrivacyPolicyModal(event); return false;" style="color:var(--goose);text-decoration:none;font-weight:600;cursor:pointer">Privacy Policy</a>
         <span style="margin:0 0.35rem;opacity:0.4">&middot;</span>
-        <a href="#" onclick="openTermsConditionsModal(event)" style="color:var(--goose);text-decoration:none;font-weight:600">Terms &amp; Conditions</a>
+        <a href="javascript:void(0)" onclick="openTermsConditionsModal(event); return false;" style="color:var(--goose);text-decoration:none;font-weight:600;cursor:pointer">Terms &amp; Conditions</a>
       </div>
     </div>
   </div>
@@ -299,9 +299,9 @@
         <div style="padding:0.75rem 1rem;margin-top:auto;border-top:1px solid var(--border-subtle);font-size:0.68rem;color:var(--text-tertiary);font-family:var(--font-mono);display:flex;justify-content:space-between;align-items:center;gap:0.35rem;flex-wrap:wrap">
           <span>System v3.0.7</span>
           <div style="display:flex;gap:0.5rem">
-            <a href="#" onclick="openPrivacyPolicyModal(event)" style="color:var(--text-secondary);text-decoration:none;transition:color 0.15s ease" onmouseover="this.style.color='var(--goose)'" onmouseout="this.style.color='var(--text-secondary)'">Privacy</a>
+            <a href="javascript:void(0)" onclick="openPrivacyPolicyModal(event); return false;" style="color:var(--text-secondary);text-decoration:none;cursor:pointer;transition:color 0.15s ease" onmouseover="this.style.color='var(--goose)'" onmouseout="this.style.color='var(--text-secondary)'">Privacy</a>
             <span>&middot;</span>
-            <a href="#" onclick="openTermsConditionsModal(event)" style="color:var(--text-secondary);text-decoration:none;transition:color 0.15s ease" onmouseover="this.style.color='var(--goose)'" onmouseout="this.style.color='var(--text-secondary)'">Terms</a>
+            <a href="javascript:void(0)" onclick="openTermsConditionsModal(event); return false;" style="color:var(--text-secondary);text-decoration:none;cursor:pointer;transition:color 0.15s ease" onmouseover="this.style.color='var(--goose)'" onmouseout="this.style.color='var(--text-secondary)'">Terms</a>
           </div>
         </div>
       </nav>
@@ -1268,7 +1268,7 @@
           <h2 style="font-size:1.35rem;font-weight:800;color:var(--text-primary);margin-top:0.35rem;letter-spacing:-0.02em">Privacy &amp; Data Protection Policy</h2>
           <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.15rem">Goose Industrial Solutions Pvt Ltd &middot; Effective Date: September 2026</p>
         </div>
-        <button class="btn btn-ghost btn-icon" onclick="closePrivacyPolicyModal()" style="font-size:1.25rem;line-height:1;padding:0.4rem 0.6rem">&times;</button>
+        <button class="btn btn-ghost btn-icon" onclick="closePrivacyPolicyModal(event); return false;" style="font-size:1.25rem;line-height:1;padding:0.4rem 0.6rem">&times;</button>
       </div>
 
       <!-- Scrollable Policy Content -->
@@ -1344,8 +1344,11 @@
 
       <!-- Modal Footer -->
       <div style="display:flex;justify-content:flex-end;align-items:center;border-top:1px solid var(--border-subtle);padding-top:1rem;flex-shrink:0">
-        <button class="btn btn-primary" onclick="closePrivacyPolicyModal()">Close Policy</button>
+        <button class="btn btn-primary" onclick="closePrivacyPolicyModal(event); return false;">Close Policy</button>
       </div>
+
+    </div>
+  </div>
 
   <!-- TERMS & CONDITIONS MODAL -->
   <div class="modal-backdrop hidden" id="modal-terms-conditions-overlay" onclick="closeTermsConditionsModal(event)" style="z-index:99996;background:rgba(8,12,20,0.85);backdrop-filter:blur(6px)">
@@ -1361,7 +1364,7 @@
           <h2 style="font-size:1.35rem;font-weight:800;color:var(--text-primary);margin-top:0.35rem;letter-spacing:-0.02em">Terms &amp; Conditions of Use</h2>
           <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.15rem">Goose Industrial Solutions Pvt Ltd &middot; Effective Date: September 2026</p>
         </div>
-        <button class="btn btn-ghost btn-icon" onclick="closeTermsConditionsModal()" style="font-size:1.25rem;line-height:1;padding:0.4rem 0.6rem">&times;</button>
+        <button class="btn btn-ghost btn-icon" onclick="closeTermsConditionsModal(event); return false;" style="font-size:1.25rem;line-height:1;padding:0.4rem 0.6rem">&times;</button>
       </div>
 
       <!-- Scrollable Content -->
@@ -1448,7 +1451,7 @@
 
       <!-- Modal Footer -->
       <div style="display:flex;justify-content:flex-end;align-items:center;border-top:1px solid var(--border-subtle);padding-top:1rem;flex-shrink:0">
-        <button class="btn btn-primary" onclick="closeTermsConditionsModal()">Accept &amp; Close</button>
+        <button class="btn btn-primary" onclick="closeTermsConditionsModal(event); return false;">Accept &amp; Close</button>
       </div>
 
     </div>

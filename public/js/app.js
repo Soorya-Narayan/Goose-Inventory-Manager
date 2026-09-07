@@ -1825,25 +1825,48 @@ function closeCSVAuditExplorerModal() {
 
 function openPrivacyPolicyModal(e) {
   if (e && e.preventDefault) e.preventDefault();
+  if (e && e.stopPropagation) e.stopPropagation();
   const modal = document.getElementById('modal-privacy-policy-overlay');
-  if (modal) modal.classList.remove('hidden');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
 }
 
 function closePrivacyPolicyModal(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (e && e.stopPropagation) e.stopPropagation();
   const modal = document.getElementById('modal-privacy-policy-overlay');
-  if (modal) modal.classList.add('hidden');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = '';
+  }
 }
 
 function openTermsConditionsModal(e) {
   if (e && e.preventDefault) e.preventDefault();
+  if (e && e.stopPropagation) e.stopPropagation();
   const modal = document.getElementById('modal-terms-conditions-overlay');
-  if (modal) modal.classList.remove('hidden');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
 }
 
 function closeTermsConditionsModal(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (e && e.stopPropagation) e.stopPropagation();
   const modal = document.getElementById('modal-terms-conditions-overlay');
-  if (modal) modal.classList.add('hidden');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = '';
+  }
 }
+
+window.openPrivacyPolicyModal = openPrivacyPolicyModal;
+window.closePrivacyPolicyModal = closePrivacyPolicyModal;
+window.openTermsConditionsModal = openTermsConditionsModal;
+window.closeTermsConditionsModal = closeTermsConditionsModal;
 
 function setCSVEplorerTab(tabName) {
   state.csvExplorer.activeTab = tabName;
