@@ -1047,10 +1047,18 @@ app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: `API route '${req.path}' not found` });
   }
-  if (req.path.includes('.') || req.path.startsWith('/css') || req.path.startsWith('/js') || req.path.startsWith('/uploads')) {
-    return res.status(404).send('Asset not found');
+  if (req.path.includes('.') || req.path.startsWith('/css') || req.path.startsWith('/js') || req.path.startsWith('/uploads') || req.path === '/404') {
+    return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
   }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Custom 404 Catch-All Handler
+app.use((req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: `API route '${req.path}' not found` });
+  }
+  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 });
 
 
