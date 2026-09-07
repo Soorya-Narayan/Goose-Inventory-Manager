@@ -2694,12 +2694,12 @@ function renderDashboard() {
                 <div style="font-size:0.78rem">No materials are currently below minimum stock threshold.</div>
               </div>
             ` : alertItems.slice(0, 5).map(i => `
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:0.65rem 0.875rem;background:var(--bg-elevated);border-radius:var(--radius-md);border:1px solid var(--border-subtle)">
-                <div>
-                  <div style="font-weight:600;font-size:0.85rem;color:var(--text-primary)">${escHtml(i.name)}</div>
-                  <div style="font-size:0.72rem;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:0.15rem">Zoho Code: ${escHtml(i.zohoCode || i.sku)} &middot; Shelf ${escHtml(i.location)}</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;padding:0.65rem 0.875rem;background:var(--bg-elevated);border-radius:var(--radius-md);border:1px solid var(--border-subtle);width:100%;box-sizing:border-box">
+                <div style="min-width:0;flex:1">
+                  <div style="font-weight:600;font-size:0.85rem;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(i.name)}</div>
+                  <div style="font-size:0.72rem;color:var(--text-tertiary);font-family:var(--font-mono);margin-top:0.15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Zoho Code: ${escHtml(i.zohoCode || i.sku)} &middot; Shelf ${escHtml(i.location)}</div>
                 </div>
-                <div>${stockTag(i)}</div>
+                <div style="flex-shrink:0">${stockTag(i)}</div>
               </div>
             `).join('')}
           </div>
