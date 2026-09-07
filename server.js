@@ -21,6 +21,20 @@ if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 app.use(cors());
 
+// ─── Trust Reverse Proxies & HTTPS Redirection Middleware ────────────────────
+app.set('trust proxy', 1);
+
+app.use((req, res, next) => {
+  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  const isLocalDev = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
+  const shouldForceHttps = process.env.FORCE_HTTPS === 'true' || (process.env.NODE_ENV === 'production' && !isLocalDev);
+
+  if (!isHttps && shouldForceHttps) {
+    return res.redirect(301, `https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+
 // ─── Security Headers Middleware (MDN HTTP Observatory A+ Compliance) ───────
 app.use((req, res, next) => {
   // 1. Content Security Policy (CSP) - Allow http & https for local LAN & production
@@ -1055,11 +1069,36 @@ function getLocalIpAddress() {
   return 'localhost';
 }
 
-app.listen(PORT, '0.0.0.0', () => {
-  const localIp = getLocalIpAddress();
-  const data = readData();
-  const currentPin = (data.settings && data.settings.managerPin) ? data.settings.managerPin : 'Mannar@200';
-  console.log(`
+const https = require('https');
+
+const localIp = getLocalIpAddress();
+const data = readData();
+const currentPin = (data.settings && data.settings.managerPin) ? data.settings.managerPin : 'Mannar@200';
+
+const hasCustomSsl = process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH &&
+  fs.existsSync(process.env.SSL_KEY_PATH) && fs.existsSync(process.env.SSL_CERT_PATH);
+
+if (hasCustomSsl) {
+  const sslOptions = {
+    key: fs.readFileSync(process.env.SSL_KEY_PATH),
+    cert: fs.readFileSync(process.env.SSL_CERT_PATH)
+  };
+  https.createServer(sslOptions, app).listen(PORT, '0.0.0.0', () => {
+    console.log(`
+  ═════════════════════════════════════════════════════════════════════
+   Goose Store Inventory System — Online (Native SSL Enforced)
+   
+   Local Access (This PC):    https://localhost:${PORT}
+   Office Wi-Fi (Employees):  https://${localIp}:${PORT}
+   
+   Manager Password: ${currentPin}
+   Hardware Ready: Helett HT20 Scanner & Tej C15 Label Printer
+  ═════════════════════════════════════════════════════════════════════
+    `);
+  });
+} else {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`
   ═════════════════════════════════════════════════════════════════════
    Goose Store Inventory System — Online
    
@@ -1069,5 +1108,6 @@ app.listen(PORT, '0.0.0.0', () => {
    Manager Password: ${currentPin}
    Hardware Ready: Helett HT20 Scanner & Tej C15 Label Printer
   ═════════════════════════════════════════════════════════════════════
-  `);
-});
+    `);
+  });
+}
