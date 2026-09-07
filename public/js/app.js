@@ -398,6 +398,7 @@ window.addEventListener('keydown', (e) => {
 
   if (e.key === 'Escape') {
     closePrivacyPolicyModal();
+    closeTermsConditionsModal();
     closeCSVAuditExplorerModal();
   }
 
@@ -1830,6 +1831,17 @@ function openPrivacyPolicyModal(e) {
 
 function closePrivacyPolicyModal(e) {
   const modal = document.getElementById('modal-privacy-policy-overlay');
+  if (modal) modal.classList.add('hidden');
+}
+
+function openTermsConditionsModal(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const modal = document.getElementById('modal-terms-conditions-overlay');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeTermsConditionsModal(e) {
+  const modal = document.getElementById('modal-terms-conditions-overlay');
   if (modal) modal.classList.add('hidden');
 }
 

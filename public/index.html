@@ -178,6 +178,8 @@
         <span>INVENTORY v3.0.7 &middot; GOOSE INDUSTRIAL SOLUTIONS PVT LTD</span>
         <span style="margin:0 0.35rem;opacity:0.4">&middot;</span>
         <a href="#" onclick="openPrivacyPolicyModal(event)" style="color:var(--goose);text-decoration:none;font-weight:600">Privacy Policy</a>
+        <span style="margin:0 0.35rem;opacity:0.4">&middot;</span>
+        <a href="#" onclick="openTermsConditionsModal(event)" style="color:var(--goose);text-decoration:none;font-weight:600">Terms &amp; Conditions</a>
       </div>
     </div>
   </div>
@@ -294,9 +296,13 @@
             <span>Label Designer</span>
           </a>
         </div>
-        <div style="padding:0.75rem 1rem;margin-top:auto;border-top:1px solid var(--border-subtle);font-size:0.7rem;color:var(--text-tertiary);font-family:var(--font-mono);display:flex;justify-content:space-between;align-items:center">
+        <div style="padding:0.75rem 1rem;margin-top:auto;border-top:1px solid var(--border-subtle);font-size:0.68rem;color:var(--text-tertiary);font-family:var(--font-mono);display:flex;justify-content:space-between;align-items:center;gap:0.35rem;flex-wrap:wrap">
           <span>System v3.0.7</span>
-          <a href="#" onclick="openPrivacyPolicyModal(event)" style="color:var(--text-secondary);text-decoration:none;transition:color 0.15s ease" onmouseover="this.style.color='var(--goose)'" onmouseout="this.style.color='var(--text-secondary)'">Privacy Policy</a>
+          <div style="display:flex;gap:0.5rem">
+            <a href="#" onclick="openPrivacyPolicyModal(event)" style="color:var(--text-secondary);text-decoration:none;transition:color 0.15s ease" onmouseover="this.style.color='var(--goose)'" onmouseout="this.style.color='var(--text-secondary)'">Privacy</a>
+            <span>&middot;</span>
+            <a href="#" onclick="openTermsConditionsModal(event)" style="color:var(--text-secondary);text-decoration:none;transition:color 0.15s ease" onmouseover="this.style.color='var(--goose)'" onmouseout="this.style.color='var(--text-secondary)'">Terms</a>
+          </div>
         </div>
       </nav>
 
@@ -1339,6 +1345,110 @@
       <!-- Modal Footer -->
       <div style="display:flex;justify-content:flex-end;align-items:center;border-top:1px solid var(--border-subtle);padding-top:1rem;flex-shrink:0">
         <button class="btn btn-primary" onclick="closePrivacyPolicyModal()">Close Policy</button>
+      </div>
+
+  <!-- TERMS & CONDITIONS MODAL -->
+  <div class="modal-backdrop hidden" id="modal-terms-conditions-overlay" onclick="closeTermsConditionsModal(event)" style="z-index:99996;background:rgba(8,12,20,0.85);backdrop-filter:blur(6px)">
+    <div class="modal card" style="max-width:850px;width:92vw;max-height:88vh;padding:1.5rem;display:flex;flex-direction:column;gap:1rem;border:1px solid var(--border-highlight);box-shadow:0 24px 48px rgba(0,0,0,0.6)" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;border-bottom:1px solid var(--border-subtle);padding-bottom:1rem;flex-shrink:0">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.6rem">
+            <span style="background:rgba(59,130,246,0.15);color:#3b82f6;font-size:0.68rem;font-weight:700;font-family:var(--font-mono);padding:0.2rem 0.5rem;border-radius:4px;border:1px solid rgba(59,130,246,0.3);letter-spacing:0.05em">LEGAL &amp; OPERATIONAL AGREEMENT</span>
+            <span style="font-size:0.75rem;color:var(--text-tertiary);font-family:var(--font-mono)">System v3.0.7</span>
+          </div>
+          <h2 style="font-size:1.35rem;font-weight:800;color:var(--text-primary);margin-top:0.35rem;letter-spacing:-0.02em">Terms &amp; Conditions of Use</h2>
+          <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.15rem">Goose Industrial Solutions Pvt Ltd &middot; Effective Date: September 2026</p>
+        </div>
+        <button class="btn btn-ghost btn-icon" onclick="closeTermsConditionsModal()" style="font-size:1.25rem;line-height:1;padding:0.4rem 0.6rem">&times;</button>
+      </div>
+
+      <!-- Scrollable Content -->
+      <div style="overflow-y:auto;padding-right:0.5rem;display:flex;flex-direction:column;gap:1.25rem;font-size:0.85rem;line-height:1.6;color:var(--text-secondary)">
+        
+        <!-- Section 1 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">1.</span> Acceptance of Terms &amp; Authorization Scope
+          </h3>
+          <p>
+            By accessing or operating the <strong>Goose Inventory Manager</strong> system, personnel agree to comply strictly with these Terms &amp; Conditions. Access is restricted exclusively to authorized employees, store managers, engineers, and contracted personnel of <strong>Goose Industrial Solutions Pvt Ltd</strong>.
+          </p>
+        </section>
+
+        <!-- Section 2 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">2.</span> Authorized Access &amp; Credential Security
+          </h3>
+          <ul style="margin:0;padding-left:1.25rem;display:flex;flex-direction:column;gap:0.35rem">
+            <li>Users are issued specific Role-Based Access Control (RBAC) credentials based on their designation (Store Manager vs. Engineer).</li>
+            <li>Users are strictly prohibited from sharing PINs, passwords, or authentication session keys with unauthorized individuals.</li>
+            <li>All transactions performed under a logged-in user account are attributed to that specific user ID in system audit logs.</li>
+          </ul>
+        </section>
+
+        <!-- Section 3 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">3.</span> Data Integrity &amp; Material Tracking Obligations
+          </h3>
+          <p style="margin-bottom:0.5rem">Personnel operating the system must adhere to standard store inventory practices:</p>
+          <ul style="margin:0;padding-left:1.25rem;display:flex;flex-direction:column;gap:0.35rem">
+            <li>Accurate recording of physical item quantities, shelf location codes, and category classifications.</li>
+            <li>Prompt logging of all material stock-outs, transfers, and additions to prevent store audit discrepancies.</li>
+            <li>Verification of uploaded Zoho Books audit CSV files before confirming master inventory overrides.</li>
+          </ul>
+        </section>
+
+        <!-- Section 4 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">4.</span> Prohibited System Activities
+          </h3>
+          <ul style="margin:0;padding-left:1.25rem;display:flex;flex-direction:column;gap:0.35rem">
+            <li>Tampering with system audit logs, deleting historical issue records without authorization, or bypassing role security controls.</li>
+            <li>Attempting unauthorized automated scraping or stress-testing against the store server APIs.</li>
+            <li>Uploading malicious files, corrupted scripts, or formatted payloads intended to impair system availability.</li>
+          </ul>
+        </section>
+
+        <!-- Section 5 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">5.</span> Intellectual Property &amp; Ownership
+          </h3>
+          <p>
+            The software architecture, source code, database structures, UI components, and label designer templates are the exclusive intellectual property of <strong>Goose Industrial Solutions Pvt Ltd</strong>. Unauthorized copying, redistribution, or reverse engineering is strictly prohibited.
+          </p>
+        </section>
+
+        <!-- Section 6 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">6.</span> System Availability &amp; Liability Limitations
+          </h3>
+          <p>
+            While Goose Industrial Solutions Pvt Ltd maintains rigorous backup protocols for system files (<code>data/inventory.json</code>), system operators must regularly export stock PDFs and CSV reports for offline disaster recovery. System downtime during routine maintenance or server restarts is governed by internal IT maintenance schedules.
+          </p>
+        </section>
+
+        <!-- Section 7 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">7.</span> Amendments &amp; Contact Information
+          </h3>
+          <p>
+            Goose Industrial Solutions Pvt Ltd reserves the right to amend these Terms &amp; Conditions as operational requirements evolve. For questions regarding system compliance, contact the Enterprise IT &amp; Store Governance Committee.
+          </p>
+        </section>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="display:flex;justify-content:flex-end;align-items:center;border-top:1px solid var(--border-subtle);padding-top:1rem;flex-shrink:0">
+        <button class="btn btn-primary" onclick="closeTermsConditionsModal()">Accept &amp; Close</button>
       </div>
 
     </div>
