@@ -1019,6 +1019,16 @@ function toggleOptionsMenu(e) {
   }
 }
 
+function closeOptionsMenu() {
+  const menu = document.getElementById('options-menu');
+  if (menu) {
+    menu.classList.add('hidden');
+  }
+}
+
+window.toggleOptionsMenu = toggleOptionsMenu;
+window.closeOptionsMenu = closeOptionsMenu;
+
 window.addEventListener('click', (e) => {
   const wrapper = document.getElementById('nav-options-wrapper');
   const menu = document.getElementById('options-menu');
