@@ -176,6 +176,8 @@
 
       <div class="login-footer">
         <span>INVENTORY v3.0.7 &middot; GOOSE INDUSTRIAL SOLUTIONS PVT LTD</span>
+        <span style="margin:0 0.35rem;opacity:0.4">&middot;</span>
+        <a href="#" onclick="openPrivacyPolicyModal(event)" style="color:var(--goose);text-decoration:none;font-weight:600">Privacy Policy</a>
       </div>
     </div>
   </div>
@@ -292,8 +294,9 @@
             <span>Label Designer</span>
           </a>
         </div>
-        <div style="padding:0.75rem 1rem;margin-top:auto;border-top:1px solid var(--border-subtle);font-size:0.7rem;color:var(--text-tertiary);font-family:var(--font-mono)">
-          System v3.0.7
+        <div style="padding:0.75rem 1rem;margin-top:auto;border-top:1px solid var(--border-subtle);font-size:0.7rem;color:var(--text-tertiary);font-family:var(--font-mono);display:flex;justify-content:space-between;align-items:center">
+          <span>System v3.0.7</span>
+          <a href="#" onclick="openPrivacyPolicyModal(event)" style="color:var(--text-secondary);text-decoration:none;transition:color 0.15s ease" onmouseover="this.style.color='var(--goose)'" onmouseout="this.style.color='var(--text-secondary)'">Privacy Policy</a>
         </div>
       </nav>
 
@@ -1240,6 +1243,102 @@
           <span style="font-size:0.8rem;font-family:var(--font-mono);font-weight:700;color:var(--text-primary)" id="explorer-page-label">Page 1 of 1</span>
           <button class="btn btn-ghost btn-sm" onclick="changeCSVEplorerPage(1)" id="explorer-next-btn">Next &raquo;</button>
         </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PRIVACY POLICY MODAL -->
+  <div class="modal-backdrop hidden" id="modal-privacy-policy-overlay" onclick="closePrivacyPolicyModal(event)" style="z-index:99995;background:rgba(8,12,20,0.85);backdrop-filter:blur(6px)">
+    <div class="modal card" style="max-width:850px;width:92vw;max-height:88vh;padding:1.5rem;display:flex;flex-direction:column;gap:1rem;border:1px solid var(--border-highlight);box-shadow:0 24px 48px rgba(0,0,0,0.6)" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;border-bottom:1px solid var(--border-subtle);padding-bottom:1rem;flex-shrink:0">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.6rem">
+            <span style="background:rgba(16,185,129,0.15);color:#10b981;font-size:0.68rem;font-weight:700;font-family:var(--font-mono);padding:0.2rem 0.5rem;border-radius:4px;border:1px solid rgba(16,185,129,0.3);letter-spacing:0.05em">COMPLIANCE &amp; GOVERNANCE</span>
+            <span style="font-size:0.75rem;color:var(--text-tertiary);font-family:var(--font-mono)">System v3.0.7</span>
+          </div>
+          <h2 style="font-size:1.35rem;font-weight:800;color:var(--text-primary);margin-top:0.35rem;letter-spacing:-0.02em">Privacy &amp; Data Protection Policy</h2>
+          <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.15rem">Goose Industrial Solutions Pvt Ltd &middot; Effective Date: September 2026</p>
+        </div>
+        <button class="btn btn-ghost btn-icon" onclick="closePrivacyPolicyModal()" style="font-size:1.25rem;line-height:1;padding:0.4rem 0.6rem">&times;</button>
+      </div>
+
+      <!-- Scrollable Policy Content -->
+      <div style="overflow-y:auto;padding-right:0.5rem;display:flex;flex-direction:column;gap:1.25rem;font-size:0.85rem;line-height:1.6;color:var(--text-secondary)">
+        
+        <!-- Section 1 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">1.</span> Overview &amp; System Scope
+          </h3>
+          <p>
+            This Privacy &amp; Data Protection Policy details how <strong>Goose Inventory Manager</strong> (operated by Goose Industrial Solutions Pvt Ltd) collects, processes, stores, and protects operational inventory records, user account details, and audit comparison datasets. This application is designed exclusively for industrial store operations, barcode tracking, and material reconciliation.
+          </p>
+        </section>
+
+        <!-- Section 2 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">2.</span> Data Collected
+          </h3>
+          <ul style="margin:0;padding-left:1.25rem;display:flex;flex-direction:column;gap:0.35rem">
+            <li><strong>User Account Information:</strong> Employee IDs, user roles (Store Manager, Engineer, Inspector), email addresses, and encrypted session credentials.</li>
+            <li><strong>Inventory &amp; Transaction Records:</strong> Item descriptions, SKU numbers, category tags, shelf location coordinates, stock adjustments, and material stock-out logs.</li>
+            <li><strong>Uploaded Reconciliation Files:</strong> CSV files and API payloads imported for Zoho Books stock audit comparison.</li>
+            <li><strong>System &amp; Device Telemetry:</strong> Client IP addresses, browser user-agent logs, login timestamps, and hardware connectivity logs (label printers, barcode scanners).</li>
+          </ul>
+        </section>
+
+        <!-- Section 3 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">3.</span> Purpose of Data Processing &amp; Access Control
+          </h3>
+          <p style="margin-bottom:0.5rem">Data collected within the application is utilized solely for enterprise operational purposes:</p>
+          <ul style="margin:0;padding-left:1.25rem;display:flex;flex-direction:column;gap:0.35rem">
+            <li>Maintaining real-time store inventory balances, shelf mapping, and item movements.</li>
+            <li>Enforcing strict <strong>Role-Based Access Control (RBAC)</strong>—restricting audit comparative analytics to Store Managers while providing streamlined view-only access to Engineers.</li>
+            <li>Generating PDF/CSV audit reports and dispatching automated low-stock notifications.</li>
+          </ul>
+        </section>
+
+        <!-- Section 4 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">4.</span> Data Storage &amp; Security Protocols
+          </h3>
+          <p>
+            All store inventory data, transaction logs, and user configurations are stored on secure local/enterprise infrastructure (e.g., <code>data/inventory.json</code>). Client communications are encrypted over HTTPS. Password hashes are stored using salted cryptographic algorithms. Uploaded CSV audit files are parsed locally in memory and never distributed to third-party data brokers.
+          </p>
+        </section>
+
+        <!-- Section 5 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">5.</span> Third-Party Services &amp; Integrations
+          </h3>
+          <p>
+            The system integrates with Zoho Books (via CSV upload or REST API) and SMTP dispatchers (via <code>nodemailer</code>) strictly to execute inventory syncs and email notifications. CDN dependencies (such as Chart.js, jsPDF, and html5-qrcode) are loaded solely for client-side rendering. No commercial tracking or advertising pixels are deployed.
+          </p>
+        </section>
+
+        <!-- Section 6 -->
+        <section style="background:var(--bg-surface);padding:1rem 1.25rem;border-radius:8px;border:1px solid var(--border-subtle)">
+          <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:var(--goose)">6.</span> User Rights &amp; Governance Contact
+          </h3>
+          <p>
+            Authorized personnel may request account updates, inventory audit log exports, or account deactivation through system administrators. For privacy or data compliance inquiries, contact the IT &amp; Operations Governance department at <strong>Goose Industrial Solutions Pvt Ltd</strong>.
+          </p>
+        </section>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="display:flex;justify-content:flex-end;align-items:center;border-top:1px solid var(--border-subtle);padding-top:1rem;flex-shrink:0">
+        <button class="btn btn-primary" onclick="closePrivacyPolicyModal()">Close Policy</button>
       </div>
 
     </div>

@@ -396,6 +396,11 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
+  if (e.key === 'Escape') {
+    closePrivacyPolicyModal();
+    closeCSVAuditExplorerModal();
+  }
+
   if (e.key === 'Enter') {
     if (scanBuffer.length > 2) {
       handleBarcodeScanned(scanBuffer.trim());
@@ -1814,6 +1819,17 @@ function openCSVAuditExplorerModal() {
 
 function closeCSVAuditExplorerModal() {
   const modal = document.getElementById('modal-csv-audit-explorer');
+  if (modal) modal.classList.add('hidden');
+}
+
+function openPrivacyPolicyModal(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const modal = document.getElementById('modal-privacy-policy-overlay');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closePrivacyPolicyModal(e) {
+  const modal = document.getElementById('modal-privacy-policy-overlay');
   if (modal) modal.classList.add('hidden');
 }
 
