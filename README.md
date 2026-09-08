@@ -1,7 +1,7 @@
 <div align="center">
   <img src="public/goose_logo_new.png" alt="Goose Industrial Systems" width="220" />
   <h1>Goose Inventory Manager</h1>
-  <p><strong>Industrial-Grade Store Inventory & Barcode Management System (v3.0.8)</strong></p>
+  <p><strong>Industrial-Grade Store Inventory & Barcode Management System (v3.0.9)</strong></p>
   <p>Engineered for Mechanical, Electrical & Consumable Equipment Stores</p>
 </div>
 
@@ -59,12 +59,17 @@ Quick options menu for updating manager credentials globally across all devices,
 
 ## Key Features & System Capabilities
 
+- **Unified Action Button System (38px Height Standard)**: All header action buttons across Store Overview, Inventory, Store Layout, Analytics, Stock Movements, and Engineer Activity views share identical `38px` height, `0.5rem 1rem` padding, font size, and flex alignment.
+- **Redesigned Analytics KPI Cards**: Analytics & Zoho Audit tab features horizontal flex cards with themed icons, left border accents, and 3-column grid layout (`repeat(3, 1fr)`) matching the Store Overview tab.
 - **Primary Zoho Code Identifier System**: Tracks materials using **Zoho Code** as the primary master SKU across search, directory, barcode stickers, PDF reports, and CSV exports.
 - **Automatic Stock Deduplication & Auto-Merging Engine**: Adding or importing items sharing an existing non-placeholder Zoho Code automatically consolidates quantities into a single primary item entry.
 - **Live Duplicate Warning & Submit Pop-up Modal**: Typing an existing Zoho Code displays an instant real-time amber warning banner with stock & shelf location details, followed by a confirmation pop-up modal requesting manager approval before merging.
+- **SEO, OpenGraph & Cyan Goose Favicon**: Comprehensive SEO meta titles, meta descriptions, OpenGraph / Twitter social cards, cyan goose favicon logo, and dynamic browser tab titles on view navigation.
+- **Sitemap.xml & Robots.txt Integration**: Standards-compliant `/sitemap.xml` and `/robots.txt` endpoints served with explicit MIME headers.
+- **Custom 404 Page & Server Catch-All**: Custom `404.html` error page with gradient theme, home links, and Express server fallback.
 - **Hardware Barcode Scanner Support**: Instant HID mode barcode scanning via **Helett HT20** (2.4G wireless USB dongle).
 - **Tej C15 Thermal Barcode Sticker Printing**: Direct browser thermal sticker printing pre-formatted for **Tej C15 / YXWL Y50** label printers (50mm × 25mm labels) featuring scannable Code128 barcodes, QR codes, Zoho Code, and shelf location tags.
-- **Centralized Password Security (`Mannar@200`)**: Store Manager password (`Mannar@200`) is managed centrally via `POST /api/auth/change-pin`. Changing the password on one device immediately updates access across all laptops, phones, and desktops globally.
+- **Centralized Password Security**: Store Manager password is managed centrally via `POST /api/auth/change-pin`. Changing the password on one device immediately updates access across all laptops, phones, and desktops globally.
 - **Engineer Zoho Email 6-Digit OTP Auth**: Secure two-factor login workflow requiring Engineers to enter their Zoho/Company Email ID (`surya@goosesolutions.in`) and verify a 6-digit OTP sent via Zoho SMTP.
 - **Offline LocalStorage Cache Resilience**: Client automatically caches inventory and requests in browser `localStorage`. If network connection drops, the app seamlessly falls back to offline cache mode without UI freezing.
 - **Physical Store Layout & Shelf Directory**: Visual rack directory mapping Racks A through E, shelf codes (`E-G1`, `C4`, `T1 & T2`, `D1`, `D2`, etc.), shelf search, and zone tabs.
