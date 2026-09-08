@@ -2419,27 +2419,6 @@ input,
     gap: 0.35rem;
     line-height: 1.4;
   }
-
-  .mobile-footer-links {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 1.25rem 0.5rem 0.5rem;
-    margin-top: 1.5rem;
-    border-top: 1px solid var(--border-subtle);
-    font-size: 0.72rem;
-    color: var(--text-tertiary);
-    font-family: var(--font-mono);
-    text-align: center;
-  }
-
-  .mobile-footer-links a {
-    color: var(--goose);
-    text-decoration: none;
-    font-weight: 600;
-    cursor: pointer;
-  }
 }
 
 @media (max-width: 480px) {
