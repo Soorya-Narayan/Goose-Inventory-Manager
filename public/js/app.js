@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.0.7',
+  currentVersion: '3.0.8',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
