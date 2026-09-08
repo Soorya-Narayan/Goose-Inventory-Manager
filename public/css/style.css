@@ -2205,106 +2205,73 @@ input[type="number"] {
 /* ─── Analytics Audit KPI Grid Styling ───────────────────────────── */
 .analytics-stats-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
-@media (max-width: 1300px) {
-  .analytics-stats-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .analytics-stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 540px) {
   .analytics-stats-grid {
     grid-template-columns: 1fr;
   }
 }
 
 .analytics-kpi-card {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 1.125rem 1.125rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-muted);
+  border-left: 4px solid var(--card-accent, var(--goose));
+  border-radius: var(--radius-lg);
+  padding: 1.125rem 1.25rem;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 105px;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  align-items: center;
+  gap: 1rem;
   position: relative;
-  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition: transform var(--fast), box-shadow var(--fast);
+  cursor: pointer;
 }
 
 .analytics-kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
   border-color: var(--border-highlight);
 }
 
-.analytics-kpi-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-}
-
-.analytics-kpi-card.zoho::before { background: var(--goose); }
-.analytics-kpi-card.store::before { background: #8b5cf6; }
-.analytics-kpi-card.total::before { background: var(--goose); }
-.analytics-kpi-card.mismatch::before { background: #f59e0b; }
-.analytics-kpi-card.missing::before { background: #ef4444; }
-.analytics-kpi-card.extra::before { background: #06b6d4; }
-.analytics-kpi-card.synced::before { background: #10b981; }
+.analytics-kpi-card.zoho { --card-accent: var(--goose); --card-dim: rgba(0, 198, 255, 0.12); }
+.analytics-kpi-card.store { --card-accent: #8b5cf6; --card-dim: rgba(139, 92, 246, 0.12); }
+.analytics-kpi-card.total { --card-accent: var(--goose); --card-dim: rgba(0, 198, 255, 0.12); }
+.analytics-kpi-card.mismatch { --card-accent: #f59e0b; --card-dim: rgba(245, 158, 11, 0.12); }
+.analytics-kpi-card.missing { --card-accent: #ef4444; --card-dim: rgba(239, 68, 68, 0.12); }
+.analytics-kpi-card.extra { --card-accent: #06b6d4; --card-dim: rgba(6, 182, 212, 0.12); }
+.analytics-kpi-card.synced { --card-accent: #10b981; --card-dim: rgba(16, 185, 129, 0.12); }
 
 .analytics-kpi-title {
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  color: var(--text-tertiary);
-  margin-bottom: 0.35rem;
+  letter-spacing: 0.05em;
+  margin-top: 0.2rem;
 }
-
-.analytics-kpi-card.zoho .analytics-kpi-title { color: var(--goose); }
-.analytics-kpi-card.store .analytics-kpi-title { color: #8b5cf6; }
-.analytics-kpi-card.total .analytics-kpi-title { color: var(--goose); }
-.analytics-kpi-card.mismatch .analytics-kpi-title { color: #f59e0b; }
-.analytics-kpi-card.missing .analytics-kpi-title { color: #ef4444; }
-.analytics-kpi-card.extra .analytics-kpi-title { color: #06b6d4; }
-.analytics-kpi-card.synced .analytics-kpi-title { color: #10b981; }
 
 .analytics-kpi-value {
-  font-size: 1.85rem;
+  font-size: 1.65rem;
   font-weight: 800;
-  font-family: var(--font-mono);
-  line-height: 1.1;
   color: var(--text-primary);
-  margin-bottom: 0.35rem;
+  line-height: 1.1;
+  font-family: var(--font-mono);
 }
 
-.analytics-kpi-card.zoho .analytics-kpi-value { color: var(--text-primary); }
-.analytics-kpi-card.store .analytics-kpi-value { color: #8b5cf6; }
-
-.analytics-kpi-card.total .analytics-kpi-value { color: var(--text-primary); }
-.analytics-kpi-card.mismatch .analytics-kpi-value { color: #f59e0b; }
-.analytics-kpi-card.missing .analytics-kpi-value { color: #ef4444; }
-.analytics-kpi-card.extra .analytics-kpi-value { color: #06b6d4; }
-.analytics-kpi-card.synced .analytics-kpi-value { color: #10b981; }
-
 .analytics-kpi-sub {
-  font-size: 0.73rem;
+  font-size: 0.72rem;
   color: var(--text-tertiary);
-  white-space: nowrap;
+  margin-top: 0.15rem;
 }
 
 /* ─── Cookie Consent Banner ───────────────────────────────────────────────── */
