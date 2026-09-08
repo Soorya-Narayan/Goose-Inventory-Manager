@@ -1068,7 +1068,21 @@ function navigateTo(view) {
   document.getElementById('content-area')?.scrollTo(0, 0);
 }
 
+const VIEW_META_TITLES = {
+  'dashboard': 'Store Overview — Goose Inventory Manager',
+  'inventory': 'Store Inventory — Goose Inventory Manager',
+  'storemap': 'Store Layout & Shelf Map — Goose Inventory Manager',
+  'analytics': 'Analytics & Zoho Audit — Goose Inventory Manager',
+  'requests': 'Material Requests — Goose Inventory Manager',
+  'transactions': 'Stock Movements & Activity Log — Goose Inventory Manager',
+  'engineer-history': 'Engineer Activity Log — Goose Inventory Manager',
+  'labeldesigner': 'Label Designer — Goose Inventory Manager'
+};
+
 function renderView(view) {
+  if (VIEW_META_TITLES[view]) {
+    document.title = VIEW_META_TITLES[view];
+  }
   switch (view) {
     case 'dashboard':        renderDashboard();       break;
     case 'analytics':        renderAnalytics();       break;
