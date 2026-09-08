@@ -1,0 +1,7 @@
+# Goose Inventory Manager - Robots.txt
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /uploads/
+
+Sitemap: /sitemap.xml
