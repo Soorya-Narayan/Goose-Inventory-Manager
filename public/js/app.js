@@ -1454,11 +1454,11 @@ function renderAnalytics() {
         <div class="page-subtitle">Zoho Books Master vs Physical Store Stock Reconciliation &amp; Mismatch Analysis</div>
       </div>
       <div style="display:flex;gap:0.625rem;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-secondary" onclick="openCSVAuditExplorerModal()" style="gap:0.4rem;background:rgba(0,114,255,0.1);color:var(--goose);border-color:rgba(0,114,255,0.3)" title="Browse, search and traverse through all audit items in a full view">
+        <button class="btn btn-secondary" onclick="openCSVAuditExplorerModal()" style="background:rgba(0,114,255,0.1);color:var(--goose);border-color:rgba(0,114,255,0.3)" title="Browse, search and traverse through all audit items in a full view">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           Browse Full CSV Audit List (${summary.totalChecked || 0})
         </button>
-        <button class="btn btn-primary" onclick="exportAnalyticsAuditPDF()" style="gap:0.4rem">
+        <button class="btn btn-primary" onclick="exportAnalyticsAuditPDF()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export Audit PDF
         </button>
@@ -2451,7 +2451,7 @@ async function renderTransactions() {
         <div class="page-subtitle">Barcode-scanned inward receipts and outward allocations</div>
       </div>
       <div style="display:flex;gap:0.75rem">
-        ${isManager ? `<button class="btn btn-ghost" onclick="clearAllTransactions()" style="font-size:0.8rem;color:var(--danger)">Clear All</button>` : ''}
+        ${isManager ? `<button class="btn btn-ghost" onclick="clearAllTransactions()" style="color:var(--danger)">Clear All</button>` : ''}
       </div>
     </div>
     <div class="card" style="overflow:hidden">
@@ -2640,7 +2640,7 @@ function renderDashboard() {
         <p class="page-subtitle">${new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' })} &middot; Goose Industrial Solutions Pvt Ltd</p>
       </div>
       <div style="display:flex;gap:0.625rem;align-items:center">
-        <button class="btn btn-ghost" onclick="loadAll().then(()=>renderView('dashboard'))" style="display:inline-flex;align-items:center;gap:0.4rem">
+        <button class="btn btn-ghost" onclick="loadAll().then(()=>renderView('dashboard'))">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           Refresh
         </button>
@@ -3066,13 +3066,13 @@ function renderStoreMap() {
 
       <!-- Zone Selector Tabs -->
       <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border-subtle);padding-bottom:0.75rem">
-        <button class="btn btn-ghost" onclick="selectStoreMapZone('electrical')" style="gap:0.4rem;padding:0.45rem 1rem">
+        <button class="btn btn-ghost" onclick="selectStoreMapZone('electrical')">
           Electrical Section (95 Shelves)
         </button>
-        <button class="btn btn-ghost" onclick="selectStoreMapZone('mechanical')" style="gap:0.4rem;padding:0.45rem 1rem">
+        <button class="btn btn-ghost" onclick="selectStoreMapZone('mechanical')">
           Mechanical Section (60 Shelves)
         </button>
-        <button class="btn btn-primary" onclick="selectStoreMapZone('consumables')" style="gap:0.4rem;padding:0.45rem 1rem">
+        <button class="btn btn-primary" onclick="selectStoreMapZone('consumables')">
           Consumables Section (Unified Single Zone)
         </button>
       </div>
@@ -3173,13 +3173,13 @@ function renderStoreMap() {
 
     <!-- Zone Selector Tabs -->
     <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border-subtle);padding-bottom:0.75rem">
-      <button class="btn ${currentZone === 'electrical' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('electrical')" style="gap:0.4rem;padding:0.45rem 1rem">
+      <button class="btn ${currentZone === 'electrical' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('electrical')">
         Electrical Section (${ELECTRICAL_RACK_GROUPS.reduce((acc, g) => acc + g.racks.reduce((a, r) => a + r.shelves.length, 0), 0)} Shelves)
       </button>
-      <button class="btn ${currentZone === 'mechanical' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('mechanical')" style="gap:0.4rem;padding:0.45rem 1rem">
+      <button class="btn ${currentZone === 'mechanical' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('mechanical')">
         Mechanical Section (${MECHANICAL_RACK_GROUPS.reduce((acc, g) => acc + g.racks.reduce((a, r) => a + r.shelves.length, 0), 0)} Shelves)
       </button>
-      <button class="btn ${currentZone === 'consumables' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('consumables')" style="gap:0.4rem;padding:0.45rem 1rem">
+      <button class="btn ${currentZone === 'consumables' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('consumables')">
         Consumables Section (Unified Single Zone)
       </button>
     </div>
@@ -3514,11 +3514,11 @@ function renderInventory() {
         <p class="page-subtitle" id="inventory-subtitle-count">Showing 0 of 0 materials</p>
       </div>
       <div style="display:flex;gap:0.625rem;align-items:center">
-        <button class="btn btn-ghost" onclick="exportInventoryCSV()" title="Export Inventory to CSV Spreadsheet" style="display:inline-flex;align-items:center;gap:0.4rem">
+        <button class="btn btn-ghost" onclick="exportInventoryCSV()" title="Export Inventory to CSV Spreadsheet">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export CSV
         </button>
-        <button class="btn btn-ghost" onclick="exportInventoryPDF()" title="Export Inventory PDF Report" style="display:inline-flex;align-items:center;gap:0.4rem">
+        <button class="btn btn-ghost" onclick="exportInventoryPDF()" title="Export Inventory PDF Report">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           Export PDF
         </button>
@@ -5320,12 +5320,12 @@ async function renderEngineerHistory() {
       </div>
       <div style="display:flex;gap:0.75rem;align-items:center">
         ${isManager ? `
-          <select id="engineer-filter-select" class="field-input" onchange="_selectedEngineerEmail=this.value;renderEngineerHistory()" style="width:auto;font-size:0.85rem;padding:0.5rem 0.85rem">
+          <select id="engineer-filter-select" class="field-input" onchange="_selectedEngineerEmail=this.value;renderEngineerHistory()" style="width:auto;height:38px;font-size:0.84rem;font-weight:600;padding:0.5rem 0.85rem;box-sizing:border-box">
             <option value="all" ${_selectedEngineerEmail === 'all' ? 'selected' : ''}>All Engineers Activity</option>
             ${engineersList.map(e => `<option value="${e.email}" ${_selectedEngineerEmail === e.email ? 'selected' : ''}>${escHtml(e.name)} (${escHtml(e.email)})</option>`).join('')}
           </select>
         ` : ''}
-        <button class="btn btn-primary" onclick="exportEngineerActivityPDF('${_selectedEngineerEmail}')" style="display:inline-flex;align-items:center;gap:0.4rem">
+        <button class="btn btn-primary" onclick="exportEngineerActivityPDF('${_selectedEngineerEmail}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           <span>Export Activity PDF</span>
         </button>
