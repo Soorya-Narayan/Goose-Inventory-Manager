@@ -5128,7 +5128,7 @@ async function openSettingsModal() {
     }
   } catch (e) {}
 
-  const currentPin = state.managerPin || localStorage.getItem('ims_manager_pin') || 'Mannar@200';
+  const currentPin = state.managerPin || localStorage.getItem('ims_manager_pin') || '';
   const pinInput = document.getElementById('settings-manager-pin');
   if (pinInput) pinInput.value = currentPin;
 
@@ -5156,7 +5156,7 @@ async function handleSaveSettings(e) {
   try {
     const res = await api.post('/api/auth/change-pin', {
       role: 'manager',
-      currentPin: state.managerPin || 'Mannar@200',
+      currentPin: state.managerPin || localStorage.getItem('ims_manager_pin') || '',
       newPin: newPin
     });
 
