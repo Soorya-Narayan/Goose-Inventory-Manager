@@ -26,8 +26,8 @@
 | <sub>Track historical requests linked to engineer emails with 1-click PDF export</sub><br><br><a href="pictures/engineer-ACT.png"><img src="pictures/engineer-ACT.png" alt="Engineer Activity Log" width="100%"/></a> | <sub>Global credential settings, Dark/Light theme toggles &amp; live Zoho API sync</sub><br><br><a href="pictures/admin_options.png"><img src="pictures/admin_options.png" alt="Store Manager Options Menu" width="100%"/></a> |
 | **Privacy & Data Protection Policy** | **Terms & Conditions of Use** |
 | <sub>Enterprise compliance modal detailing data processing &amp; RBAC access control</sub><br><br><a href="pictures/privacy_policy.png"><img src="pictures/privacy_policy.png" alt="Privacy Policy Modal" width="100%"/></a> | <sub>Legal operational agreement governing store manager &amp; engineer system usage</sub><br><br><a href="pictures/terms_conditions.png"><img src="pictures/terms_conditions.png" alt="Terms & Conditions Modal" width="100%"/></a> |
-| **Custom 404 Error Page** | |
-| <sub>Gradient-styled fallback page for non-existent material routes &amp; system paths</sub><br><br><a href="pictures/page_404.png"><img src="pictures/page_404.png" alt="Custom 404 Error Page" width="100%"/></a> | |
+| **Custom 404 Error Page** | **Thermal Label Designer Module** |
+| <sub>Gradient-styled fallback page for non-existent material routes &amp; system paths</sub><br><br><a href="pictures/page_404.png"><img src="pictures/page_404.png" alt="Custom 404 Error Page" width="100%"/></a> | <sub>Custom barcode sticker template designer &amp; thermal print layout editor</sub><br><br><a href="pictures/label_designer.png"><img src="pictures/label_designer.png" alt="Thermal Label Designer" width="100%"/></a> |
 
 ---
 
