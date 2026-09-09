@@ -15,45 +15,11 @@
 
 ## System Screenshots
 
-### Store Overview Dashboard
-Real-time operational summary displaying total inventory count, low stock threshold alerts, priority items, and quick management actions.
-
-![Store Overview](pictures/overview.png)
-
----
-
-### Material Directory & Inventory Management
-Search and filter industrial materials by Zoho Code, zone (Mechanical, Electrical, Consumables), stock status, category, or shelf location.
-
-![Store Inventory](pictures/store_inventory.png)
-
----
-
-### Material Requests Workflow
-Review, approve, and track material requisition requests submitted by site engineers and project teams.
-
-![Material Requests](pictures/material_requests.png)
-
----
-
-### Stock Movements & Allocation Audit Log
-Complete audit trail recording every inward receipt and outward allocation to specific engineers, projects, customers, or vendors.
-
-![Stock Movements](pictures/stock_movments.png)
-
----
-
-### Engineer Activity & Audit Log
-Track historical material requests, dispatch approvals/rejections, and aggregate total item quantities linked to engineer email IDs with 1-click PDF audit report export.
-
-![Engineer Activity Audit Log](pictures/engineer-ACT.png)
-
----
-
-### Store Manager Options Menu & Centralized Security
-Quick options menu for updating manager credentials globally across all devices, toggling Dark/Light themes, and triggering live Zoho Books API synchronization.
-
-![Store Manager Options Menu](pictures/admin_options.png)
+| View / Feature | Preview | View / Feature | Preview |
+|---|:---:|---|:---:|
+| **Store Overview Dashboard**<br><sub>Real-time operational summary, low stock alerts, and quick management actions.</sub> | <a href="pictures/overview.png"><img src="pictures/overview.png" alt="Store Overview" width="380"/></a> | **Material Directory & Inventory**<br><sub>Search and filter materials by Zoho Code, zone, category, or shelf location.</sub> | <a href="pictures/store_inventory.png"><img src="pictures/store_inventory.png" alt="Store Inventory" width="380"/></a> |
+| **Material Requests Workflow**<br><sub>Review, approve, and track requisition requests submitted by site engineers.</sub> | <a href="pictures/material_requests.png"><img src="pictures/material_requests.png" alt="Material Requests" width="380"/></a> | **Stock Movements Audit Log**<br><sub>Complete audit trail recording inward receipts and outward allocations.</sub> | <a href="pictures/stock_movments.png"><img src="pictures/stock_movments.png" alt="Stock Movements" width="380"/></a> |
+| **Engineer Activity & Audit Log**<br><sub>Track historical requests linked to engineer emails with 1-click PDF export.</sub> | <a href="pictures/engineer-ACT.png"><img src="pictures/engineer-ACT.png" alt="Engineer Activity Log" width="380"/></a> | **Manager Options & Security**<br><sub>Global credential settings, theme toggles, and live Zoho Books API sync.</sub> | <a href="pictures/admin_options.png"><img src="pictures/admin_options.png" alt="Store Manager Options Menu" width="380"/></a> |
 
 ---
 
