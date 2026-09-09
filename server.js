@@ -910,35 +910,6 @@ app.post('/api/zoho/import-csv', (req, res) => {
   }
 });
 
-// List available CSV audit report files from project /csv folder
-app.get('/api/csv/list', (req, res) => {
-  try {
-    const csvDir = path.join(__dirname, 'csv');
-    if (!fs.existsSync(csvDir)) {
-      return res.json({ files: [] });
-    }
-    const files = fs.readdirSync(csvDir).filter(f => f.toLowerCase().endsWith('.csv'));
-    res.json({ files });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get content of specific CSV audit report file
-app.get('/api/csv/content/:filename', (req, res) => {
-  try {
-    const filename = path.basename(req.params.filename);
-    const filePath = path.join(__dirname, 'csv', filename);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'CSV file not found' });
-    }
-    const content = fs.readFileSync(filePath, 'utf8');
-    res.json({ filename, content });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // Zoho Books Live REST API Proxy Sync Endpoint
 app.post('/api/zoho/sync-api', async (req, res) => {
   try {
@@ -1040,11 +1011,13 @@ app.delete('/api/transactions', (req, res) => {
 app.get('/api/system/status', (req, res) => {
   const data = readData();
   const isMaint = maintenanceMode || (data.settings && data.settings.maintenanceMode === true);
+  const isLocalDev = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
   res.json({
     status: 'ok',
     version: SYSTEM_VERSION,
     serverStartTime: SERVER_START_TIME,
     maintenance: isMaint,
+    isLocalDev,
     timestamp: new Date().toISOString()
   });
 });

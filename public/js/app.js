@@ -1157,31 +1157,6 @@ function loadSavedAnalyticsAudit() {
       }
     }
   } catch (e) {}
-
-  if (!state.analyticsAudit.auditResults || state.analyticsAudit.auditResults.length === 0) {
-    loadServerCSVReport('Pune Stock Report - 31.08.csv');
-  }
-}
-
-async function loadServerCSVReport(filename = 'Pune Stock Report - 31.08.csv') {
-  try {
-    showToast(`Loading ${filename}...`, 'info');
-    const res = await api.get(`/api/csv/content/${encodeURIComponent(filename)}`);
-    if (res && res.content) {
-      const items = parseCSVTextToObjects(res.content);
-      if (items.length === 0) {
-        showToast('CSV report contains no valid records', 'error');
-        return;
-      }
-      runZohoAuditComparison(items, filename);
-      showToast(`Successfully reconciled store items against ${filename}`, 'success');
-    } else {
-      showToast(`Could not load ${filename}`, 'error');
-    }
-  } catch (err) {
-    console.error('Failed to load CSV report:', err);
-    showToast(`Error loading ${filename}`, 'error');
-  }
 }
 
 function parseCSVTextToObjects(csvContent) {
@@ -1244,22 +1219,11 @@ function parseCSVTextToObjects(csvContent) {
 
   if (rows.length <= 1) return [];
 
-  // Intelligently find header row index if metadata/report title lines precede it
-  let headerRowIdx = 0;
-  const headerKeywords = ['item name', 'item', 'name', 'sku', 'item code', 'zoho code', 'closing stock', 'opening stock', 'stock on hand', 'quantity', 'product name'];
-  for (let r = 0; r < Math.min(10, rows.length); r++) {
-    const rowStr = rows[r].join(' ').toLowerCase();
-    if (headerKeywords.some(kw => rowStr.includes(kw))) {
-      headerRowIdx = r;
-      break;
-    }
-  }
-
-  const rawHeaders = rows[headerRowIdx];
+  const rawHeaders = rows[0];
   const headers = rawHeaders.map(h => h.replace(/^["'\s]+|["'\s]+$/g, '').trim());
 
   const results = [];
-  for (let r = headerRowIdx + 1; r < rows.length; r++) {
+  for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
     if (!row || row.length === 0 || row.every(cell => !cell)) continue;
     const obj = {};
@@ -1273,15 +1237,6 @@ function parseCSVTextToObjects(csvContent) {
   }
 
   return results;
-}
-
-function parseNumVal(val) {
-  if (val === undefined || val === null) return 0;
-  let s = String(val).trim();
-  if (!s || s === '-' || s === '—' || s === 'N/A') return 0;
-  s = s.replace(/,/g, '').replace(/\s+/g, '');
-  const num = parseFloat(s);
-  return isNaN(num) ? 0 : num;
 }
 
 function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') {
@@ -1300,52 +1255,47 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
   const skuCandidates = ['SKU', 'sku', 'Item Code', 'Item ID', 'Zoho Code', 'Part Number', 'Code', 'Material Code', 'Item SKU', 'Product Code'];
   const nameCandidates = ['Item Name', 'Name', 'Item', 'Material Name', 'Product Name', 'Title', 'Item_Name'];
   const specCandidates = ['Description', 'Purchase Description', 'Sales Description', 'Spec', 'Specification', 'Details'];
-  const qtyCandidates = ['Closing Stock', 'Closing_Stock', 'ClosingStock', 'Stock On Hand', 'Stock on Hand', 'quantity', 'Quantity', 'Stock', 'Actual Available Stock', 'Available Stock', 'Qty', 'Physical Qty', 'Store Qty', 'Stock_On_Hand', 'Quantity In', 'Quantity Out', 'Balance'];
+  const qtyCandidates = ['Stock On Hand', 'Stock on Hand', 'quantity', 'Quantity', 'Stock', 'Actual Available Stock', 'Available Stock', 'Qty', 'Physical Qty', 'Store Qty', 'Stock_On_Hand'];
   const unitCandidates = ['Usage Unit', 'Unit Name', 'Unit', 'UOM', 'Usage_Unit'];
   const rateCandidates = ['Rate', 'Purchase Rate', 'Sales Rate', 'Price', 'Unit Price', 'Cost Price', 'Cost'];
   const catCandidates = ['Product Type', 'Category', 'Item Type', 'Group', 'Product_Type'];
 
-  // 1. Process items present in Zoho Books / CSV Report
+  // 1. Process items present in Zoho Books
   rawZohoItems.forEach((z, index) => {
     const rawCode = getCSVValue(z, skuCandidates, z.SKU || z.sku || z.zohoCode || z.code || '');
-    const itemName = getCSVValue(z, nameCandidates, z.name || z.itemName || `Zoho Item #${index + 1}`);
-
-    let zohoCode = String(rawCode).trim();
-    if (!zohoCode && itemName) {
-      zohoCode = itemName;
-    }
-
+    const zohoCode = String(rawCode).trim();
     const cleanZohoCode = sanitizeCode(zohoCode);
-    const cleanItemName = sanitizeCode(itemName);
     const hasValidSku = cleanZohoCode.length >= 2 && !IGNORED_ZOHO_CODES.has(cleanZohoCode);
 
+    const itemName = getCSVValue(z, nameCandidates, z.name || z.itemName || `Zoho Item #${index + 1}`);
+    const cleanItemName = sanitizeCode(itemName);
     const spec = getCSVValue(z, specCandidates, z.specification || z.spec || '');
     const rawQty = getCSVValue(z, qtyCandidates, '0');
-    const zohoQty = parseNumVal(rawQty);
+    const zohoQty = parseFloat(rawQty) || 0;
     const unit = getCSVValue(z, unitCandidates, z.unit || 'pcs');
     const rawRate = getCSVValue(z, rateCandidates, '0');
-    const rate = parseNumVal(rawRate);
+    const rate = parseFloat(rawRate) || 0;
     const category = getCSVValue(z, catCandidates, z.category || 'Zoho Import');
 
     if (!hasValidSku && (!itemName || itemName.startsWith('Zoho Item #'))) return;
 
     let storeMatch = null;
 
-    // 1. Try Code / SKU / Barcode / ID / Name exact sanitized match
+    // 1. Try Code / SKU match (checking zohoCode, sku, barcode, id)
     if (hasValidSku) {
       processedZohoCodes.add(cleanZohoCode);
       storeMatch = storeItems.find(i => {
         if (processedStoreItemIds.has(i.id)) return false;
-        const candidateCodes = [i.zohoCode, i.sku, i.barcode, i.id, i.name].map(sanitizeCode).filter(Boolean);
+        const candidateCodes = [i.zohoCode, i.sku, i.barcode, i.id].map(sanitizeCode).filter(Boolean);
         return candidateCodes.includes(cleanZohoCode);
       });
     }
 
-    // 2. Fallback: Try Name substring match
+    // 2. Fallback: Try Name match (exact or sanitized)
     if (!storeMatch && cleanItemName) {
       storeMatch = storeItems.find(i => {
         if (processedStoreItemIds.has(i.id)) return false;
-        const candidateNames = [i.name, i.zohoCode, i.sku, i.specification ? `${i.name} ${i.specification}` : ''].map(sanitizeCode).filter(Boolean);
+        const candidateNames = [i.name, i.specification ? `${i.name} ${i.specification}` : ''].map(sanitizeCode).filter(Boolean);
         return candidateNames.some(c => c === cleanItemName || (c.length > 5 && (c.includes(cleanItemName) || cleanItemName.includes(c))));
       });
     }
@@ -1359,7 +1309,7 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
         if (s) processedZohoCodes.add(s);
       });
 
-      const storeQty = parseNumVal(storeMatch.quantity);
+      const storeQty = parseFloat(storeMatch.quantity) || 0;
       const diff = storeQty - zohoQty;
       const isQtyMatched = Math.abs(diff) < 0.001;
 
@@ -1427,7 +1377,7 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
     if (candidateCodes.some(c => processedZohoCodes.has(c))) return;
 
     extraInStoreCount++;
-    const storeQty = parseNumVal(item.quantity);
+    const storeQty = parseFloat(item.quantity) || 0;
     auditResults.push({
       id: `audit_extra_${item.id}`,
       zohoCode: item.zohoCode || item.sku || '—',
@@ -1677,13 +1627,7 @@ function renderAnalytics() {
           </div>
           <div style="font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:0.25rem">Drop Zoho Books Items CSV file here</div>
           <div style="font-size:0.78rem;color:var(--text-tertiary);margin-bottom:1rem">Upload your Zoho Books Items.csv file to compare stock with physical store inventory</div>
-          <div style="display:flex;gap:0.75rem;justify-content:center;align-items:center;flex-wrap:wrap">
-            <button class="btn btn-primary btn-sm" onclick="document.getElementById('analytics-csv-input').click()">Select CSV File</button>
-            <button class="btn btn-secondary btn-sm" onclick="loadServerCSVReport('Pune Stock Report - 31.08.csv')" style="background:rgba(0,114,255,0.1);color:var(--goose);border-color:rgba(0,114,255,0.3)" title="Run reconciliation for Pune Stock Report - 31.08.csv">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              Load Pune Stock Report - 31.08.csv
-            </button>
-          </div>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('analytics-csv-input').click()" style="margin:0 auto">Select CSV File</button>
         </div>
       ` : `
         <!-- LIVE REST API BOX -->
@@ -5657,11 +5601,12 @@ function exportEngineerActivityPDF(filterEmail = 'all') {
 
 // ─── System Update & Maintenance Screen Logic ─────────────────────────────
 async function initSystemStatusPolling() {
+  state.failedPollCount = 0;
   try {
     const res = await fetch('/api/system/status').then(r => r.json()).catch(() => null);
     if (res && res.status === 'ok') {
       state.initialServerStartTime = res.serverStartTime;
-      state.currentVersion = res.version || '2.9.0';
+      state.currentVersion = res.version || '3.0.9';
       if (res.maintenance) {
         state.maintenanceActive = true;
         updateMaintenanceSettingBtn(true);
@@ -5679,8 +5624,12 @@ async function initSystemStatusPolling() {
 }
 
 async function checkSystemUpdateStatus(manual = false) {
+  const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
   try {
     const res = await fetch('/api/system/status').then(r => r.json());
+    state.failedPollCount = 0;
+
     const tag = document.getElementById('system-update-version-tag');
     if (tag && res.version) tag.textContent = `v${res.version}`;
 
@@ -5699,11 +5648,25 @@ async function checkSystemUpdateStatus(manual = false) {
       }
     }
 
+    // Hide overlay if it was shown due to temporary network loss
+    if (state.isUpdateOverlayShowing && !res.maintenance && !state.maintenanceActive) {
+      hideSystemUpdateOverlay();
+      showToast('Store server reconnected!', 'success');
+    }
+
     // 2. System Version or Server Start Time Changed (Deploy / Restart Pushed)
     const serverRestarted = state.initialServerStartTime && res.serverStartTime !== state.initialServerStartTime;
     const versionBumped = state.currentVersion && res.version !== state.currentVersion;
 
     if (serverRestarted || versionBumped) {
+      // On localhost dev environment, update initial start time silently without triggering overlays or reloads
+      if (isLocalHost || res.isLocalDev) {
+        state.initialServerStartTime = res.serverStartTime;
+        state.currentVersion = res.version;
+        if (manual) showToast(`System online & up to date (v${res.version})`, 'success');
+        return;
+      }
+
       showSystemUpdateOverlay('New updates successfully deployed! Reloading application...');
       setTimeout(() => {
         window.location.reload(true);
@@ -5711,20 +5674,14 @@ async function checkSystemUpdateStatus(manual = false) {
       return;
     }
 
-    // 3. Reconnected after temporary downtime during push
-    if (state.isUpdateOverlayShowing && !res.maintenance) {
-      showToast('Store server reconnected! Reloading latest changes...', 'success');
-      setTimeout(() => {
-        window.location.reload(true);
-      }, 1000);
-      return;
-    }
-
     if (manual) {
       showToast(`System online & up to date (v${res.version})`, 'success');
     }
   } catch (err) {
-    showSystemUpdateOverlay('Store system is currently being updated. Waiting for server connection...');
+    state.failedPollCount = (state.failedPollCount || 0) + 1;
+    if (state.failedPollCount >= 3 && !isLocalHost) {
+      showSystemUpdateOverlay('Store system connection lost. Retrying...');
+    }
   }
 }
 
