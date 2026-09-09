@@ -15,13 +15,19 @@
 
 ## System Screenshots
 
-| Store Overview Dashboard | Material Directory & Inventory |
+| **Store Overview Dashboard** | **Material Directory & Inventory** |
 | :---: | :---: |
 | <sub>Real-time operational summary, low stock alerts &amp; quick management actions</sub><br><br><a href="pictures/overview.png"><img src="pictures/overview.png" alt="Store Overview" width="100%"/></a> | <sub>Search and filter materials by Zoho Code, zone, category &amp; shelf location</sub><br><br><a href="pictures/store_inventory.png"><img src="pictures/store_inventory.png" alt="Store Inventory" width="100%"/></a> |
+| **Store Layout & Shelf Directory** | **Analytics & Zoho Audit Hub** |
+| <sub>Visual rack matrix mapping Racks A-E, shelf codes &amp; zone counts</sub><br><br><a href="pictures/store_layout.png"><img src="pictures/store_layout.png" alt="Store Layout & Shelf Directory" width="100%"/></a> | <sub>Stock reconciliation, quantity mismatches &amp; fully synced item breakdown</sub><br><br><a href="pictures/analytics_hub.png"><img src="pictures/analytics_hub.png" alt="Analytics & Zoho Audit" width="100%"/></a> |
 | **Material Requests Workflow** | **Stock Movements Audit Log** |
 | <sub>Review, approve, and track material requisition requests from site engineers</sub><br><br><a href="pictures/material_requests.png"><img src="pictures/material_requests.png" alt="Material Requests" width="100%"/></a> | <sub>Complete audit trail recording inward receipts and outward allocations</sub><br><br><a href="pictures/stock_movments.png"><img src="pictures/stock_movments.png" alt="Stock Movements" width="100%"/></a> |
 | **Engineer Activity & Audit Log** | **Manager Options & Centralized Security** |
 | <sub>Track historical requests linked to engineer emails with 1-click PDF export</sub><br><br><a href="pictures/engineer-ACT.png"><img src="pictures/engineer-ACT.png" alt="Engineer Activity Log" width="100%"/></a> | <sub>Global credential settings, Dark/Light theme toggles &amp; live Zoho API sync</sub><br><br><a href="pictures/admin_options.png"><img src="pictures/admin_options.png" alt="Store Manager Options Menu" width="100%"/></a> |
+| **Privacy & Data Protection Policy** | **Terms & Conditions of Use** |
+| <sub>Enterprise compliance modal detailing data processing &amp; RBAC access control</sub><br><br><a href="pictures/privacy_policy.png"><img src="pictures/privacy_policy.png" alt="Privacy Policy Modal" width="100%"/></a> | <sub>Legal operational agreement governing store manager &amp; engineer system usage</sub><br><br><a href="pictures/terms_conditions.png"><img src="pictures/terms_conditions.png" alt="Terms & Conditions Modal" width="100%"/></a> |
+| **Custom 404 Error Page** | |
+| <sub>Gradient-styled fallback page for non-existent material routes &amp; system paths</sub><br><br><a href="pictures/page_404.png"><img src="pictures/page_404.png" alt="Custom 404 Error Page" width="100%"/></a> | |
 
 ---
 
