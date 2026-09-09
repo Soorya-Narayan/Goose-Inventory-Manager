@@ -1040,6 +1040,30 @@ app.post('/api/system/maintenance', (req, res) => {
   });
 });
 
+// ─── Preset CSV Analytics Endpoint ──────────────────────────────────────────
+app.get('/api/analytics/preset-csv', (req, res) => {
+  try {
+    const csvDir = path.join(__dirname, 'csv');
+    if (!fs.existsSync(csvDir)) {
+      return res.status(404).json({ error: 'Directory csv not found' });
+    }
+    const files = fs.readdirSync(csvDir).filter(f => f.endsWith('.csv'));
+    if (files.length === 0) {
+      return res.status(404).json({ error: 'No CSV files found in csv directory' });
+    }
+    const targetFile = files.find(f => f.toLowerCase().includes('pune')) || files[0];
+    const filePath = path.join(csvDir, targetFile);
+    const content = fs.readFileSync(filePath, 'utf8');
+    res.json({
+      success: true,
+      fileName: targetFile,
+      content
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to read preset CSV file: ' + err.message });
+  }
+});
+
 // ─── Health Check & SPA Wildcard Fallback ────────────────────────────────────
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date() });

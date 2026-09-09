@@ -5412,7 +5412,7 @@
       "barcode": "PHO-2966838",
       "zone": "electrical",
       "category": "consumable",
-      "quantity": 4,
+      "quantity": 5,
       "unit": "pcs",
       "minStock": 5,
       "location": "G3",
@@ -5426,7 +5426,7 @@
       "soNumber": "",
       "poNumber": "",
       "addedAt": "2026-09-04T04:48:58.665Z",
-      "updatedAt": "2026-09-04T04:48:58.665Z"
+      "updatedAt": "2026-09-09T08:36:05.998Z"
     },
     {
       "id": "ELE-138",

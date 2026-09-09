@@ -1219,17 +1219,33 @@ function parseCSVTextToObjects(csvContent) {
 
   if (rows.length <= 1) return [];
 
-  const rawHeaders = rows[0];
-  const headers = rawHeaders.map(h => h.replace(/^["'\s]+|["'\s]+$/g, '').trim());
+  // Locate true header row (skip report title/metadata headers if present)
+  let headerRowIndex = 0;
+  for (let r = 0; r < Math.min(rows.length, 10); r++) {
+    const row = rows[r];
+    if (!row || row.length === 0) continue;
+    const cleanCells = row.map(c => c.replace(/^["'\s\t]+|["'\s\t]+$/g, '').trim());
+    const candidateMatches = cleanCells.filter(c =>
+      ['Item Name', 'Item', 'SKU', 'Item Code', 'Name', 'Closing Stock', 'Stock On Hand', 'Quantity', 'Code', 'Product'].some(h => c.toLowerCase().includes(h.toLowerCase()))
+    );
+    if (candidateMatches.length >= 1 && cleanCells.filter(Boolean).length >= 2) {
+      headerRowIndex = r;
+      break;
+    }
+  }
+
+  const rawHeaders = rows[headerRowIndex];
+  const headers = rawHeaders.map(h => h.replace(/^["'\s\t]+|["'\s\t]+$/g, '').trim());
 
   const results = [];
-  for (let r = 1; r < rows.length; r++) {
+  for (let r = headerRowIndex + 1; r < rows.length; r++) {
     const row = rows[r];
     if (!row || row.length === 0 || row.every(cell => !cell)) continue;
     const obj = {};
     headers.forEach((h, idx) => {
       if (h) {
-        const val = row[idx] !== undefined && row[idx] !== null ? String(row[idx]).replace(/^["'\s]+|["'\s]+$/g, '').trim() : '';
+        let val = row[idx] !== undefined && row[idx] !== null ? String(row[idx]).replace(/^["'\s\t]+|["'\s\t]+$/g, '').trim() : '';
+        if (val === '-') val = '0';
         obj[h] = val;
       }
     });
@@ -1255,7 +1271,7 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
   const skuCandidates = ['SKU', 'sku', 'Item Code', 'Item ID', 'Zoho Code', 'Part Number', 'Code', 'Material Code', 'Item SKU', 'Product Code'];
   const nameCandidates = ['Item Name', 'Name', 'Item', 'Material Name', 'Product Name', 'Title', 'Item_Name'];
   const specCandidates = ['Description', 'Purchase Description', 'Sales Description', 'Spec', 'Specification', 'Details'];
-  const qtyCandidates = ['Stock On Hand', 'Stock on Hand', 'quantity', 'Quantity', 'Stock', 'Actual Available Stock', 'Available Stock', 'Qty', 'Physical Qty', 'Store Qty', 'Stock_On_Hand'];
+  const qtyCandidates = ['Closing Stock', 'Closing_Stock', 'ClosingStock', 'Stock On Hand', 'Stock on Hand', 'quantity', 'Quantity', 'Stock', 'Actual Available Stock', 'Available Stock', 'Qty', 'Physical Qty', 'Store Qty', 'Stock_On_Hand'];
   const unitCandidates = ['Usage Unit', 'Unit Name', 'Unit', 'UOM', 'Usage_Unit'];
   const rateCandidates = ['Rate', 'Purchase Rate', 'Sales Rate', 'Price', 'Unit Price', 'Cost Price', 'Cost'];
   const catCandidates = ['Product Type', 'Category', 'Item Type', 'Group', 'Product_Type'];
@@ -1271,10 +1287,10 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
     const cleanItemName = sanitizeCode(itemName);
     const spec = getCSVValue(z, specCandidates, z.specification || z.spec || '');
     const rawQty = getCSVValue(z, qtyCandidates, '0');
-    const zohoQty = parseFloat(rawQty) || 0;
+    const zohoQty = parseFloat(String(rawQty).replace(/,/g, '')) || 0;
     const unit = getCSVValue(z, unitCandidates, z.unit || 'pcs');
     const rawRate = getCSVValue(z, rateCandidates, '0');
-    const rate = parseFloat(rawRate) || 0;
+    const rate = parseFloat(String(rawRate).replace(/,/g, '')) || 0;
     const category = getCSVValue(z, catCandidates, z.category || 'Zoho Import');
 
     if (!hasValidSku && (!itemName || itemName.startsWith('Zoho Item #'))) return;
@@ -1291,12 +1307,12 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
       });
     }
 
-    // 2. Fallback: Try Name match (exact or sanitized)
+    // 2. Fallback: Try Name or Code match (exact or sanitized)
     if (!storeMatch && cleanItemName) {
       storeMatch = storeItems.find(i => {
         if (processedStoreItemIds.has(i.id)) return false;
-        const candidateNames = [i.name, i.specification ? `${i.name} ${i.specification}` : ''].map(sanitizeCode).filter(Boolean);
-        return candidateNames.some(c => c === cleanItemName || (c.length > 5 && (c.includes(cleanItemName) || cleanItemName.includes(c))));
+        const candidateNames = [i.zohoCode, i.sku, i.barcode, i.name, i.specification ? `${i.name} ${i.specification}` : ''].map(sanitizeCode).filter(Boolean);
+        return candidateNames.some(c => c === cleanItemName || (c.length > 4 && cleanItemName.length > 4 && (c.includes(cleanItemName) || cleanItemName.includes(c))));
       });
     }
 
@@ -1425,6 +1441,25 @@ function runZohoAuditComparison(rawZohoItems, sourceName = 'Zoho Books Export') 
   renderAnalytics();
 }
 
+async function loadPuneStockReportCSV(manual = false) {
+  try {
+    const res = await fetch('/api/analytics/preset-csv').then(r => r.json());
+    if (res && res.success && res.content) {
+      const rawZohoItems = parseCSVTextToObjects(res.content);
+      if (rawZohoItems && rawZohoItems.length > 0) {
+        runZohoAuditComparison(rawZohoItems, res.fileName || 'Pune Stock Report - 31.08.csv');
+        if (manual) showToast(`Loaded ${res.fileName || 'Pune Stock Report'} (${rawZohoItems.length} items evaluated)`, 'success');
+        renderAnalytics();
+        return true;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load Pune Stock Report CSV:', err);
+    if (manual) showToast('Failed to load Pune Stock Report CSV file', 'error');
+  }
+  return false;
+}
+
 function renderAnalytics() {
   const container = document.getElementById('view-analytics');
   if (!container) return;
@@ -1441,6 +1476,10 @@ function renderAnalytics() {
   }
 
   loadSavedAnalyticsAudit();
+  if (!state.analyticsAudit.auditResults || state.analyticsAudit.auditResults.length === 0) {
+    loadPuneStockReportCSV(false);
+    return;
+  }
 
   const { auditResults, summary, activeTab, searchQuery, sourceType, sourceName, lastRunAt } = state.analyticsAudit;
 
@@ -1626,8 +1665,10 @@ function renderAnalytics() {
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           </div>
           <div style="font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:0.25rem">Drop Zoho Books Items CSV file here</div>
-          <div style="font-size:0.78rem;color:var(--text-tertiary);margin-bottom:1rem">Upload your Zoho Books Items.csv file to compare stock with physical store inventory</div>
-          <button class="btn btn-primary btn-sm" onclick="document.getElementById('analytics-csv-input').click()" style="margin:0 auto">Select CSV File</button>
+          <div style="display:flex;gap:0.75rem;justify-content:center;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('analytics-csv-input').click()">Select CSV File</button>
+            <button class="btn btn-secondary btn-sm" onclick="loadPuneStockReportCSV(true)" style="background:rgba(0,114,255,0.1);color:var(--goose);border-color:rgba(0,114,255,0.3)" title="Load and audit Pune Stock Report - 31.08.csv file">Load Pune Stock Report (31.08.csv)</button>
+          </div>
         </div>
       ` : `
         <!-- LIVE REST API BOX -->
