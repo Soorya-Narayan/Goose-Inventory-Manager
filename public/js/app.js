@@ -3418,7 +3418,7 @@ function exportInventoryCSV() {
 
   const headers = [
     'Item ID', 'Zoho Code / Barcode', 'Material Name', 'Specification', 'Zone', 'Category', 
-    'Quantity', 'Unit', 'Unit Rate (INR)', 'Total Value (INR)', 'Min Stock', 
+    'Quantity', 'Stock Status', 'Unit', 'Unit Rate (INR)', 'Total Value (INR)', 'Min Stock', 
     'Shelf Location', 'HSN', 'Notes', 'Added Date'
   ];
 
@@ -3432,6 +3432,14 @@ function exportInventoryCSV() {
     const qty = parseInt(item.quantity) || 0;
     const rate = parseFloat(item.rate) || 0;
     const totalVal = (qty * rate).toFixed(2);
+    const status = getStockStatus(item);
+
+    let statusText = 'IN STOCK [OK]';
+    if (status === 'out') {
+      statusText = 'NO STOCK [RED]';
+    } else if (status === 'low') {
+      statusText = 'LOW STOCK [AMBER]';
+    }
 
     return [
       escapeCSV(item.id),
@@ -3441,6 +3449,7 @@ function exportInventoryCSV() {
       escapeCSV(item.zone || ''),
       escapeCSV(item.category || ''),
       qty,
+      escapeCSV(statusText),
       escapeCSV(item.unit || 'pcs'),
       rate.toFixed(2),
       totalVal,
@@ -3493,6 +3502,8 @@ function exportInventoryPDF() {
 
     const totalQty = items.reduce((sum, i) => sum + (parseInt(i.quantity) || 0), 0);
     const totalValue = items.reduce((sum, i) => sum + ((parseInt(i.quantity) || 0) * (parseFloat(i.rate) || 0)), 0);
+    const lowStockItems = items.filter(i => getStockStatus(i) === 'low');
+    const noStockItems = items.filter(i => getStockStatus(i) === 'out');
 
     // Title Header
     doc.setFillColor(15, 23, 42); // Dark industrial navy
@@ -3517,24 +3528,38 @@ function exportInventoryPDF() {
     doc.setDrawColor(226, 232, 240);
     doc.roundedRect(14, 30, 182, 14, 2, 2, 'FD');
 
-    doc.setFontSize(8.5);
-    doc.setTextColor(51, 65, 85);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
     doc.text(`Total Materials: ${items.length}`, 18, 39);
-    doc.text(`Total Stock Quantity: ${totalQty.toLocaleString('en-IN')} pcs`, 75, 39);
-    doc.text(`Total Inventory Value: INR ${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 132, 39);
+    doc.text(`Qty: ${totalQty.toLocaleString('en-IN')}`, 55, 39);
+
+    doc.setTextColor(217, 119, 6); // Amber
+    doc.text(`Low Stock (Amber): ${lowStockItems.length}`, 92, 39);
+
+    doc.setTextColor(220, 38, 38); // Red
+    doc.text(`No Stock (Red): ${noStockItems.length}`, 132, 39);
+
+    doc.setTextColor(30, 41, 59);
+    doc.text(`Value: INR ${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 166, 39);
 
     // AutoTable
-    const tableHeaders = [['#', 'ZOHO CODE', 'MATERIAL NAME', 'SPECIFICATION', 'ZONE', 'QTY', 'SHELF']];
+    const tableHeaders = [['#', 'ZOHO CODE', 'MATERIAL NAME', 'SPECIFICATION', 'ZONE', 'QTY', 'STATUS', 'SHELF']];
     const tableRows = items.map((item, index) => {
       const zoneName = item.zone ? item.zone.charAt(0).toUpperCase() + item.zone.slice(1) : 'General';
+      const status = getStockStatus(item);
+      let statusLabel = 'IN STOCK';
+      if (status === 'out') statusLabel = 'NO STOCK';
+      else if (status === 'low') statusLabel = 'LOW STOCK';
+
       return [
         index + 1,
         item.zohoCode || item.sku || item.barcode || '-',
-        item.name.length > 25 ? item.name.slice(0, 25) + '...' : item.name,
-        item.specification ? (item.specification.length > 18 ? item.specification.slice(0, 18) + '...' : item.specification) : '-',
+        item.name.length > 24 ? item.name.slice(0, 24) + '...' : item.name,
+        item.specification ? (item.specification.length > 15 ? item.specification.slice(0, 15) + '...' : item.specification) : '-',
         zoneName,
         `${item.quantity || 0} ${item.unit || 'pcs'}`,
+        statusLabel,
         item.location || 'A1'
       ];
     });
@@ -3560,13 +3585,36 @@ function exportInventoryPDF() {
           fillColor: [248, 250, 252]
         },
         columnStyles: {
-          0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 32, fontStyle: 'bold' },
-          2: { cellWidth: 60 },
-          3: { cellWidth: 26 },
-          4: { cellWidth: 20, fontStyle: 'bold' },
-          5: { cellWidth: 24 },
-          6: { cellWidth: 15 }
+          0: { cellWidth: 8, halign: 'center' },
+          1: { cellWidth: 28, fontStyle: 'bold' },
+          2: { cellWidth: 52 },
+          3: { cellWidth: 24 },
+          4: { cellWidth: 18, fontStyle: 'bold' },
+          5: { cellWidth: 20 },
+          6: { cellWidth: 20, fontStyle: 'bold', halign: 'center' },
+          7: { cellWidth: 12 }
+        },
+        didParseCell: function (data) {
+          if (data.section === 'body') {
+            const rawRowIndex = data.row.index;
+            const item = items[rawRowIndex];
+            if (item) {
+              const status = getStockStatus(item);
+              if (status === 'out') {
+                data.cell.styles.fillColor = [254, 226, 226]; // Soft Red background #fee2e2
+                if (data.column.index === 5 || data.column.index === 6) {
+                  data.cell.styles.textColor = [185, 28, 28]; // Dark Red text #b91c1c
+                  data.cell.styles.fontStyle = 'bold';
+                }
+              } else if (status === 'low') {
+                data.cell.styles.fillColor = [254, 243, 199]; // Soft Amber background #fef3c7
+                if (data.column.index === 5 || data.column.index === 6) {
+                  data.cell.styles.textColor = [180, 83, 9]; // Dark Amber text #b45309
+                  data.cell.styles.fontStyle = 'bold';
+                }
+              }
+            }
+          }
         },
         didDrawPage: function (data) {
           doc.setFontSize(7.5);
