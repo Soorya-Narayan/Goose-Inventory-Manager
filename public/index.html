@@ -488,29 +488,35 @@
             <strong style="color:#b45309">Possible duplicate:</strong> <span id="duplicate-warning-text"></span>
           </div>
 
-          <div class="field-grid two-col" style="gap:0.75rem">
-            <div class="field-group">
-              <label class="field-label">NOTES / SPECIFICATIONS</label>
-              <input type="text" id="item-notes" class="field-input" placeholder="Grade, dimensions, supplier info, etc." />
-            </div>
-            <div class="field-group">
-              <label class="field-label">MATERIAL PHOTO</label>
-              <div class="image-upload-wrap" style="gap:0.5rem">
-                <div class="image-preview-box" id="item-img-preview-box" style="width:38px;height:38px;border-radius:6px">
-                  <img id="item-img-preview" class="image-preview-img hidden" alt="Material preview" />
-                  <div id="item-img-placeholder" class="image-placeholder" style="font-size:0.65rem">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  </div>
+          <div class="field-group">
+            <label class="field-label">NOTES / SPECIFICATIONS</label>
+            <input type="text" id="item-notes" class="field-input" placeholder="Grade, dimensions, supplier info, etc." />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">MATERIAL PHOTO</label>
+            <div class="material-photo-dropzone" id="material-photo-dropzone" onclick="document.getElementById('item-img-file').click()" style="border:2px dashed var(--border-muted);border-radius:var(--radius-md);padding:1rem 1.25rem;background:var(--bg-surface);display:flex;align-items:center;gap:1.25rem;cursor:pointer;transition:all 0.2s;position:relative" ondragover="event.preventDefault();this.style.borderColor='var(--goose)'" ondragleave="this.style.borderColor='var(--border-muted)'" ondrop="handlePhotoDrop(event)">
+              <input type="file" id="item-img-file" accept="image/*" capture="environment" class="hidden" onchange="handleImageFileSelect(event)" />
+              <input type="hidden" id="item-imageUrl" value="" />
+              
+              <div class="image-preview-box-large" id="item-img-preview-box" style="width:72px;height:72px;border-radius:var(--radius-md);background:var(--bg-elevated);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;position:relative">
+                <img id="item-img-preview" class="image-preview-img hidden" alt="Material preview" style="width:100%;height:100%;object-fit:cover" />
+                <div id="item-img-placeholder" style="color:var(--text-tertiary);display:flex;flex-direction:column;align-items:center;gap:0.25rem">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 </div>
-                <div class="image-upload-controls" style="display:flex;gap:0.4rem;align-items:center">
-                  <input type="file" id="item-img-file" accept="image/*" capture="environment" class="hidden" onchange="handleImageFileSelect(event)" />
-                  <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('item-img-file').click()" style="height:38px;padding:0 0.75rem;font-size:0.8rem;display:inline-flex;align-items:center;gap:0.35rem">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    Upload Photo
-                  </button>
-                  <button type="button" id="btn-remove-img" class="btn btn-ghost btn-sm danger-hover hidden" onclick="removeSelectedImage()" style="height:38px;padding:0 0.65rem;font-size:0.8rem">Remove</button>
-                  <input type="hidden" id="item-imageUrl" value="" />
-                </div>
+              </div>
+              
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:0.88rem;color:var(--text-primary);margin-bottom:0.2rem" id="item-img-label-text">Upload Material Photo</div>
+                <div style="font-size:0.78rem;color:var(--text-tertiary)" id="item-img-sub-text">Click to select photo or drag &amp; drop PNG, JPG, WEBP image file</div>
+              </div>
+              
+              <div style="display:flex;gap:0.5rem;align-items:center;flex-shrink:0" onclick="event.stopPropagation()">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('item-img-file').click()" style="height:38px;padding:0 0.875rem;font-size:0.8rem;display:inline-flex;align-items:center;gap:0.4rem">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  Browse
+                </button>
+                <button type="button" id="btn-remove-img" class="btn btn-ghost btn-sm danger-hover hidden" onclick="removeSelectedImage()" style="height:38px;padding:0 0.75rem;font-size:0.8rem">Remove</button>
               </div>
             </div>
           </div>

@@ -4495,17 +4495,23 @@ function setImagePreview(url) {
   const ph = document.getElementById('item-img-placeholder');
   const hdn = document.getElementById('item-imageUrl');
   const btnR = document.getElementById('btn-remove-img');
+  const lbl = document.getElementById('item-img-label-text');
+  const sub = document.getElementById('item-img-sub-text');
 
   if (url) {
     if (img) { img.src = url; img.classList.remove('hidden'); }
     if (ph) ph.classList.add('hidden');
     if (hdn) hdn.value = url;
     if (btnR) btnR.classList.remove('hidden');
+    if (lbl) lbl.textContent = 'Material Photo Attached';
+    if (sub) sub.textContent = 'Click Browse or Dropzone to change photo';
   } else {
     if (img) { img.src = ''; img.classList.add('hidden'); }
     if (ph) ph.classList.remove('hidden');
     if (hdn) hdn.value = '';
     if (btnR) btnR.classList.add('hidden');
+    if (lbl) lbl.textContent = 'Upload Material Photo';
+    if (sub) sub.textContent = 'Click to select photo or drag & drop PNG, JPG, WEBP image file';
   }
 }
 
@@ -4530,8 +4536,26 @@ async function handleImageFileSelect(event) {
   reader.readAsDataURL(file);
 }
 
+function handlePhotoDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const file = e.dataTransfer?.files?.[0];
+  if (!file || !file.type.startsWith('image/')) {
+    showToast('Please drop a valid image file', 'warning');
+    return;
+  }
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const input = document.getElementById('item-img-file');
+  if (input) {
+    input.files = dt.files;
+    handleImageFileSelect({ target: input });
+  }
+}
+
 function removeSelectedImage() {
-  document.getElementById('item-img-file').value = '';
+  const input = document.getElementById('item-img-file');
+  if (input) input.value = '';
   setImagePreview('');
 }
 
