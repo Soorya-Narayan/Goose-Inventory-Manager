@@ -11,7 +11,7 @@ const DATA_FILE = path.join(__dirname, 'data', 'inventory.json');
 const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
 
 const SERVER_START_TIME = Date.now();
-const SYSTEM_VERSION = require('./package.json').version || '2.9.0';
+const SYSTEM_VERSION = require('./package.json').version || '3.1.0';
 let maintenanceMode = false;
 
 // Ensure data & uploads folders exist
