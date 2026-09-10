@@ -1430,6 +1430,7 @@ td {
   font-size: 0.75rem;
 }
 
+/* ─── Unified Form Field System ─────────────────────────────────────────── */
 .field-group {
   display: flex;
   flex-direction: column;
@@ -1445,20 +1446,81 @@ td {
   text-transform: uppercase;
 }
 
-.field-input {
+.field-input,
+.field-select,
+select.field-input,
+input.field-input {
   width: 100%;
-  padding: 0.55rem 0.75rem;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 0.75rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  line-height: 36px;
   background: var(--bg-elevated);
   border: 1px solid var(--border-muted);
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   outline: none;
+  box-sizing: border-box;
   transition: var(--fast);
 }
 
-.field-input:focus {
+.field-input:focus,
+.field-select:focus {
   border-color: var(--goose);
   box-shadow: 0 0 0 2px var(--goose-dim);
+}
+
+select.field-input,
+.field-select {
+  padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 12px 12px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+textarea.field-input,
+.field-textarea {
+  height: auto;
+  min-height: 76px;
+  padding: 0.55rem 0.75rem;
+  line-height: 1.45;
+}
+
+.image-upload-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 38px;
+}
+
+.image-preview-box {
+  width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  border-radius: var(--radius-md) !important;
+  flex-shrink: 0;
+}
+
+.image-upload-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 38px;
+}
+
+.image-upload-controls .btn {
+  height: 38px !important;
+  min-height: 38px !important;
+  line-height: 36px !important;
+  padding: 0 0.75rem !important;
+  box-sizing: border-box !important;
 }
 
 .field-grid.two-col {

@@ -4670,17 +4670,17 @@ function addMaterialRow() {
   row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.5rem 0.625rem';
   row.innerHTML = `
     <button type="button"
-      style="flex:1;text-align:left;background:var(--bg-surface);border:1px solid var(--border-muted);border-radius:var(--radius);padding:0.4rem 0.65rem;font-size:0.82rem;color:var(--text-tertiary);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0"
+      style="flex:1;height:38px;line-height:36px;text-align:left;background:var(--bg-surface);border:1px solid var(--border-muted);border-radius:var(--radius-md);padding:0 0.75rem;font-size:0.85rem;color:var(--text-tertiary);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;box-sizing:border-box"
       onclick="openPickerModal(${rowId})" id="mat-picker-btn-${rowId}">
       Select Material
     </button>
-    <div style="display:flex;align-items:center;gap:0.3rem;flex-shrink:0">
-      <button type="button" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.55rem;font-size:1rem;line-height:1" onclick="stepQty(${rowId}, -1)">−</button>
-      <input type="number" id="mat-qty-${rowId}" value="1" min="1" class="field-input mono" style="width:52px;text-align:center;padding:0.3rem;font-size:0.88rem;-moz-appearance:textfield;-webkit-appearance:none;" oninput="if(this.value<1)this.value=1" />
-      <button type="button" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.55rem;font-size:1rem;line-height:1" onclick="stepQty(${rowId}, 1)">+</button>
+    <div style="display:flex;align-items:center;gap:0.35rem;flex-shrink:0;height:38px">
+      <button type="button" class="btn btn-ghost btn-sm" style="height:38px;width:34px;padding:0;font-size:1rem;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box" onclick="stepQty(${rowId}, -1)">−</button>
+      <input type="number" id="mat-qty-${rowId}" value="1" min="1" class="field-input mono" style="width:54px;height:38px;text-align:center;padding:0 0.4rem;font-size:0.88rem;box-sizing:border-box;-moz-appearance:textfield;-webkit-appearance:none;" oninput="if(this.value<1)this.value=1" />
+      <button type="button" class="btn btn-ghost btn-sm" style="height:38px;width:34px;padding:0;font-size:1rem;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box" onclick="stepQty(${rowId}, 1)">+</button>
       <span id="mat-unit-${rowId}" style="font-size:0.75rem;color:var(--text-tertiary);min-width:24px">pcs</span>
     </div>
-    <button type="button" onclick="removeMaterialRow(${rowId})" style="flex-shrink:0;background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:1.1rem;padding:0.15rem 0.3rem;line-height:1" title="Remove row">&times;</button>
+    <button type="button" onclick="removeMaterialRow(${rowId})" style="flex-shrink:0;width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:1.2rem;box-sizing:border-box" title="Remove row">&times;</button>
   `;
   container.appendChild(row);
 }
