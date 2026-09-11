@@ -4035,6 +4035,7 @@ function openChecklistModal(reqId, readOnly = false) {
   info.innerHTML =
     row('Engineer Name', req.name || req.engineerName) +
     row('Employee ID', req.employeeId) +
+    row('Email ID', req.engineerEmail || req.email) +
     row('Target Project', req.projectName) +
     row('Purpose', req.purpose);
 
@@ -4705,6 +4706,10 @@ function openRequestModal(preselectItemId = null) {
       const el = document.getElementById('req-employee-id');
       if (el) el.value = String(state.user.employeeId).replace(/[^0-9]/g, '');
     }
+    if (state.user?.email) {
+      const el = document.getElementById('req-email');
+      if (el) el.value = state.user.email;
+    }
     // Add one empty row to start
     addMaterialRow();
 
@@ -4933,6 +4938,7 @@ function saveRequestDraft(closeAfterSave = false) {
   const engineer   = document.getElementById('req-engineer')?.value.trim() || '';
   const empDigits  = document.getElementById('req-employee-id')?.value.trim().replace(/[^0-9]/g, '') || '';
   const employeeId = empDigits ? ('GIS' + empDigits) : '';
+  const email      = document.getElementById('req-email')?.value.trim() || '';
   const project    = document.getElementById('req-project')?.value.trim() || '';
   const purpose    = document.getElementById('req-purpose')?.value.trim() || '';
 
@@ -4952,12 +4958,13 @@ function saveRequestDraft(closeAfterSave = false) {
     }
   }
 
-  const hasContent = engineer || employeeId || project || purpose || materials.length > 0;
+  const hasContent = engineer || employeeId || email || project || purpose || materials.length > 0;
 
   if (hasContent) {
     const draft = {
       engineer,
       employeeId,
+      email,
       project,
       purpose,
       materials,
@@ -4996,7 +5003,7 @@ function loadRequestDraft() {
       return false;
     }
 
-    const hasContent = draft.engineer || draft.employeeId || draft.project || draft.purpose || (Array.isArray(draft.materials) && draft.materials.length > 0);
+    const hasContent = draft.engineer || draft.employeeId || draft.email || draft.project || draft.purpose || (Array.isArray(draft.materials) && draft.materials.length > 0);
     if (!hasContent) {
       if (draftBanner) draftBanner.classList.add('hidden');
       return false;
@@ -5004,6 +5011,7 @@ function loadRequestDraft() {
 
     if (document.getElementById('req-engineer')) document.getElementById('req-engineer').value = draft.engineer || '';
     if (document.getElementById('req-employee-id')) document.getElementById('req-employee-id').value = String(draft.employeeId || '').replace(/[^0-9]/g, '');
+    if (document.getElementById('req-email')) document.getElementById('req-email').value = draft.email || '';
     if (document.getElementById('req-project')) document.getElementById('req-project').value = draft.project || '';
     if (document.getElementById('req-purpose')) document.getElementById('req-purpose').value = draft.purpose || '';
 
@@ -5085,6 +5093,9 @@ function clearRequestDraft(showNotice = true) {
   if (document.getElementById('req-employee-id')) {
     document.getElementById('req-employee-id').value = String(state.user?.employeeId || '').replace(/[^0-9]/g, '');
   }
+  if (state.user?.email && document.getElementById('req-email')) {
+    document.getElementById('req-email').value = state.user.email;
+  }
   addMaterialRow();
 
   if (showNotice) {
@@ -5136,10 +5147,17 @@ async function handleRequestSubmit(e) {
     return;
   }
 
+  const email = document.getElementById('req-email').value.trim();
+  if (!email || !email.includes('@')) {
+    showToast('Please enter a valid Email ID', 'error');
+    return;
+  }
+
   const data = {
     name:          document.getElementById('req-engineer').value.trim(),
     employeeId:    'GIS' + empDigits,
-    engineerEmail: state.user?.email || 'surya@goosesolutions.in',
+    engineerEmail: email,
+    email:         email,
     projectName:   document.getElementById('req-project').value.trim(),
     purpose:       document.getElementById('req-purpose').value.trim(),
     materials,
