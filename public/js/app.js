@@ -5332,6 +5332,78 @@ async function handleSaveSettings(e) {
   }
 }
 
+// ─── Data Protection & Backup Export / Import Handlers ──────────────────────
+function exportSystemBackup() {
+  showToast('Preparing system data backup...', 'info');
+  const link = document.createElement('a');
+  link.href = '/api/system/export-backup';
+  const dateStr = new Date().toISOString().split('T')[0];
+  link.download = `Goose_Store_Backup_${dateStr}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('Database backup downloaded successfully!', 'success');
+}
+
+function triggerRestoreBackupUpload() {
+  if (state.user?.role !== 'manager') {
+    showToast('Access Denied: Only Store Manager can restore database backups', 'error');
+    return;
+  }
+  const fileInput = document.getElementById('backup-restore-file-input');
+  if (fileInput) {
+    fileInput.value = '';
+    fileInput.click();
+  }
+}
+
+async function handleRestoreBackupFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (!file.name.toLowerCase().endsWith('.json')) {
+    showToast('Please select a valid .json database backup file', 'error');
+    return;
+  }
+
+  const confirmRestore = confirm(`Are you sure you want to restore database backup '${file.name}'?\n\nThis will restore all materials, requests, and history stored in the backup.`);
+  if (!confirmRestore) return;
+
+  showToast('Reading and validating backup file...', 'info');
+
+  try {
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const backupData = JSON.parse(e.target.result);
+        if (!backupData || typeof backupData !== 'object' || !Array.isArray(backupData.items)) {
+          showToast('Invalid backup file: Missing required inventory structure', 'error');
+          return;
+        }
+
+        const res = await api.post('/api/system/import-backup', {
+          role: 'manager',
+          backupData
+        });
+
+        if (res && res.success) {
+          showToast(res.message || 'Database restored successfully!', 'success');
+          closeSettingsModal();
+          await fetchAllData();
+          renderActiveView();
+        } else {
+          showToast(res.error || 'Failed to restore database backup', 'error');
+        }
+      } catch (err) {
+        showToast('Error parsing backup file: ' + err.message, 'error');
+      }
+    };
+    reader.readAsText(file);
+  } catch (err) {
+    showToast('Failed to read backup file: ' + err.message, 'error');
+  }
+}
+
 // ─── Forgot Manager Password (OTP Reset) Handlers ────────────────────────────
 function openForgotManagerPasswordModal() {
   const overlay = document.getElementById('modal-forgot-password-overlay');

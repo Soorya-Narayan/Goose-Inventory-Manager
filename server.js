@@ -14,10 +14,28 @@ const SERVER_START_TIME = Date.now();
 const SYSTEM_VERSION = require('./package.json').version || '3.1.0';
 let maintenanceMode = false;
 
-// Ensure data & uploads folders exist
+const BACKUP_DIR = path.join(__dirname, 'data', 'backups');
+const SEED_FILE = path.join(__dirname, 'data', 'inventory.seed.json');
+
+// Ensure data, backup & uploads folders exist
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+// Auto-backup on server startup to prevent data loss across deployments
+if (fs.existsSync(DATA_FILE)) {
+  try {
+    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+    if (raw && raw.trim().length > 10) {
+      fs.writeFileSync(path.join(BACKUP_DIR, 'inventory_auto_backup.json'), raw, 'utf-8');
+      const dateStr = new Date().toISOString().split('T')[0];
+      fs.writeFileSync(path.join(BACKUP_DIR, `inventory_backup_${dateStr}.json`), raw, 'utf-8');
+    }
+  } catch (e) {
+    console.warn('Auto backup warning:', e.message);
+  }
+}
 
 app.use(cors());
 
@@ -161,6 +179,16 @@ function mergeDuplicateZohoItems(data) {
 
 function readData() {
   try {
+    // If main data file does not exist or is empty, attempt auto-restore from backup or seed
+    if (!fs.existsSync(DATA_FILE) || fs.statSync(DATA_FILE).size < 10) {
+      const autoBackup = path.join(BACKUP_DIR, 'inventory_auto_backup.json');
+      if (fs.existsSync(autoBackup) && fs.statSync(autoBackup).size > 10) {
+        fs.copyFileSync(autoBackup, DATA_FILE);
+      } else if (fs.existsSync(SEED_FILE) && fs.statSync(SEED_FILE).size > 10) {
+        fs.copyFileSync(SEED_FILE, DATA_FILE);
+      }
+    }
+
     if (!fs.existsSync(DATA_FILE)) return { items: [], requests: [], transactions: [], settings: { managerPin: 'Mannar@200', engineerPin: '5678' } };
     const raw = fs.readFileSync(DATA_FILE, 'utf-8');
     const data = JSON.parse(raw) || {};
@@ -1038,6 +1066,51 @@ app.post('/api/system/maintenance', (req, res) => {
     maintenance: maintenanceMode,
     message: maintenanceMode ? 'System maintenance mode enabled' : 'System maintenance mode disabled'
   });
+});
+
+// ─── Data Backup Export & Restore APIs ──────────────────────────────────────
+app.get('/api/system/export-backup', (req, res) => {
+  try {
+    const data = readData();
+    const dateStr = new Date().toISOString().split('T')[0];
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename=Goose_Store_Backup_${dateStr}.json`);
+    res.send(JSON.stringify(data, null, 2));
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to export database backup: ' + err.message });
+  }
+});
+
+app.post('/api/system/import-backup', (req, res) => {
+  try {
+    const { backupData, role } = req.body;
+    if (role !== 'manager') {
+      return res.status(403).json({ error: 'Only Store Manager can restore database backups' });
+    }
+    if (!backupData || typeof backupData !== 'object') {
+      return res.status(400).json({ error: 'Invalid backup file payload' });
+    }
+    if (!Array.isArray(backupData.items) || !Array.isArray(backupData.requests)) {
+      return res.status(400).json({ error: 'Backup file missing required items or requests data arrays' });
+    }
+
+    // Auto backup current data before restoring
+    if (fs.existsSync(DATA_FILE)) {
+      try {
+        fs.copyFileSync(DATA_FILE, path.join(BACKUP_DIR, `pre_restore_backup_${Date.now()}.json`));
+      } catch (_) {}
+    }
+
+    writeData(backupData);
+    res.json({
+      success: true,
+      message: `Database restored successfully! (${backupData.items.length} materials, ${backupData.requests.length} requests restored)`,
+      itemCount: backupData.items.length,
+      requestCount: backupData.requests.length
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to restore database backup: ' + err.message });
+  }
 });
 
 // ─── Preset CSV Analytics Endpoint ──────────────────────────────────────────
