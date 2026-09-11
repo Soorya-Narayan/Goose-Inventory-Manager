@@ -949,19 +949,17 @@ function applyRoleNavigationVisibility() {
 
   // Left Nav (Desktop Sidebar)
   const reqLink = document.getElementById('nav-requests-link');
-  if (reqLink) {
-    reqLink.style.display = 'flex';
-    const labelSpan = reqLink.querySelector('span:not(.nav-count)');
-    if (labelSpan) {
-      labelSpan.textContent = isManager ? 'Material Requests' : 'My Requests';
-    }
-  }
+  if (reqLink) reqLink.style.display = isManager ? 'flex' : 'none';
 
   const txLink = document.getElementById('nav-transactions-link');
   if (txLink) txLink.style.display = isManager ? 'flex' : 'none';
 
   const engLink = document.getElementById('nav-engineer-history-link');
-  if (engLink) engLink.style.display = isManager ? 'flex' : 'none';
+  if (engLink) {
+    engLink.style.display = 'flex';
+    const span = engLink.querySelector('span');
+    if (span) span.textContent = isManager ? 'Engineer Activity' : 'My Requests & Activity';
+  }
 
   const analyticsLink = document.getElementById('nav-analytics-link');
   if (analyticsLink) analyticsLink.style.display = isManager ? 'flex' : 'none';
@@ -971,16 +969,17 @@ function applyRoleNavigationVisibility() {
 
   // Bottom Nav (Mobile)
   const bnavReq = document.getElementById('bnav-requests-btn');
-  if (bnavReq) {
-    bnavReq.style.display = 'flex';
-    const blabelSpan = bnavReq.querySelector('span');
-    if (blabelSpan) {
-      blabelSpan.textContent = isManager ? 'Requests' : 'My Requests';
-    }
-  }
+  if (bnavReq) bnavReq.style.display = isManager ? 'flex' : 'none';
 
   const bnavTx = document.getElementById('bnav-transactions-btn');
   if (bnavTx) bnavTx.style.display = isManager ? 'flex' : 'none';
+
+  const bnavEng = document.getElementById('bnav-engineer-history-btn');
+  if (bnavEng) {
+    bnavEng.style.display = 'flex';
+    const span = bnavEng.querySelector('span');
+    if (span) span.textContent = isManager ? 'Activity' : 'My Activity';
+  }
 
   const bnavAnalytics = document.getElementById('bnav-analytics-btn');
   if (bnavAnalytics) bnavAnalytics.style.display = isManager ? 'flex' : 'none';
@@ -1062,8 +1061,8 @@ function logout() {
 // ═══════════════════════════════════════════════════════════════════════════════
 function navigateTo(view) {
   const isManager = state.user?.role === 'manager';
-  // Engineers can only view Overview (dashboard), Store Inventory (inventory), and Store Layout (storemap)
-  if (!isManager && ['analytics', 'requests', 'transactions', 'engineer-history', 'labeldesigner'].includes(view)) {
+  // Engineers can view Overview, Inventory, Layout, and My Requests & Activity
+  if (!isManager && ['analytics', 'requests', 'transactions', 'labeldesigner'].includes(view)) {
     view = 'dashboard';
   }
 
@@ -3826,34 +3825,15 @@ function filterAndRenderInventoryRows() {
 // ═══════════════════════════════════════════════════════════════════════════════
 function renderRequests() {
   const isManager = state.user?.role === 'manager';
-  let reqs = state.requests || [];
+  const reqs = state.requests || [];
   const isMobile = window.innerWidth <= 640;
-
-  // Active status filter
-  const currentStatusFilter = state._reqStatusFilter || 'all';
-
-  if (currentStatusFilter !== 'all') {
-    reqs = reqs.filter(r => r.status === currentStatusFilter);
-  }
 
   let contentHtml = '';
 
-  const filterTabsHtml = `
-    <div style="display:flex;gap:0.4rem;padding:0.75rem 1rem;border-bottom:1px solid var(--border-subtle);overflow-x:auto;align-items:center;background:var(--bg-surface)">
-      <span style="font-size:0.75rem;font-weight:600;color:var(--text-tertiary);margin-right:0.25rem">Filter:</span>
-      ${['all', 'pending', 'approved', 'issued', 'rejected'].map(status => {
-        const active = currentStatusFilter === status;
-        const label = status.charAt(0).toUpperCase() + status.slice(1);
-        return `<button class="btn ${active ? 'btn-primary' : 'btn-ghost'} btn-sm" style="padding:0.25rem 0.65rem;font-size:0.78rem" onclick="state._reqStatusFilter='${status}';renderRequests()">${label}</button>`;
-      }).join('')}
-    </div>
-  `;
-
   if (reqs.length === 0) {
     contentHtml = `
-      ${filterTabsHtml}
       <div style="text-align:center;padding:3.5rem 1rem;color:var(--text-tertiary)">
-        <div style="font-weight:700;font-size:1.05rem;color:var(--text-primary);margin-bottom:0.35rem">No Material Requests Found</div>
+        <div style="font-weight:700;font-size:1.05rem;color:var(--text-primary);margin-bottom:0.35rem">No Supplier Offers Submitted</div>
         <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1.25rem">Engineers can request items from the inventory at any time.</div>
         <button class="btn btn-primary btn-sm" onclick="openRequestModal()" style="margin:0 auto">+ Request Material</button>
       </div>
@@ -3861,7 +3841,6 @@ function renderRequests() {
   } else if (isMobile) {
     // Mobile Touch Cards
     contentHtml = `
-      ${filterTabsHtml}
       <div style="display:flex;flex-direction:column;gap:0.75rem;padding:0.75rem">
         ${reqs.map(r => {
           const mats = Array.isArray(r.materials) ? r.materials : (
@@ -3892,29 +3871,29 @@ function renderRequests() {
               <span>${escHtml(r.purpose || '')}</span>
               <span>${new Date(r.requestedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
             </div>
-            <div style="display:flex;gap:0.4rem;margin-top:0.4rem;align-items:center">
-              <button class="btn btn-secondary btn-sm" style="flex:1;justify-content:center;gap:0.3rem" onclick="openEditRequestModal('${r.id}')" title="Edit Request">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Edit Request
-              </button>
-              ${isManager ? (() => {
-                if (r.status === 'pending') return `
+            ${isManager ? (() => {
+              if (r.status === 'pending') return `
+                <div style="display:flex;gap:0.5rem;margin-top:0.4rem">
                   <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'approved')">Approve</button>
-                  <button class="btn btn-danger btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'rejected')">Reject</button>`;
-                if (r.status === 'approved') return `
+                  <button class="btn btn-danger btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
+                </div>`;
+              if (r.status === 'approved') return `
+                <div style="display:flex;gap:0.4rem;margin-top:0.4rem">
                   <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center;gap:0.3rem" onclick="openChecklistModal('${r.id}')" title="Open Issue Checklist">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
                     Issue
                   </button>
-                  <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>`;
-                if (r.status === 'issued') return `
-                  <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;gap:0.3rem;opacity:0.6" onclick="openChecklistModal('${r.id}', true)" title="View Issue Record">
+                  <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>
+                </div>`;
+              if (r.status === 'issued') return `
+                <div style="margin-top:0.4rem">
+                  <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;gap:0.3rem;opacity:0.6" onclick="openChecklistModal('${r.id}', true)" title="View Issue Record">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-                    Record
-                  </button>`;
-                return '';
-              })() : ''}
-            </div>
+                    View Record
+                  </button>
+                </div>`;
+              return '';
+            })() : ''}
           </div>`;
         }).join('')}
       </div>
@@ -3922,7 +3901,6 @@ function renderRequests() {
   } else {
     // Desktop Table
     contentHtml = `
-      ${filterTabsHtml}
       <div class="table-wrap">
         <table>
           <thead>
@@ -3932,7 +3910,7 @@ function renderRequests() {
               <th>Materials</th>
               <th>Project</th>
               <th>Status</th>
-              <th>Action</th>
+              ${isManager ? '<th>Action</th>' : ''}
             </tr>
           </thead>
           <tbody>
@@ -3956,13 +3934,9 @@ function renderRequests() {
                 <td style="max-width:240px">${matsHtml}</td>
                 <td>${escHtml(r.projectName || r.project || 'General')}</td>
                 <td>${reqStatusTag(r.status)}</td>
-                <td style="white-space:nowrap">
-                  <div style="display:flex;gap:0.4rem;align-items:center">
-                    <button class="btn btn-secondary btn-sm" style="padding:0.25rem 0.55rem;font-size:0.78rem;display:inline-flex;align-items:center;gap:0.3rem" onclick="openEditRequestModal('${r.id}')" title="Edit Request">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      Edit
-                    </button>
-                    ${isManager ? `
+                ${isManager ? `
+                  <td style="white-space:nowrap">
+                    <div style="display:flex;gap:0.4rem;align-items:center">
                       ${r.status === 'pending' ? `
                         <button class="btn btn-primary btn-sm" onclick="processRequest('${r.id}', 'approved')">Approve</button>
                         <button class="btn btn-danger btn-sm" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
@@ -3977,13 +3951,13 @@ function renderRequests() {
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
                           View Record
                         </button>
-                      ` : ''}
+                      ` : `<span style="font-size:0.75rem;color:var(--text-tertiary)">—</span>`}
                       <button class="btn btn-ghost btn-sm" onclick="deleteRequest('${r.id}')" title="Delete Material Request" style="color:var(--text-tertiary);padding:0.25rem 0.4rem">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                       </button>
-                    ` : ''}
-                  </div>
-                </td>
+                    </div>
+                  </td>
+                ` : ''}
               </tr>`;
             }).join('')}
           </tbody>
@@ -3995,8 +3969,8 @@ function renderRequests() {
   document.getElementById('view-requests').innerHTML = `
     <div class="page-hdr">
       <div>
-        <h1 class="page-title">${isManager ? 'Material Requests &amp; Supplier Offers' : 'My Requests &amp; Activity'}</h1>
-        <p class="page-subtitle">${isManager ? 'Review &amp; approve supplier offers' : 'Track your material requests, view real-time approval status, and edit requests'}</p>
+        <h1 class="page-title">Supplier Offers</h1>
+        <p class="page-subtitle">${isManager ? 'Review &amp; approve supplier offers' : 'Your submitted supplier offers'}</p>
       </div>
       <div>
         <button class="btn btn-primary" onclick="openRequestModal()">+ Request Material</button>
@@ -4723,16 +4697,15 @@ function toggleTheme() {
 }
 
 // ─── Material Row counter ─────────────────────────────────────────────────────
+let _editingRequestId = null;
 let _rowCounter = 0;
 
 // ─── Modal Openers for Requesting ─────────────────────────────────────────────
-let _activeEditRequestId = null;
-
 function openRequestModal(preselectItemId = null) {
-  _activeEditRequestId = null;
-  const titleEl = document.getElementById('request-modal-title');
-  if (titleEl) titleEl.textContent = 'Request Material';
-  const submitBtn = document.getElementById('request-modal-submit-btn');
+  _editingRequestId = null;
+  const titleEl = document.getElementById('modal-request-title') || document.getElementById('request-modal-title');
+  if (titleEl) titleEl.textContent = 'Supplier Offer / Material Request';
+  const submitBtn = document.getElementById('req-submit-btn') || document.getElementById('request-modal-submit-btn');
   if (submitBtn) submitBtn.textContent = 'Submit Offer';
 
   _rowCounter = 0;
@@ -4765,13 +4738,13 @@ function openRequestModal(preselectItemId = null) {
         if (row) {
           row.dataset.itemId   = item.id;
           row.dataset.itemName = item.name;
-          row.dataset.itemSku  = item.sku;
+          row.dataset.itemSku  = item.sku || '';
           row.dataset.unit     = item.unit || 'pcs';
           const btn = document.getElementById('mat-picker-btn-1');
           if (btn) {
             btn.style.color = 'var(--text-primary)';
             btn.style.fontWeight = '600';
-            btn.textContent = `${item.name} (${item.sku})`;
+            btn.textContent = `${item.name} (${item.sku || item.id})`;
           }
           const unitEl = document.getElementById('mat-unit-1');
           if (unitEl) unitEl.textContent = item.unit || 'pcs';
@@ -4790,79 +4763,61 @@ function openEditRequestModal(requestId) {
     showToast('Request not found', 'error');
     return;
   }
-  _activeEditRequestId = requestId;
 
-  // Clear draft banner
-  const draftBanner = document.getElementById('request-draft-banner');
-  if (draftBanner) draftBanner.classList.add('hidden');
+  _editingRequestId = requestId;
+  _rowCounter = 0;
 
-  // Set Modal title & submit button text
-  const titleEl = document.getElementById('request-modal-title');
-  if (titleEl) titleEl.textContent = `Edit Material Request (${req.id})`;
-  const submitBtn = document.getElementById('request-modal-submit-btn');
+  const titleEl = document.getElementById('modal-request-title') || document.getElementById('request-modal-title');
+  if (titleEl) titleEl.textContent = `Edit Material Request #${req.id}`;
+  const submitBtn = document.getElementById('req-submit-btn') || document.getElementById('request-modal-submit-btn');
   if (submitBtn) submitBtn.textContent = 'Update Request';
 
-  // Fill Header details
-  if (document.getElementById('req-engineer')) {
-    document.getElementById('req-engineer').value = req.name || req.engineerName || req.engineer || '';
-  }
-  if (document.getElementById('req-employee-id')) {
-    document.getElementById('req-employee-id').value = String(req.employeeId || '').replace(/[^0-9]/g, '');
-  }
-  if (document.getElementById('req-email')) {
-    document.getElementById('req-email').value = req.engineerEmail || req.email || '';
-  }
-  if (document.getElementById('req-project')) {
-    document.getElementById('req-project').value = req.projectName || req.project || '';
-  }
-  if (document.getElementById('req-purpose')) {
-    document.getElementById('req-purpose').value = req.purpose || '';
-  }
+  // Fill text fields
+  const engEl = document.getElementById('req-engineer');
+  if (engEl) engEl.value = req.name || req.engineerName || '';
 
-  // Fill Material rows
+  const empEl = document.getElementById('req-employee-id');
+  if (empEl) empEl.value = (req.employeeId || '').replace(/[^0-9]/g, '');
+
+  const emailEl = document.getElementById('req-email');
+  if (emailEl) emailEl.value = req.engineerEmail || req.email || '';
+
+  const projEl = document.getElementById('req-project');
+  if (projEl) projEl.value = req.projectName || '';
+
+  const purpEl = document.getElementById('req-purpose');
+  if (purpEl) purpEl.value = req.purpose || '';
+
+  // Populate materials
   const container = document.getElementById('material-rows-container');
-  if (container) {
-    container.innerHTML = '';
-    _rowCounter = 0;
-    const mats = Array.isArray(req.materials) && req.materials.length > 0
-      ? req.materials
-      : (req.itemName ? [{ itemId: req.itemId, itemName: req.itemName, itemSku: req.itemSku, unit: req.unit, quantity: req.quantityRequested || 1 }] : []);
+  if (container) container.innerHTML = '';
 
-    if (mats.length === 0) {
-      addMaterialRow();
-    } else {
-      mats.forEach(m => {
-        const rowId = ++_rowCounter;
-        const row = document.createElement('div');
-        row.id = `mat-row-${rowId}`;
-        row.dataset.itemId   = m.itemId || '';
-        row.dataset.itemName = m.itemName || '';
-        row.dataset.itemSku  = m.itemSku || '';
-        row.dataset.unit     = m.unit || 'pcs';
-        row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.5rem 0.625rem';
+  const mats = Array.isArray(req.materials) && req.materials.length > 0
+    ? req.materials
+    : [{ itemId: req.itemId || '', itemName: req.itemName || 'Material', itemSku: req.itemSku || '', quantity: req.quantityRequested || 1, unit: req.unit || 'pcs' }];
 
-        const btnLabel = m.itemName ? `${m.itemName} (${m.itemSku || m.itemId})` : 'Select Material';
-        const btnColor = m.itemName ? 'var(--text-primary)' : 'var(--text-tertiary)';
-        const btnWeight = m.itemName ? '600' : 'normal';
+  mats.forEach(mat => {
+    addMaterialRow();
+    const rowId = _rowCounter;
+    const row = document.getElementById(`mat-row-${rowId}`);
+    if (row) {
+      row.dataset.itemId = mat.itemId || '';
+      row.dataset.itemName = mat.itemName || '';
+      row.dataset.itemSku = mat.itemSku || '';
+      row.dataset.unit = mat.unit || 'pcs';
 
-        row.innerHTML = `
-          <button type="button"
-            style="flex:1;height:38px;line-height:36px;text-align:left;background:var(--bg-surface);border:1px solid var(--border-muted);border-radius:var(--radius-md);padding:0 0.75rem;font-size:0.85rem;color:${btnColor};font-weight:${btnWeight};cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;box-sizing:border-box"
-            onclick="openPickerModal(${rowId})" id="mat-picker-btn-${rowId}">
-            ${escHtml(btnLabel)}
-          </button>
-          <div style="display:flex;align-items:center;gap:0.35rem;flex-shrink:0;height:38px">
-            <button type="button" class="btn btn-ghost btn-sm" style="height:38px;width:34px;padding:0;font-size:1rem;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box" onclick="stepQty(${rowId}, -1)">−</button>
-            <input type="number" id="mat-qty-${rowId}" value="${m.quantity || 1}" min="1" class="field-input mono" style="width:54px;height:38px;text-align:center;padding:0 0.4rem;font-size:0.88rem;box-sizing:border-box;-moz-appearance:textfield;-webkit-appearance:none;" oninput="if(this.value<1)this.value=1" />
-            <button type="button" class="btn btn-ghost btn-sm" style="height:38px;width:34px;padding:0;font-size:1rem;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box" onclick="stepQty(${rowId}, 1)">+</button>
-            <span id="mat-unit-${rowId}" style="font-size:0.75rem;color:var(--text-tertiary);min-width:24px">${escHtml(m.unit || 'pcs')}</span>
-          </div>
-          <button type="button" onclick="removeMaterialRow(${rowId})" style="flex-shrink:0;width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:1.2rem;box-sizing:border-box" title="Remove row">&times;</button>
-        `;
-        container.appendChild(row);
-      });
+      const pickerBtn = document.getElementById(`mat-picker-btn-${rowId}`);
+      if (pickerBtn) {
+        pickerBtn.style.color = 'var(--text-primary)';
+        pickerBtn.style.fontWeight = '600';
+        pickerBtn.textContent = `${mat.itemName || 'Select Material'} ${mat.itemSku ? '(' + mat.itemSku + ')' : ''}`;
+      }
+      const qtyInput = document.getElementById(`mat-qty-${rowId}`);
+      if (qtyInput) qtyInput.value = mat.quantity || 1;
+      const unitSpan = document.getElementById(`mat-unit-${rowId}`);
+      if (unitSpan) unitSpan.textContent = mat.unit || 'pcs';
     }
-  }
+  });
 
   document.getElementById('modal-request-overlay')?.classList.remove('hidden');
 }
@@ -5063,7 +5018,6 @@ function selectPickerItem(itemId) {
 // ─── Material Request Draft Helpers ──────────────────────────────────────────
 
 function saveRequestDraft(closeAfterSave = false) {
-  if (_activeEditRequestId) return false;
   const engineer   = document.getElementById('req-engineer')?.value.trim() || '';
   const empDigits  = document.getElementById('req-employee-id')?.value.trim().replace(/[^0-9]/g, '') || '';
   const employeeId = empDigits ? ('GIS' + empDigits) : '';
@@ -5234,10 +5188,7 @@ function clearRequestDraft(showNotice = true) {
 
 function closeRequestModal(e) {
   if (e && e.target !== document.getElementById('modal-request-overlay')) return;
-  if (!_activeEditRequestId) {
-    saveRequestDraft(false);
-  }
-  _activeEditRequestId = null;
+  saveRequestDraft(false);
   document.getElementById('modal-request-overlay')?.classList.add('hidden');
 }
 
@@ -5269,7 +5220,7 @@ async function handleRequestSubmit(e) {
   }
 
   if (materials.length === 0) {
-    showToast('Add at least one material to the request', 'error');
+    showToast('Add at least one material to the offer', 'error');
     return;
   }
 
@@ -5297,8 +5248,8 @@ async function handleRequestSubmit(e) {
 
   try {
     let res;
-    if (_activeEditRequestId) {
-      res = await api.put(`/api/requests/${_activeEditRequestId}`, data);
+    if (_editingRequestId) {
+      res = await api.put(`/api/requests/${_editingRequestId}`, data);
     } else {
       res = await api.post('/api/requests', data);
     }
@@ -5306,15 +5257,15 @@ async function handleRequestSubmit(e) {
       showToast(res.error, 'error');
       return;
     }
-    const isEdit = !!_activeEditRequestId;
-    _activeEditRequestId = null;
+    const msg = _editingRequestId ? 'Material request updated successfully!' : 'Supplier offer submitted successfully!';
+    _editingRequestId = null;
     clearRequestDraft(false);
-    showToast(isEdit ? 'Material request updated successfully!' : 'Material request submitted successfully!', 'success');
+    showToast(msg, 'success');
     document.getElementById('modal-request-overlay').classList.add('hidden');
     await loadAll();
-    renderView('requests');
+    renderView(state.currentView || 'engineer-history');
   } catch (err) {
-    showToast(_activeEditRequestId ? 'Failed to update request' : 'Failed to submit request', 'error');
+    showToast('Failed to submit offer', 'error');
   }
 }
 
@@ -5707,21 +5658,26 @@ async function renderEngineerHistory() {
   }, 0);
 
   const selectedEngInfo = engineersMap.get(_selectedEngineerEmail) || {
-    name: isManager ? 'All Engineers' : (state.user?.name || 'Engineer'),
+    name: isManager ? 'All Engineers' : (state.user?.name || 'Engineer Profile'),
     email: _selectedEngineerEmail === 'all' ? 'All Activity' : _selectedEngineerEmail,
     employeeId: state.user?.employeeId || 'GIS1001'
   };
 
+  const pageTitle = isManager ? 'Engineer Activity & Audit Log' : 'My Requests & Activity';
+  const pageSubtitle = isManager
+    ? 'Historical material requests & dispatch activity linked to engineer mail IDs'
+    : 'Track approval, dispatch status and edit your material requests';
+
   container.innerHTML = `
     <div class="page-hdr">
       <div>
-        <h1 class="page-title">Engineer Activity &amp; Audit Log</h1>
-        <div class="page-subtitle">Historical material requests &amp; dispatch activity linked to engineer mail IDs</div>
+        <h1 class="page-title">${escHtml(pageTitle)}</h1>
+        <div class="page-subtitle">${escHtml(pageSubtitle)}</div>
       </div>
       <div style="display:flex;gap:0.75rem;align-items:center">
-        ${isManager ? `
+        ${engineersList.length > 0 ? `
           <select id="engineer-filter-select" class="field-input" onchange="_selectedEngineerEmail=this.value;renderEngineerHistory()" style="width:auto;height:38px;font-size:0.84rem;font-weight:600;padding:0.5rem 0.85rem;box-sizing:border-box">
-            <option value="all" ${_selectedEngineerEmail === 'all' ? 'selected' : ''}>All Engineers Activity</option>
+            <option value="all" ${_selectedEngineerEmail === 'all' ? 'selected' : ''}>${isManager ? 'All Engineers Activity' : 'All Requests & Activity'}</option>
             ${engineersList.map(e => `<option value="${e.email}" ${_selectedEngineerEmail === e.email ? 'selected' : ''}>${escHtml(e.name)} (${escHtml(e.email)})</option>`).join('')}
           </select>
         ` : ''}
@@ -5773,12 +5729,13 @@ async function renderEngineerHistory() {
               <th>Requested Materials</th>
               <th>Status</th>
               <th>Manager Remarks</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             ${activeRequests.length === 0 ? `
               <tr>
-                <td colspan="6" style="text-align:center;padding:3rem;color:var(--text-tertiary)">
+                <td colspan="7" style="text-align:center;padding:3rem;color:var(--text-tertiary)">
                   No activity or material request history recorded for this profile yet.
                 </td>
               </tr>
@@ -5815,6 +5772,12 @@ async function renderEngineerHistory() {
                   <td style="font-size:0.82rem;line-height:1.4">${matsSummary}</td>
                   <td>${statusBadge}</td>
                   <td style="font-size:0.8rem;color:var(--text-secondary)">${escHtml(r.managerNotes || '—')}</td>
+                  <td>
+                    <button class="btn btn-ghost btn-sm" onclick="openEditRequestModal('${r.id}')" title="Edit Request">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                      <span>Edit</span>
+                    </button>
+                  </td>
                 </tr>
               `;
             }).join('')}

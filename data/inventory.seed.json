@@ -7641,6 +7641,59 @@
           "quantity": 3
         }
       ]
+    },
+    {
+      "id": "req-anita-101",
+      "name": "Anita Sharma",
+      "employeeId": "GIS1042",
+      "engineerEmail": "anita@goosesolutions.in",
+      "email": "anita@goosesolutions.in",
+      "projectName": "Dairy Plant Automation Phase 2",
+      "purpose": "Sensor installation & fitting assembly",
+      "status": "pending",
+      "requestedAt": "2026-09-11T10:15:00.000Z",
+      "processedAt": null,
+      "processedBy": null,
+      "managerNotes": "",
+      "materials": [
+        {
+          "itemId": "MEC-001",
+          "itemName": "UB - SMS UNION",
+          "itemSku": "UB-SMS UNION 25MM",
+          "unit": "pcs",
+          "quantity": 4
+        },
+        {
+          "itemId": "BRO-TR-100 BK",
+          "itemName": "BRO-FERULE INK",
+          "itemSku": "BRO-TR-100 BK",
+          "unit": "pcs",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "id": "req-anita-102",
+      "name": "Anita Sharma",
+      "employeeId": "GIS1042",
+      "engineerEmail": "anita@goosesolutions.in",
+      "email": "anita@goosesolutions.in",
+      "projectName": "Substation Control Upgrade",
+      "purpose": "Terminal block replacement & electrical cabling",
+      "status": "approved",
+      "requestedAt": "2026-09-11T11:45:00.000Z",
+      "processedAt": "2026-09-11T12:00:00.000Z",
+      "processedBy": "Store Manager",
+      "managerNotes": "Approved for dispatch from Rack F1",
+      "materials": [
+        {
+          "itemId": "MEC-002",
+          "itemName": "UB - UNION NUT",
+          "itemSku": "UB-SS304 UNION NUT 25MM",
+          "unit": "pcs",
+          "quantity": 3
+        }
+      ]
     }
   ],
   "transactions": [],

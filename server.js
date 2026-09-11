@@ -712,21 +712,28 @@ app.put('/api/requests/:id', (req, res) => {
   const idx = data.requests.findIndex(r => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Request not found' });
 
-  const body = req.body || {};
+  const { status, processedBy, managerNotes, checklist, processedAt, name, employeeId, engineerEmail, email, projectName, purpose, materials } = req.body;
   const oldStatus = data.requests[idx].status;
-  const newStatus = body.status !== undefined ? body.status : oldStatus;
 
-  // Build the updated request — merge updated fields while preserving system metadata
+  const targetEmail = email !== undefined ? email : (engineerEmail !== undefined ? engineerEmail : (data.requests[idx].engineerEmail || data.requests[idx].email));
+
+  // Build the updated request — allow updating status as well as request details
   data.requests[idx] = {
     ...data.requests[idx],
-    ...body,
-    status: newStatus,
-    processedBy: body.processedBy !== undefined ? body.processedBy : data.requests[idx].processedBy,
-    managerNotes: body.managerNotes !== undefined ? body.managerNotes : data.requests[idx].managerNotes,
-    checklist: Array.isArray(body.checklist) ? body.checklist : data.requests[idx].checklist || [],
-    processedAt: body.processedAt !== undefined
-      ? body.processedAt  // explicit null allowed (for revert)
-      : (newStatus !== oldStatus ? new Date().toISOString() : data.requests[idx].processedAt)
+    status: status !== undefined ? status : data.requests[idx].status,
+    name: name !== undefined ? name : data.requests[idx].name,
+    employeeId: employeeId !== undefined ? employeeId : data.requests[idx].employeeId,
+    engineerEmail: targetEmail !== undefined ? targetEmail : data.requests[idx].engineerEmail,
+    email: targetEmail !== undefined ? targetEmail : data.requests[idx].email,
+    projectName: projectName !== undefined ? projectName : data.requests[idx].projectName,
+    purpose: purpose !== undefined ? purpose : data.requests[idx].purpose,
+    materials: Array.isArray(materials) ? materials : data.requests[idx].materials,
+    processedBy: processedBy !== undefined ? processedBy : data.requests[idx].processedBy,
+    managerNotes: managerNotes !== undefined ? managerNotes : data.requests[idx].managerNotes,
+    checklist: Array.isArray(checklist) ? checklist : data.requests[idx].checklist || [],
+    processedAt: processedAt !== undefined
+      ? processedAt  // explicit null allowed (for revert)
+      : (status && status !== oldStatus ? new Date().toISOString() : data.requests[idx].processedAt)
   };
 
   // ── Stock deduction: only when transitioning TO 'issued' ──────────────────
