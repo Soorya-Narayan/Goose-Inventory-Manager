@@ -712,19 +712,21 @@ app.put('/api/requests/:id', (req, res) => {
   const idx = data.requests.findIndex(r => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Request not found' });
 
-  const { status, processedBy, managerNotes, checklist, processedAt } = req.body;
+  const body = req.body || {};
   const oldStatus = data.requests[idx].status;
+  const newStatus = body.status !== undefined ? body.status : oldStatus;
 
-  // Build the updated request — allow any status transition (including revert to pending)
+  // Build the updated request — merge updated fields while preserving system metadata
   data.requests[idx] = {
     ...data.requests[idx],
-    status,
-    processedBy: processedBy !== undefined ? processedBy : data.requests[idx].processedBy,
-    managerNotes: managerNotes !== undefined ? managerNotes : data.requests[idx].managerNotes,
-    checklist: Array.isArray(checklist) ? checklist : data.requests[idx].checklist || [],
-    processedAt: processedAt !== undefined
-      ? processedAt  // explicit null allowed (for revert)
-      : new Date().toISOString()
+    ...body,
+    status: newStatus,
+    processedBy: body.processedBy !== undefined ? body.processedBy : data.requests[idx].processedBy,
+    managerNotes: body.managerNotes !== undefined ? body.managerNotes : data.requests[idx].managerNotes,
+    checklist: Array.isArray(body.checklist) ? body.checklist : data.requests[idx].checklist || [],
+    processedAt: body.processedAt !== undefined
+      ? body.processedAt  // explicit null allowed (for revert)
+      : (newStatus !== oldStatus ? new Date().toISOString() : data.requests[idx].processedAt)
   };
 
   // ── Stock deduction: only when transitioning TO 'issued' ──────────────────

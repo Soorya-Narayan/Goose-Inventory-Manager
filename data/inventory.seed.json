@@ -7588,7 +7588,61 @@
       "updatedAt": "2026-09-05T06:07:50.246Z"
     }
   ],
-  "requests": [],
+  "requests": [
+    {
+      "id": "REQ-1001",
+      "name": "Suresh Patel",
+      "employeeId": "GIS1042",
+      "engineerEmail": "surya@goosesolutions.in",
+      "email": "surya@goosesolutions.in",
+      "projectName": "Dairy Plant Expansion",
+      "purpose": "Control panel wiring and relay assembly for line 2",
+      "status": "pending",
+      "requestedAt": "2026-09-11T10:15:00.000Z",
+      "processedAt": null,
+      "processedBy": null,
+      "managerNotes": "",
+      "materials": [
+        {
+          "itemId": "RELAY-24V",
+          "itemName": "Sample Relay 24V",
+          "itemSku": "RELAY-24V",
+          "unit": "pcs",
+          "quantity": 2
+        },
+        {
+          "itemId": "BRO-TR-100 BK",
+          "itemName": "BRO-FERULE INK",
+          "itemSku": "BRO-TR-100 BK",
+          "unit": "pcs",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "REQ-1002",
+      "name": "Anil Kumar",
+      "employeeId": "GIS1088",
+      "engineerEmail": "anil@goosesolutions.in",
+      "email": "anil@goosesolutions.in",
+      "projectName": "HVAC Piping Overhaul",
+      "purpose": "Stainless steel SMS union fittings replacement",
+      "status": "approved",
+      "requestedAt": "2026-09-11T09:30:00.000Z",
+      "processedAt": "2026-09-11T10:00:00.000Z",
+      "processedBy": "Store Manager",
+      "managerNotes": "Approved for store issue",
+      "materials": [
+        {
+          "itemId": "MEC-001",
+          "itemName": "UB - SMS UNION",
+          "itemSku": "UB-SMS UNION 25MM",
+          "unit": "pcs",
+          "quantity": 3
+        }
+      ]
+    }
+  ],
   "transactions": [],
   "settings": {
     "managerPin": "Mannar@200",

@@ -576,8 +576,8 @@
     <div class="modal" id="modal-request" style="max-width:640px" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title-block">
-          <div class="modal-title-tag">SUPPLIER OFFER</div>
-          <h2 class="modal-title">Supplier Offer / Material Request</h2>
+          <div class="modal-title-tag">MATERIAL REQUEST</div>
+          <h2 class="modal-title" id="request-modal-title">Request Material</h2>
         </div>
         <button class="modal-close-btn" onclick="closeRequestModal()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -645,7 +645,7 @@
           </button>
           <div style="display:flex;gap:0.5rem">
             <button type="button" class="btn btn-ghost" onclick="closeRequestModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary">Submit Offer</button>
+            <button type="submit" class="btn btn-primary" id="request-modal-submit-btn">Submit Request</button>
           </div>
         </div>
       </form>
