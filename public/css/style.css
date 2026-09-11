@@ -1393,6 +1393,33 @@ td {
   background: var(--bg-overlay);
 }
 
+/* Active Filter Pill Buttons Styling */
+.btn.active,
+.btn-primary.active,
+.btn-ghost.active {
+  background: var(--goose) !important;
+  color: #000000 !important;
+  border-color: var(--goose) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4) !important;
+}
+
+.btn-filter-out.active {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4) !important;
+}
+
+.btn-filter-low.active {
+  background: #f59e0b !important;
+  color: #000000 !important;
+  border-color: #d97706 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4) !important;
+}
+
 .btn-danger {
   background: var(--danger-dim);
   color: var(--danger);

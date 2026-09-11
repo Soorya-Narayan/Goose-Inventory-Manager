@@ -3258,13 +3258,13 @@ function renderStoreMap() {
 
     <!-- Zone Selector Tabs -->
     <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border-subtle);padding-bottom:0.75rem">
-      <button class="btn ${currentZone === 'electrical' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('electrical')">
+      <button class="btn btn-sm ${currentZone === 'electrical' ? 'btn-primary active' : 'btn-ghost'}" onclick="selectStoreMapZone('electrical')">
         Electrical Section (${ELECTRICAL_RACK_GROUPS.reduce((acc, g) => acc + g.racks.reduce((a, r) => a + r.shelves.length, 0), 0)} Shelves)
       </button>
-      <button class="btn ${currentZone === 'mechanical' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('mechanical')">
+      <button class="btn btn-sm ${currentZone === 'mechanical' ? 'btn-primary active' : 'btn-ghost'}" onclick="selectStoreMapZone('mechanical')">
         Mechanical Section (${MECHANICAL_RACK_GROUPS.reduce((acc, g) => acc + g.racks.reduce((a, r) => a + r.shelves.length, 0), 0)} Shelves)
       </button>
-      <button class="btn ${currentZone === 'consumables' ? 'btn-primary' : 'btn-ghost'}" onclick="selectStoreMapZone('consumables')">
+      <button class="btn btn-sm ${currentZone === 'consumables' ? 'btn-primary active' : 'btn-ghost'}" onclick="selectStoreMapZone('consumables')">
         Consumables Section (Unified Single Zone)
       </button>
     </div>
@@ -3671,19 +3671,19 @@ function renderInventory() {
       <!-- Zone Filter Pills -->
       <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
         <span style="font-size:0.75rem;font-weight:600;color:var(--text-tertiary);display:flex;align-items:center;margin-right:0.25rem">ZONE:</span>
-        <button class="btn btn-ghost btn-sm ${state.filters.zone==='all'?'btn-primary':''}" onclick="state.filters.zone='all';renderInventory()">All Zones</button>
-        <button class="btn btn-ghost btn-sm ${state.filters.zone==='mechanical'?'btn-primary':''}" onclick="state.filters.zone='mechanical';renderInventory()">Mechanical</button>
-        <button class="btn btn-ghost btn-sm ${state.filters.zone==='electrical'?'btn-primary':''}" onclick="state.filters.zone='electrical';renderInventory()">Electrical</button>
-        <button class="btn btn-ghost btn-sm ${state.filters.zone==='consumables'?'btn-primary':''}" onclick="state.filters.zone='consumables';renderInventory()">Consumables</button>
+        <button class="btn btn-sm ${state.filters.zone==='all'?'btn-primary active':'btn-ghost'}" onclick="state.filters.zone='all';renderInventory()">All Zones</button>
+        <button class="btn btn-sm ${state.filters.zone==='mechanical'?'btn-primary active':'btn-ghost'}" onclick="state.filters.zone='mechanical';renderInventory()">Mechanical</button>
+        <button class="btn btn-sm ${state.filters.zone==='electrical'?'btn-primary active':'btn-ghost'}" onclick="state.filters.zone='electrical';renderInventory()">Electrical</button>
+        <button class="btn btn-sm ${state.filters.zone==='consumables'?'btn-primary active':'btn-ghost'}" onclick="state.filters.zone='consumables';renderInventory()">Consumables</button>
       </div>
 
       <!-- Stock Availability Filter Pills -->
       <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
         <span style="font-size:0.75rem;font-weight:600;color:var(--text-tertiary);display:flex;align-items:center;margin-right:0.25rem">STOCK:</span>
-        <button class="btn btn-ghost btn-sm ${(state.filters.stockAvailability||'all')==='all'?'btn-primary':''}" onclick="state.filters.stockAvailability='all';renderInventory()">All Stock</button>
-        <button class="btn btn-ghost btn-sm ${(state.filters.stockAvailability)==='instock'?'btn-primary':''}" onclick="state.filters.stockAvailability='instock';renderInventory()">In Stock</button>
-        <button class="btn btn-ghost btn-sm ${(state.filters.stockAvailability)==='out'?'btn-primary':''}" onclick="state.filters.stockAvailability='out';renderInventory()">Out of Stock</button>
-        <button class="btn btn-ghost btn-sm ${(state.filters.stockAvailability)==='low'?'btn-primary':''}" onclick="state.filters.stockAvailability='low';renderInventory()">Stock Alerts</button>
+        <button class="btn btn-sm ${(state.filters.stockAvailability||'all')==='all'?'btn-primary active':'btn-ghost'}" onclick="state.filters.stockAvailability='all';renderInventory()">All Stock</button>
+        <button class="btn btn-sm ${(state.filters.stockAvailability)==='instock'?'btn-primary active':'btn-ghost'}" onclick="state.filters.stockAvailability='instock';renderInventory()">In Stock</button>
+        <button class="btn btn-sm ${(state.filters.stockAvailability)==='out'?'btn-filter-out active':'btn-ghost'}" onclick="state.filters.stockAvailability='out';renderInventory()">Out of Stock</button>
+        <button class="btn btn-sm ${(state.filters.stockAvailability)==='low'?'btn-filter-low active':'btn-ghost'}" onclick="state.filters.stockAvailability='low';renderInventory()">Stock Alerts</button>
       </div>
 
     </div>
