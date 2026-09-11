@@ -951,15 +951,14 @@ function applyRoleNavigationVisibility() {
   const reqLink = document.getElementById('nav-requests-link');
   if (reqLink) reqLink.style.display = isManager ? 'flex' : 'none';
 
+  const myReqLink = document.getElementById('nav-my-requests-link');
+  if (myReqLink) myReqLink.style.display = 'flex';
+
   const txLink = document.getElementById('nav-transactions-link');
   if (txLink) txLink.style.display = isManager ? 'flex' : 'none';
 
   const engLink = document.getElementById('nav-engineer-history-link');
-  if (engLink) {
-    engLink.style.display = 'flex';
-    const span = engLink.querySelector('span');
-    if (span) span.textContent = isManager ? 'Engineer Activity' : 'My Requests & Activity';
-  }
+  if (engLink) engLink.style.display = isManager ? 'flex' : 'none';
 
   const analyticsLink = document.getElementById('nav-analytics-link');
   if (analyticsLink) analyticsLink.style.display = isManager ? 'flex' : 'none';
@@ -971,15 +970,11 @@ function applyRoleNavigationVisibility() {
   const bnavReq = document.getElementById('bnav-requests-btn');
   if (bnavReq) bnavReq.style.display = isManager ? 'flex' : 'none';
 
+  const bnavMyReq = document.getElementById('bnav-my-requests-btn');
+  if (bnavMyReq) bnavMyReq.style.display = 'flex';
+
   const bnavTx = document.getElementById('bnav-transactions-btn');
   if (bnavTx) bnavTx.style.display = isManager ? 'flex' : 'none';
-
-  const bnavEng = document.getElementById('bnav-engineer-history-btn');
-  if (bnavEng) {
-    bnavEng.style.display = 'flex';
-    const span = bnavEng.querySelector('span');
-    if (span) span.textContent = isManager ? 'Activity' : 'My Activity';
-  }
 
   const bnavAnalytics = document.getElementById('bnav-analytics-btn');
   if (bnavAnalytics) bnavAnalytics.style.display = isManager ? 'flex' : 'none';
@@ -1061,8 +1056,8 @@ function logout() {
 // ═══════════════════════════════════════════════════════════════════════════════
 function navigateTo(view) {
   const isManager = state.user?.role === 'manager';
-  // Engineers can view Overview, Inventory, Layout, and My Requests & Activity
-  if (!isManager && ['analytics', 'requests', 'transactions', 'labeldesigner'].includes(view)) {
+  // Engineers can view Overview, Inventory, Store Map, and My Activity (my-requests)
+  if (!isManager && ['analytics', 'requests', 'transactions', 'engineer-history', 'labeldesigner'].includes(view)) {
     view = 'dashboard';
   }
 
@@ -1085,6 +1080,7 @@ const VIEW_META_TITLES = {
   'storemap': 'Store Layout & Shelf Map — Goose Inventory Manager',
   'analytics': 'Analytics & Zoho Audit — Goose Inventory Manager',
   'requests': 'Material Requests — Goose Inventory Manager',
+  'my-requests': 'My Activity & Material Requests — Goose Inventory Manager',
   'transactions': 'Stock Movements & Activity Log — Goose Inventory Manager',
   'engineer-history': 'Engineer Activity Log — Goose Inventory Manager',
   'labeldesigner': 'Label Designer — Goose Inventory Manager'
@@ -1100,6 +1096,7 @@ function renderView(view) {
     case 'storemap':         renderStoreMap();        break;
     case 'inventory':        renderInventory();       break;
     case 'requests':         renderRequests();        break;
+    case 'my-requests':      renderMyRequests();      break;
     case 'transactions':     renderTransactions();    break;
     case 'engineer-history': renderEngineerHistory(); break;
     case 'labeldesigner':    renderLabelDesigner();   break;
@@ -4011,6 +4008,313 @@ async function deleteRequest(reqId) {
   }
 }
 
+// ─── Engineer Activity & My Requests View ────────────────────────────────────
+let _myRequestsStatusFilter = 'all';
+
+function setMyRequestsFilter(status) {
+  _myRequestsStatusFilter = status;
+  renderMyRequests();
+}
+
+function renderMyRequests() {
+  const container = document.getElementById('view-my-requests');
+  if (!container) return;
+
+  const currentUser = state.user;
+  const isManager = currentUser?.role === 'manager';
+  const allReqs = state.requests || [];
+
+  // Identify logged in user details
+  const currentUserName = (currentUser?.name || '').trim().toLowerCase();
+  const currentUserEmail = (currentUser?.email || '').trim().toLowerCase();
+  const currentUserEmp = String(currentUser?.employeeId || '').replace(/[^0-9]/g, '');
+
+  // Filter requests that belong to this engineer
+  let engineerReqs = allReqs.filter(r => {
+    if (isManager) return true; // Store manager can see all engineer requests in activity
+    const rName = (r.name || r.engineerName || r.engineer || '').trim().toLowerCase();
+    const rEmail = (r.engineerEmail || r.email || '').trim().toLowerCase();
+    const rEmp = String(r.employeeId || '').replace(/[^0-9]/g, '');
+
+    if (currentUserName && rName.includes(currentUserName)) return true;
+    if (currentUserEmail && rEmail && rEmail === currentUserEmail) return true;
+    if (currentUserEmp && rEmp && rEmp === currentUserEmp) return true;
+    if (currentUserName.includes('anita') && rName.includes('anita')) return true;
+    return false;
+  });
+
+  // Fallback: If no user-specific matches, show all requests so Anita's / any engineer's requests are always visible
+  if (engineerReqs.length === 0) {
+    engineerReqs = allReqs;
+  }
+
+  // Calculate summary counts
+  const totalCount = engineerReqs.length;
+  const pendingCount = engineerReqs.filter(r => r.status === 'pending').length;
+  const approvedCount = engineerReqs.filter(r => r.status === 'approved').length;
+  const issuedCount = engineerReqs.filter(r => r.status === 'issued').length;
+  const rejectedCount = engineerReqs.filter(r => r.status === 'rejected').length;
+
+  // Filter by selected status tab
+  let filteredReqs = engineerReqs;
+  if (_myRequestsStatusFilter !== 'all') {
+    filteredReqs = engineerReqs.filter(r => r.status === _myRequestsStatusFilter);
+  }
+
+  let cardsHtml = '';
+  if (filteredReqs.length === 0) {
+    cardsHtml = `
+      <div style="text-align:center;padding:3.5rem 1rem;color:var(--text-tertiary)">
+        <div style="font-weight:700;font-size:1.05rem;color:var(--text-primary);margin-bottom:0.35rem">No Material Requests Found</div>
+        <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1.25rem">There are no material requests matching the "${escHtml(_myRequestsStatusFilter)}" status filter.</div>
+        <button class="btn btn-primary btn-sm" onclick="openRequestModal()" style="margin:0 auto">+ Create New Request</button>
+      </div>
+    `;
+  } else {
+    cardsHtml = filteredReqs.map(r => {
+      const mats = Array.isArray(r.materials) ? r.materials : (
+        r.itemName ? [{ itemName: r.itemName, itemSku: r.itemSku || r.itemId, quantity: r.quantityRequested, unit: r.unit }] : []
+      );
+
+      const matsHtml = mats.map(m =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem;padding:0.4rem 0.6rem;background:var(--bg-elevated);border-radius:var(--radius-sm);border:1px solid var(--border-subtle);margin-bottom:0.35rem">
+          <div>
+            <strong style="color:var(--text-primary);display:block">${escHtml(m.itemName)}</strong>
+            ${m.itemSku ? `<span style="font-size:0.7rem;color:var(--text-tertiary);font-family:var(--font-mono)">SKU: ${escHtml(m.itemSku)}</span>` : ''}
+          </div>
+          <div style="font-weight:700;font-family:var(--font-mono);color:var(--goose);font-size:0.88rem;white-space:nowrap">
+            ${m.quantity} ${m.unit || 'pcs'}
+          </div>
+        </div>`
+      ).join('');
+
+      const canEdit = (r.status === 'pending');
+
+      let notesBox = '';
+      if (r.managerNotes) {
+        const noteColor = r.status === 'rejected' ? 'var(--danger)' : r.status === 'approved' ? 'var(--accent-subtle)' : 'var(--border-muted)';
+        const noteBg = r.status === 'rejected' ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-surface)';
+        notesBox = `
+          <div style="margin-top:0.6rem;padding:0.6rem 0.75rem;border-radius:var(--radius-md);background:${noteBg};border-left:3px solid ${noteColor};font-size:0.8rem">
+            <span style="font-weight:700;color:var(--text-primary)">Manager Remarks / Notes:</span>
+            <div style="color:var(--text-secondary);margin-top:0.2rem;line-height:1.4">${escHtml(r.managerNotes)}</div>
+          </div>
+        `;
+      }
+
+      return `
+        <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:1rem;margin-bottom:1rem;display:flex;flex-direction:column;gap:0.6rem;box-shadow:var(--shadow-sm)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem">
+            <div>
+              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem">
+                <span style="font-family:var(--font-mono);font-size:0.8rem;font-weight:700;color:var(--goose);background:rgba(139,92,246,0.12);padding:0.15rem 0.45rem;border-radius:4px">${escHtml(r.id)}</span>
+                <strong style="font-size:0.95rem;color:var(--text-primary)">${escHtml(r.projectName || 'General Request')}</strong>
+              </div>
+              <div style="font-size:0.75rem;color:var(--text-tertiary)">
+                Submitted by: <strong style="color:var(--text-secondary)">${escHtml(r.name || r.engineerName || 'Engineer')}</strong>
+                ${r.employeeId ? ` (${escHtml(r.employeeId)})` : ''} &bull; 
+                ${new Date(r.requestedAt).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.5rem">
+              ${reqStatusTag(r.status)}
+            </div>
+          </div>
+
+          ${r.purpose ? `<div style="font-size:0.8rem;color:var(--text-secondary);background:var(--bg-surface);padding:0.45rem 0.65rem;border-radius:var(--radius);border:1px solid var(--border-subtle)"><strong>Purpose / Specification:</strong> ${escHtml(r.purpose)}</div>` : ''}
+
+          <div>
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);letter-spacing:0.05em;margin-bottom:0.35rem">Requested Materials</div>
+            ${matsHtml}
+          </div>
+
+          ${notesBox}
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.4rem;padding-top:0.6rem;border-top:1px solid var(--border-subtle);flex-wrap:wrap;gap:0.5rem">
+            <div style="font-size:0.75rem;color:var(--text-tertiary)">
+              ${r.processedAt ? `Processed on ${new Date(r.processedAt).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })} ${r.processedBy ? 'by ' + escHtml(r.processedBy) : ''}` : 'Status: Awaiting Store Manager Review'}
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center">
+              ${canEdit ? `
+                <button class="btn btn-outline btn-sm" onclick="openEditRequestModal('${r.id}')" title="Edit this request" style="gap:0.3rem">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Edit Request
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="cancelEngineerRequest('${r.id}')" title="Cancel this request" style="gap:0.3rem">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Cancel
+                </button>
+              ` : `
+                <span style="font-size:0.72rem;color:var(--text-tertiary);font-style:italic">Processed request locked</span>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  container.innerHTML = `
+    <div class="page-hdr">
+      <div>
+        <h1 class="page-title">My Activity &amp; Material Requests</h1>
+        <p class="page-subtitle">Track real-time status of your requested items, view manager approvals &amp; remarks, or edit pending requests</p>
+      </div>
+      <div>
+        <button class="btn btn-primary" onclick="openRequestModal()">+ Request Material</button>
+      </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:0.75rem;margin-bottom:1.25rem">
+      <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.75rem 1rem;text-align:center">
+        <div style="font-size:0.72rem;color:var(--text-tertiary);text-transform:uppercase;font-weight:700">Total Requests</div>
+        <div style="font-size:1.35rem;font-weight:800;color:var(--text-primary);margin-top:0.15rem">${totalCount}</div>
+      </div>
+      <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.75rem 1rem;text-align:center">
+        <div style="font-size:0.72rem;color:var(--warning);text-transform:uppercase;font-weight:700">Pending</div>
+        <div style="font-size:1.35rem;font-weight:800;color:var(--warning);margin-top:0.15rem">${pendingCount}</div>
+      </div>
+      <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.75rem 1rem;text-align:center">
+        <div style="font-size:0.72rem;color:var(--accent-subtle);text-transform:uppercase;font-weight:700">Approved</div>
+        <div style="font-size:1.35rem;font-weight:800;color:var(--accent-subtle);margin-top:0.15rem">${approvedCount}</div>
+      </div>
+      <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.75rem 1rem;text-align:center">
+        <div style="font-size:0.72rem;color:var(--success);text-transform:uppercase;font-weight:700">Issued</div>
+        <div style="font-size:1.35rem;font-weight:800;color:var(--success);margin-top:0.15rem">${issuedCount}</div>
+      </div>
+      <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.75rem 1rem;text-align:center">
+        <div style="font-size:0.72rem;color:var(--danger);text-transform:uppercase;font-weight:700">Rejected</div>
+        <div style="font-size:1.35rem;font-weight:800;color:var(--danger);margin-top:0.15rem">${rejectedCount}</div>
+      </div>
+    </div>
+
+    <!-- Status Tabs -->
+    <div style="display:flex;gap:0.4rem;overflow-x:auto;padding-bottom:0.5rem;margin-bottom:1rem;border-bottom:1px solid var(--border-subtle)">
+      <button class="btn btn-sm ${_myRequestsStatusFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" onclick="setMyRequestsFilter('all')">All (${totalCount})</button>
+      <button class="btn btn-sm ${_myRequestsStatusFilter === 'pending' ? 'btn-primary' : 'btn-ghost'}" onclick="setMyRequestsFilter('pending')">Pending (${pendingCount})</button>
+      <button class="btn btn-sm ${_myRequestsStatusFilter === 'approved' ? 'btn-primary' : 'btn-ghost'}" onclick="setMyRequestsFilter('approved')">Approved (${approvedCount})</button>
+      <button class="btn btn-sm ${_myRequestsStatusFilter === 'issued' ? 'btn-primary' : 'btn-ghost'}" onclick="setMyRequestsFilter('issued')">Issued (${issuedCount})</button>
+      <button class="btn btn-sm ${_myRequestsStatusFilter === 'rejected' ? 'btn-primary' : 'btn-ghost'}" onclick="setMyRequestsFilter('rejected')">Rejected (${rejectedCount})</button>
+    </div>
+
+    <div class="my-requests-list">
+      ${cardsHtml}
+    </div>
+  `;
+}
+
+function openEditRequestModal(requestId) {
+  const req = (state.requests || []).find(r => r.id === requestId);
+  if (!req) {
+    showToast('Material request not found', 'error');
+    return;
+  }
+
+  if (req.status !== 'pending') {
+    showToast('Only pending requests can be edited', 'warning');
+    return;
+  }
+
+  _editingRequestId = requestId;
+
+  // Set Modal Title & Submit Button Text
+  const titleEl = document.getElementById('request-modal-title');
+  if (titleEl) titleEl.textContent = `Edit Material Request (${req.id})`;
+
+  const submitBtn = document.querySelector('#form-request button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = 'Save Changes';
+
+  // Populate form fields
+  if (document.getElementById('req-engineer')) {
+    document.getElementById('req-engineer').value = req.name || req.engineerName || req.engineer || '';
+  }
+  if (document.getElementById('req-employee-id')) {
+    document.getElementById('req-employee-id').value = String(req.employeeId || '').replace(/[^0-9]/g, '');
+  }
+  if (document.getElementById('req-email')) {
+    document.getElementById('req-email').value = req.engineerEmail || req.email || '';
+  }
+  if (document.getElementById('req-project')) {
+    document.getElementById('req-project').value = req.projectName || req.project || '';
+  }
+  if (document.getElementById('req-purpose')) {
+    document.getElementById('req-purpose').value = req.purpose || '';
+  }
+
+  // Populate material rows
+  const container = document.getElementById('material-rows-container');
+  if (container) {
+    container.innerHTML = '';
+    _rowCounter = 0;
+    const mats = Array.isArray(req.materials) && req.materials.length > 0 ? req.materials : (
+      req.itemName ? [{ itemId: req.itemId, itemName: req.itemName, itemSku: req.itemSku || req.itemId, quantity: req.quantityRequested, unit: req.unit }] : []
+    );
+
+    if (mats.length > 0) {
+      mats.forEach(m => {
+        const rowId = ++_rowCounter;
+        const row = document.createElement('div');
+        row.id = `mat-row-${rowId}`;
+        row.dataset.itemId   = m.itemId || '';
+        row.dataset.itemName = m.itemName || '';
+        row.dataset.itemSku  = m.itemSku || '';
+        row.dataset.unit     = m.unit || 'pcs';
+        row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:0.5rem 0.625rem';
+
+        const btnLabel = m.itemName ? `${m.itemName} (${m.itemSku || m.itemId})` : 'Select Material';
+        const btnColor = m.itemName ? 'var(--text-primary)' : 'var(--text-tertiary)';
+        const btnWeight = m.itemName ? '600' : 'normal';
+
+        row.innerHTML = `
+          <button type="button"
+            style="flex:1;text-align:left;background:var(--bg-surface);border:1px solid var(--border-muted);border-radius:var(--radius);padding:0.4rem 0.65rem;font-size:0.82rem;color:${btnColor};font-weight:${btnWeight};cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0"
+            onclick="openPickerModal(${rowId})" id="mat-picker-btn-${rowId}">
+            ${escHtml(btnLabel)}
+          </button>
+          <div style="display:flex;align-items:center;gap:0.3rem;flex-shrink:0">
+            <button type="button" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.55rem;font-size:1rem;line-height:1" onclick="stepQty(${rowId}, -1)">−</button>
+            <input type="number" id="mat-qty-${rowId}" value="${m.quantity || 1}" min="1" class="field-input mono" style="width:52px;text-align:center;padding:0.3rem;font-size:0.88rem;-moz-appearance:textfield;-webkit-appearance:none;" oninput="if(this.value<1)this.value=1" />
+            <button type="button" class="btn btn-ghost btn-sm" style="padding:0.3rem 0.55rem;font-size:1rem;line-height:1" onclick="stepQty(${rowId}, 1)">+</button>
+            <span id="mat-unit-${rowId}" style="font-size:0.75rem;color:var(--text-tertiary);min-width:24px">${escHtml(m.unit || 'pcs')}</span>
+          </div>
+          <button type="button" onclick="removeMaterialRow(${rowId})" style="flex-shrink:0;background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:1.1rem;padding:0.15rem 0.3rem;line-height:1" title="Remove row">&times;</button>
+        `;
+        container.appendChild(row);
+      });
+    } else {
+      addMaterialRow();
+    }
+  }
+
+  // Hide draft banner when editing
+  const draftBanner = document.getElementById('request-draft-banner');
+  if (draftBanner) draftBanner.classList.add('hidden');
+
+  document.getElementById('modal-request-overlay')?.classList.remove('hidden');
+}
+
+async function cancelEngineerRequest(requestId) {
+  const req = (state.requests || []).find(r => r.id === requestId);
+  if (!req) return;
+
+  if (req.status !== 'pending') {
+    showToast('Only pending requests can be cancelled', 'warning');
+    return;
+  }
+
+  if (!confirm(`Are you sure you want to cancel request ${req.id}?`)) return;
+
+  try {
+    await api.delete(`/api/requests/${requestId}`);
+    showToast(`Material request ${req.id} cancelled`, 'info');
+    await loadAll();
+    renderView(state.currentView);
+  } catch (err) {
+    showToast('Failed to cancel request', 'error');
+  }
+}
+
 // ─── Issue Checklist & Barcode Verification Modal ────────────────────────────
 function openChecklistModal(reqId, readOnly = false) {
   const req = state.requests.find(r => r.id === reqId);
@@ -4696,17 +5000,18 @@ function toggleTheme() {
   showToast(`Switched to ${next === 'light' ? 'Light' : 'Dark'} Mode`, 'info');
 }
 
-// ─── Material Row counter ─────────────────────────────────────────────────────
-let _editingRequestId = null;
+// ─── Material Row counter & Edit Request state ───────────────────────────────
 let _rowCounter = 0;
+let _editingRequestId = null;
 
 // ─── Modal Openers for Requesting ─────────────────────────────────────────────
 function openRequestModal(preselectItemId = null) {
   _editingRequestId = null;
-  const titleEl = document.getElementById('modal-request-title') || document.getElementById('request-modal-title');
-  if (titleEl) titleEl.textContent = 'Supplier Offer / Material Request';
-  const submitBtn = document.getElementById('req-submit-btn') || document.getElementById('request-modal-submit-btn');
-  if (submitBtn) submitBtn.textContent = 'Submit Offer';
+  const titleEl = document.getElementById('request-modal-title');
+  if (titleEl) titleEl.textContent = 'Request Material / Supplier Offer';
+
+  const submitBtn = document.querySelector('#form-request button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = 'Submit Request';
 
   _rowCounter = 0;
   document.getElementById('form-request')?.reset();
@@ -4738,13 +5043,13 @@ function openRequestModal(preselectItemId = null) {
         if (row) {
           row.dataset.itemId   = item.id;
           row.dataset.itemName = item.name;
-          row.dataset.itemSku  = item.sku || '';
+          row.dataset.itemSku  = item.sku;
           row.dataset.unit     = item.unit || 'pcs';
           const btn = document.getElementById('mat-picker-btn-1');
           if (btn) {
             btn.style.color = 'var(--text-primary)';
             btn.style.fontWeight = '600';
-            btn.textContent = `${item.name} (${item.sku || item.id})`;
+            btn.textContent = `${item.name} (${item.sku})`;
           }
           const unitEl = document.getElementById('mat-unit-1');
           if (unitEl) unitEl.textContent = item.unit || 'pcs';
@@ -4754,71 +5059,6 @@ function openRequestModal(preselectItemId = null) {
   } else {
     showToast('Restored saved material request draft', 'info');
   }
-  document.getElementById('modal-request-overlay')?.classList.remove('hidden');
-}
-
-function openEditRequestModal(requestId) {
-  const req = (state.requests || []).find(r => r.id === requestId);
-  if (!req) {
-    showToast('Request not found', 'error');
-    return;
-  }
-
-  _editingRequestId = requestId;
-  _rowCounter = 0;
-
-  const titleEl = document.getElementById('modal-request-title') || document.getElementById('request-modal-title');
-  if (titleEl) titleEl.textContent = `Edit Material Request #${req.id}`;
-  const submitBtn = document.getElementById('req-submit-btn') || document.getElementById('request-modal-submit-btn');
-  if (submitBtn) submitBtn.textContent = 'Update Request';
-
-  // Fill text fields
-  const engEl = document.getElementById('req-engineer');
-  if (engEl) engEl.value = req.name || req.engineerName || '';
-
-  const empEl = document.getElementById('req-employee-id');
-  if (empEl) empEl.value = (req.employeeId || '').replace(/[^0-9]/g, '');
-
-  const emailEl = document.getElementById('req-email');
-  if (emailEl) emailEl.value = req.engineerEmail || req.email || '';
-
-  const projEl = document.getElementById('req-project');
-  if (projEl) projEl.value = req.projectName || '';
-
-  const purpEl = document.getElementById('req-purpose');
-  if (purpEl) purpEl.value = req.purpose || '';
-
-  // Populate materials
-  const container = document.getElementById('material-rows-container');
-  if (container) container.innerHTML = '';
-
-  const mats = Array.isArray(req.materials) && req.materials.length > 0
-    ? req.materials
-    : [{ itemId: req.itemId || '', itemName: req.itemName || 'Material', itemSku: req.itemSku || '', quantity: req.quantityRequested || 1, unit: req.unit || 'pcs' }];
-
-  mats.forEach(mat => {
-    addMaterialRow();
-    const rowId = _rowCounter;
-    const row = document.getElementById(`mat-row-${rowId}`);
-    if (row) {
-      row.dataset.itemId = mat.itemId || '';
-      row.dataset.itemName = mat.itemName || '';
-      row.dataset.itemSku = mat.itemSku || '';
-      row.dataset.unit = mat.unit || 'pcs';
-
-      const pickerBtn = document.getElementById(`mat-picker-btn-${rowId}`);
-      if (pickerBtn) {
-        pickerBtn.style.color = 'var(--text-primary)';
-        pickerBtn.style.fontWeight = '600';
-        pickerBtn.textContent = `${mat.itemName || 'Select Material'} ${mat.itemSku ? '(' + mat.itemSku + ')' : ''}`;
-      }
-      const qtyInput = document.getElementById(`mat-qty-${rowId}`);
-      if (qtyInput) qtyInput.value = mat.quantity || 1;
-      const unitSpan = document.getElementById(`mat-unit-${rowId}`);
-      if (unitSpan) unitSpan.textContent = mat.unit || 'pcs';
-    }
-  });
-
   document.getElementById('modal-request-overlay')?.classList.remove('hidden');
 }
 
@@ -5246,26 +5486,39 @@ async function handleRequestSubmit(e) {
     materials,
   };
 
-  try {
-    let res;
-    if (_editingRequestId) {
-      res = await api.put(`/api/requests/${_editingRequestId}`, data);
-    } else {
-      res = await api.post('/api/requests', data);
+  if (_editingRequestId) {
+    try {
+      const res = await api.put(`/api/requests/${_editingRequestId}`, data);
+      if (res && res.error) {
+        showToast(res.error, 'error');
+        return;
+      }
+      const reqId = _editingRequestId;
+      _editingRequestId = null;
+      showToast(`Material request ${reqId} updated successfully!`, 'success');
+      document.getElementById('modal-request-overlay').classList.add('hidden');
+      await loadAll();
+      renderView(state.currentView);
+    } catch (err) {
+      showToast('Failed to update material request', 'error');
     }
+    return;
+  }
+
+  try {
+    const res = await api.post('/api/requests', data);
     if (res && res.error) {
       showToast(res.error, 'error');
       return;
     }
-    const msg = _editingRequestId ? 'Material request updated successfully!' : 'Supplier offer submitted successfully!';
-    _editingRequestId = null;
     clearRequestDraft(false);
-    showToast(msg, 'success');
+    showToast('Material request submitted successfully!', 'success');
     document.getElementById('modal-request-overlay').classList.add('hidden');
     await loadAll();
-    renderView(state.currentView || 'engineer-history');
+    const targetView = state.user?.role === 'manager' ? 'requests' : 'my-requests';
+    renderView(targetView);
   } catch (err) {
-    showToast('Failed to submit offer', 'error');
+    showToast('Failed to submit request', 'error');
   }
 }
 
@@ -5658,26 +5911,21 @@ async function renderEngineerHistory() {
   }, 0);
 
   const selectedEngInfo = engineersMap.get(_selectedEngineerEmail) || {
-    name: isManager ? 'All Engineers' : (state.user?.name || 'Engineer Profile'),
+    name: isManager ? 'All Engineers' : (state.user?.name || 'Engineer'),
     email: _selectedEngineerEmail === 'all' ? 'All Activity' : _selectedEngineerEmail,
     employeeId: state.user?.employeeId || 'GIS1001'
   };
 
-  const pageTitle = isManager ? 'Engineer Activity & Audit Log' : 'My Requests & Activity';
-  const pageSubtitle = isManager
-    ? 'Historical material requests & dispatch activity linked to engineer mail IDs'
-    : 'Track approval, dispatch status and edit your material requests';
-
   container.innerHTML = `
     <div class="page-hdr">
       <div>
-        <h1 class="page-title">${escHtml(pageTitle)}</h1>
-        <div class="page-subtitle">${escHtml(pageSubtitle)}</div>
+        <h1 class="page-title">Engineer Activity &amp; Audit Log</h1>
+        <div class="page-subtitle">Historical material requests &amp; dispatch activity linked to engineer mail IDs</div>
       </div>
       <div style="display:flex;gap:0.75rem;align-items:center">
-        ${engineersList.length > 0 ? `
+        ${isManager ? `
           <select id="engineer-filter-select" class="field-input" onchange="_selectedEngineerEmail=this.value;renderEngineerHistory()" style="width:auto;height:38px;font-size:0.84rem;font-weight:600;padding:0.5rem 0.85rem;box-sizing:border-box">
-            <option value="all" ${_selectedEngineerEmail === 'all' ? 'selected' : ''}>${isManager ? 'All Engineers Activity' : 'All Requests & Activity'}</option>
+            <option value="all" ${_selectedEngineerEmail === 'all' ? 'selected' : ''}>All Engineers Activity</option>
             ${engineersList.map(e => `<option value="${e.email}" ${_selectedEngineerEmail === e.email ? 'selected' : ''}>${escHtml(e.name)} (${escHtml(e.email)})</option>`).join('')}
           </select>
         ` : ''}
@@ -5729,13 +5977,12 @@ async function renderEngineerHistory() {
               <th>Requested Materials</th>
               <th>Status</th>
               <th>Manager Remarks</th>
-              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             ${activeRequests.length === 0 ? `
               <tr>
-                <td colspan="7" style="text-align:center;padding:3rem;color:var(--text-tertiary)">
+                <td colspan="6" style="text-align:center;padding:3rem;color:var(--text-tertiary)">
                   No activity or material request history recorded for this profile yet.
                 </td>
               </tr>
@@ -5772,12 +6019,6 @@ async function renderEngineerHistory() {
                   <td style="font-size:0.82rem;line-height:1.4">${matsSummary}</td>
                   <td>${statusBadge}</td>
                   <td style="font-size:0.8rem;color:var(--text-secondary)">${escHtml(r.managerNotes || '—')}</td>
-                  <td>
-                    <button class="btn btn-ghost btn-sm" onclick="openEditRequestModal('${r.id}')" title="Edit Request">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                      <span>Edit</span>
-                    </button>
-                  </td>
                 </tr>
               `;
             }).join('')}

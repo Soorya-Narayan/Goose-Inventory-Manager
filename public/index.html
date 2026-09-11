@@ -309,6 +309,11 @@
             <span>Material Requests</span>
             <span class="nav-count hidden" id="pending-badge">0</span>
           </a>
+          <a href="#" class="nav-link" data-view="my-requests" onclick="navigateTo('my-requests');return false;" id="nav-my-requests-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>My Activity</span>
+            <span class="nav-count hidden" id="my-requests-badge">0</span>
+          </a>
           <a href="#" class="nav-link" data-view="transactions" onclick="navigateTo('transactions');return false;" id="nav-transactions-link">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
             <span>Stock Movements</span>
@@ -348,6 +353,7 @@
         <div class="view hidden" id="view-inventory"></div>
         <div class="view hidden" id="view-requests"></div>
         <div class="view hidden" id="view-transactions"></div>
+        <div class="view hidden" id="view-my-requests"></div>
         <div class="view hidden" id="view-engineer-history"></div>
         <div class="view hidden" id="view-labeldesigner"></div>
       </main>
@@ -359,6 +365,10 @@
       <button class="bnav-btn active" data-view="dashboard" onclick="navigateTo('dashboard')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         <span>Home</span>
+      </button>
+      <button class="bnav-btn" data-view="my-requests" onclick="navigateTo('my-requests')" id="bnav-my-requests-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>My Activity</span>
       </button>
       <button class="bnav-btn" data-view="storemap" onclick="navigateTo('storemap')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
@@ -379,10 +389,6 @@
       <button class="bnav-btn" data-view="transactions" onclick="navigateTo('transactions')" id="bnav-transactions-btn">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
         <span>Movements</span>
-      </button>
-      <button class="bnav-btn" data-view="engineer-history" onclick="navigateTo('engineer-history')" id="bnav-engineer-history-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><circle cx="18" cy="8" r="3"/><polyline points="18 7 18 9 20 9"/></svg>
-        <span>Activity</span>
       </button>
     </nav>
   </div>
@@ -581,7 +587,7 @@
       <div class="modal-header">
         <div class="modal-title-block">
           <div class="modal-title-tag">SUPPLIER OFFER</div>
-          <h2 class="modal-title" id="modal-request-title">Supplier Offer / Material Request</h2>
+          <h2 class="modal-title">Supplier Offer / Material Request</h2>
         </div>
         <button class="modal-close-btn" onclick="closeRequestModal()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -649,7 +655,7 @@
           </button>
           <div style="display:flex;gap:0.5rem">
             <button type="button" class="btn btn-ghost" onclick="closeRequestModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="req-submit-btn">Submit Offer</button>
+            <button type="submit" class="btn btn-primary">Submit Offer</button>
           </div>
         </div>
       </form>

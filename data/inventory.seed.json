@@ -7586,9 +7586,75 @@
       "imageUrl": "",
       "addedAt": "2026-09-05T06:07:50.245Z",
       "updatedAt": "2026-09-05T06:07:50.246Z"
+    },
+    {
+      "id": "ELE-331",
+      "name": "Digital Multimeter Heavy Duty",
+      "sku": "DMM-HD-1000V",
+      "barcode": "DMM-HD-1000V",
+      "zone": "electrical",
+      "category": "Testing Equipment",
+      "quantity": 6,
+      "unit": "pcs",
+      "minStock": 2,
+      "location": "E4",
+      "rate": 2450,
+      "purchaseRate": 1950,
+      "hsn": "90303100",
+      "notes": "CAT III 1000V Industrial Grade Multimeter",
+      "zohoCode": "DMM-HD-1000V",
+      "specification": "True RMS 1000V Auto Ranging",
+      "addedAt": "2026-09-11T11:37:47.331Z",
+      "updatedAt": "2026-09-11T11:37:47.335Z"
     }
   ],
   "requests": [
+    {
+      "id": "REQ-1004",
+      "name": "Anita",
+      "employeeId": "GIS1099",
+      "engineerEmail": "anita@goosesolutions.in",
+      "email": "anita@goosesolutions.in",
+      "projectName": "Packaging Line 3 Overhaul",
+      "purpose": "Ferrule printing ink cartridge replacement",
+      "status": "approved",
+      "requestedAt": "2026-09-11T09:37:47.335Z",
+      "processedAt": "2026-09-11T11:07:47.335Z",
+      "processedBy": "Store Manager",
+      "managerNotes": "Approved for release from store",
+      "materials": [
+        {
+          "itemId": "BRO-TR-100 BK",
+          "itemName": "BRO-FERULE INK",
+          "itemSku": "BRO-TR-100 BK",
+          "unit": "pcs",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "REQ-1003",
+      "name": "Anita",
+      "employeeId": "GIS1099",
+      "engineerEmail": "anita@goosesolutions.in",
+      "email": "anita@goosesolutions.in",
+      "projectName": "Automation Panel Assembly",
+      "purpose": "Sensor cabling and control terminal wiring",
+      "status": "pending",
+      "requestedAt": "2026-09-11T10:37:47.335Z",
+      "processedAt": null,
+      "processedBy": null,
+      "managerNotes": "",
+      "materials": [
+        {
+          "itemId": "MEC-001",
+          "itemName": "UB - SMS UNION",
+          "itemSku": "UB-SMS UNION 25MM",
+          "unit": "pcs",
+          "quantity": 2
+        }
+      ]
+    },
     {
       "id": "REQ-1001",
       "name": "Suresh Patel",
@@ -7637,59 +7703,6 @@
           "itemId": "MEC-001",
           "itemName": "UB - SMS UNION",
           "itemSku": "UB-SMS UNION 25MM",
-          "unit": "pcs",
-          "quantity": 3
-        }
-      ]
-    },
-    {
-      "id": "req-anita-101",
-      "name": "Anita Sharma",
-      "employeeId": "GIS1042",
-      "engineerEmail": "anita@goosesolutions.in",
-      "email": "anita@goosesolutions.in",
-      "projectName": "Dairy Plant Automation Phase 2",
-      "purpose": "Sensor installation & fitting assembly",
-      "status": "pending",
-      "requestedAt": "2026-09-11T10:15:00.000Z",
-      "processedAt": null,
-      "processedBy": null,
-      "managerNotes": "",
-      "materials": [
-        {
-          "itemId": "MEC-001",
-          "itemName": "UB - SMS UNION",
-          "itemSku": "UB-SMS UNION 25MM",
-          "unit": "pcs",
-          "quantity": 4
-        },
-        {
-          "itemId": "BRO-TR-100 BK",
-          "itemName": "BRO-FERULE INK",
-          "itemSku": "BRO-TR-100 BK",
-          "unit": "pcs",
-          "quantity": 2
-        }
-      ]
-    },
-    {
-      "id": "req-anita-102",
-      "name": "Anita Sharma",
-      "employeeId": "GIS1042",
-      "engineerEmail": "anita@goosesolutions.in",
-      "email": "anita@goosesolutions.in",
-      "projectName": "Substation Control Upgrade",
-      "purpose": "Terminal block replacement & electrical cabling",
-      "status": "approved",
-      "requestedAt": "2026-09-11T11:45:00.000Z",
-      "processedAt": "2026-09-11T12:00:00.000Z",
-      "processedBy": "Store Manager",
-      "managerNotes": "Approved for dispatch from Rack F1",
-      "materials": [
-        {
-          "itemId": "MEC-002",
-          "itemName": "UB - UNION NUT",
-          "itemSku": "UB-SS304 UNION NUT 25MM",
           "unit": "pcs",
           "quantity": 3
         }
