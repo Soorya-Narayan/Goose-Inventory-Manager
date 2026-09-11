@@ -603,7 +603,10 @@
             </div>
             <div class="field-group">
               <label class="field-label">EMPLOYEE ID <span class="req">*</span></label>
-              <input type="text" id="req-employee-id" class="field-input mono" placeholder="e.g. EMP-1042" required />
+              <div class="input-prefix-group">
+                <span class="input-prefix-badge">GIS</span>
+                <input type="text" id="req-employee-id" class="field-input mono" placeholder="1042" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required />
+              </div>
             </div>
           </div>
 

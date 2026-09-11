@@ -343,7 +343,7 @@ app.post('/api/auth/verify-otp', (req, res) => {
       role: 'engineer',
       name: formattedName,
       email: cleanEmail,
-      employeeId: `EMP-${prefix.toUpperCase().slice(0, 8)}`
+      employeeId: `GIS${prefix.toUpperCase().slice(0, 8)}`
     }
   });
 });

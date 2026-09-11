@@ -4696,10 +4696,14 @@ function openRequestModal(preselectItemId = null) {
 
   const restored = loadRequestDraft();
   if (!restored) {
-    // Pre-fill name from session if available
+    // Pre-fill name and employee ID from session if available
     if (state.user?.name) {
       const el = document.getElementById('req-engineer');
       if (el) el.value = state.user.name;
+    }
+    if (state.user?.employeeId) {
+      const el = document.getElementById('req-employee-id');
+      if (el) el.value = String(state.user.employeeId).replace(/[^0-9]/g, '');
     }
     // Add one empty row to start
     addMaterialRow();
@@ -4927,7 +4931,8 @@ function selectPickerItem(itemId) {
 
 function saveRequestDraft(closeAfterSave = false) {
   const engineer   = document.getElementById('req-engineer')?.value.trim() || '';
-  const employeeId = document.getElementById('req-employee-id')?.value.trim() || '';
+  const empDigits  = document.getElementById('req-employee-id')?.value.trim().replace(/[^0-9]/g, '') || '';
+  const employeeId = empDigits ? ('GIS' + empDigits) : '';
   const project    = document.getElementById('req-project')?.value.trim() || '';
   const purpose    = document.getElementById('req-purpose')?.value.trim() || '';
 
@@ -4998,7 +5003,7 @@ function loadRequestDraft() {
     }
 
     if (document.getElementById('req-engineer')) document.getElementById('req-engineer').value = draft.engineer || '';
-    if (document.getElementById('req-employee-id')) document.getElementById('req-employee-id').value = draft.employeeId || '';
+    if (document.getElementById('req-employee-id')) document.getElementById('req-employee-id').value = String(draft.employeeId || '').replace(/[^0-9]/g, '');
     if (document.getElementById('req-project')) document.getElementById('req-project').value = draft.project || '';
     if (document.getElementById('req-purpose')) document.getElementById('req-purpose').value = draft.purpose || '';
 
@@ -5077,6 +5082,9 @@ function clearRequestDraft(showNotice = true) {
     const el = document.getElementById('req-engineer');
     if (el) el.value = state.user.name;
   }
+  if (document.getElementById('req-employee-id')) {
+    document.getElementById('req-employee-id').value = String(state.user?.employeeId || '').replace(/[^0-9]/g, '');
+  }
   addMaterialRow();
 
   if (showNotice) {
@@ -5122,9 +5130,15 @@ async function handleRequestSubmit(e) {
     return;
   }
 
+  const empDigits = document.getElementById('req-employee-id').value.trim().replace(/[^0-9]/g, '');
+  if (!empDigits) {
+    showToast('Please enter your numeric Employee ID', 'error');
+    return;
+  }
+
   const data = {
     name:          document.getElementById('req-engineer').value.trim(),
-    employeeId:    document.getElementById('req-employee-id').value.trim(),
+    employeeId:    'GIS' + empDigits,
     engineerEmail: state.user?.email || 'surya@goosesolutions.in',
     projectName:   document.getElementById('req-project').value.trim(),
     purpose:       document.getElementById('req-purpose').value.trim(),
@@ -5419,7 +5433,7 @@ async function renderEngineerHistory() {
       engineersMap.set(email, {
         email,
         name: r.name || r.engineerName || 'Engineer',
-        employeeId: r.employeeId || 'EMP-' + email.split('@')[0].toUpperCase(),
+        employeeId: r.employeeId || 'GIS' + (email.split('@')[0].replace(/[^0-9]/g, '') || '101'),
         requestsCount: 0,
         issuedCount: 0,
         materialsCount: 0,
@@ -5466,7 +5480,7 @@ async function renderEngineerHistory() {
   const selectedEngInfo = engineersMap.get(_selectedEngineerEmail) || {
     name: isManager ? 'All Engineers' : (state.user?.name || 'Engineer'),
     email: _selectedEngineerEmail === 'all' ? 'All Activity' : _selectedEngineerEmail,
-    employeeId: state.user?.employeeId || 'EMP-SYSTEM'
+    employeeId: state.user?.employeeId || 'GIS1001'
   };
 
   container.innerHTML = `
