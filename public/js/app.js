@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.1.0',
+  currentVersion: '3.1.1',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -5823,7 +5823,7 @@ async function initSystemStatusPolling() {
     const res = await fetch('/api/system/status').then(r => r.json()).catch(() => null);
     if (res && res.status === 'ok') {
       state.initialServerStartTime = res.serverStartTime;
-      state.currentVersion = res.version || '3.1.0';
+      state.currentVersion = res.version || '3.1.1';
       if (res.maintenance) {
         state.maintenanceActive = true;
         updateMaintenanceSettingBtn(true);

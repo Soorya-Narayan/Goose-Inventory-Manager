@@ -11,7 +11,7 @@ const DATA_FILE = path.join(__dirname, 'data', 'inventory.json');
 const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
 
 const SERVER_START_TIME = Date.now();
-const SYSTEM_VERSION = require('./package.json').version || '3.1.0';
+const SYSTEM_VERSION = require('./package.json').version || '3.1.1';
 let maintenanceMode = false;
 
 const BACKUP_DIR = path.join(__dirname, 'data', 'backups');
