@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.1.2',
+  currentVersion: '3.2.0',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -95,24 +95,24 @@ function setPrinterPillState(state_str) {
 
   // Reset classes
   pill.classList.remove('bt-connected-state');
-  dot.classList.remove('bt-connected', 'bt-error', 'online');
-  btIcon.classList.remove('hidden');
-  spinner.classList.add('hidden');
+  if (dot) dot.classList.remove('bt-connected', 'bt-error', 'online');
+  if (btIcon) btIcon.classList.remove('hidden');
+  if (spinner) spinner.classList.add('hidden');
 
   switch (state_str) {
     case 'connecting':
-      btIcon.classList.add('hidden');
-      spinner.classList.remove('hidden');
-      label.textContent = 'Connecting…';
-      hint.textContent  = '';
+      if (btIcon) btIcon.classList.add('hidden');
+      if (spinner) spinner.classList.remove('hidden');
+      if (label) label.textContent = 'Connecting…';
+      if (hint) hint.textContent  = '';
       pill.title = 'Connecting to Tej C15…';
       pill.disabled = true;
       break;
 
     case 'connected':
-      dot.classList.add('bt-connected');
-      label.textContent = state.printerDevice?.name || 'Tej C15';
-      hint.textContent  = 'Connected · Tap to disconnect';
+      if (dot) dot.classList.add('bt-connected');
+      if (label) label.textContent = state.printerDevice?.name || 'Tej C15';
+      if (hint) hint.textContent  = 'Connected · Tap to disconnect';
       pill.classList.add('bt-connected-state');
       pill.title = `Connected to ${state.printerDevice?.name || 'Tej C15'} · Click to disconnect`;
       pill.disabled = false;
@@ -4849,8 +4849,19 @@ function showConfirmModal({ title, message, confirmLabel = 'Delete', onConfirm }
 }
 
 function closeConfirmModal() {
-  document.getElementById('modal-confirm-overlay').classList.add('hidden');
+  document.getElementById('modal-confirm-overlay')?.classList.add('hidden');
 }
+
+function closeDeleteModal() {
+  document.getElementById('modal-delete-overlay')?.classList.add('hidden');
+}
+
+function confirmDelete() {
+  closeDeleteModal();
+}
+
+window.closeDeleteModal = closeDeleteModal;
+window.confirmDelete = confirmDelete;
 
 // ─── Delete Item ──────────────────────────────────────────────────────────────
 async function deleteItem(id, name) {
@@ -6526,6 +6537,7 @@ async function checkSystemUpdateStatus(manual = false) {
 
     const tag = document.getElementById('system-update-version-tag');
     if (tag && res.version) tag.textContent = `v${res.version}`;
+    state.currentVersion = res.version || '3.2.0';
 
     // 1. Maintenance Mode
     if (res.maintenance) {
