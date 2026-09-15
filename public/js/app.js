@@ -400,7 +400,6 @@ window.addEventListener('keydown', (e) => {
     closePrivacyPolicyModal();
     closeTermsConditionsModal();
     closeCSVAuditExplorerModal();
-    closeEasterEggModal();
   }
 
   if (e.key === 'Enter') {
@@ -6605,29 +6604,6 @@ function updateMaintenanceSettingBtn(active) {
       btn.style.borderColor = 'var(--border-subtle)';
     }
   }
-}
-
-// ─── Secret Easter Egg System Handler ─────────────────────────────────────────
-
-function triggerVersionEasterEgg(e) {
-  if (e) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-  openEasterEggModal();
-}
-
-function openEasterEggModal() {
-  const modal = document.getElementById('modal-easteregg-overlay');
-  if (modal) {
-    modal.classList.remove('hidden');
-    showToast('🎉 Secret Easter Egg Unlocked! System v3.1.2', 'success');
-  }
-}
-
-function closeEasterEggModal(e) {
-  if (e && e.target !== document.getElementById('modal-easteregg-overlay') && !e.target.closest('button')) return;
-  document.getElementById('modal-easteregg-overlay')?.classList.add('hidden');
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────
