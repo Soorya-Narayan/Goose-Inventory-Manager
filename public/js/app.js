@@ -1930,6 +1930,16 @@ function openPrivacyPolicyModal(e) {
   if (e && typeof e.preventDefault === 'function') e.preventDefault();
   if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   closeOptionsMenu();
+  const termsModal = document.getElementById('modal-terms-conditions-overlay');
+  if (termsModal) {
+    termsModal.classList.add('hidden');
+    termsModal.style.display = 'none';
+  }
+  const settingsModal = document.getElementById('modal-settings-overlay');
+  if (settingsModal) {
+    settingsModal.classList.add('hidden');
+    settingsModal.style.display = 'none';
+  }
   const modal = document.getElementById('modal-privacy-policy-overlay');
   if (modal) {
     modal.classList.remove('hidden');
@@ -1940,7 +1950,9 @@ function openPrivacyPolicyModal(e) {
 function closePrivacyPolicyModal(e) {
   if (e && e.target) {
     const backdrop = document.getElementById('modal-privacy-policy-overlay');
-    if (e.target !== backdrop && !e.target.closest('.modal-close-btn') && !e.target.closest('.btn-close')) {
+    const isBackdropClick = (e.target === backdrop);
+    const isCloseBtnClick = !!(e.target.closest('button') || e.target.closest('.modal-close-btn') || e.target.closest('.btn-close') || e.target.closest('a'));
+    if (!isBackdropClick && !isCloseBtnClick) {
       return;
     }
   }
@@ -1955,6 +1967,16 @@ function openTermsConditionsModal(e) {
   if (e && typeof e.preventDefault === 'function') e.preventDefault();
   if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   closeOptionsMenu();
+  const privacyModal = document.getElementById('modal-privacy-policy-overlay');
+  if (privacyModal) {
+    privacyModal.classList.add('hidden');
+    privacyModal.style.display = 'none';
+  }
+  const settingsModal = document.getElementById('modal-settings-overlay');
+  if (settingsModal) {
+    settingsModal.classList.add('hidden');
+    settingsModal.style.display = 'none';
+  }
   const modal = document.getElementById('modal-terms-conditions-overlay');
   if (modal) {
     modal.classList.remove('hidden');
@@ -1965,7 +1987,9 @@ function openTermsConditionsModal(e) {
 function closeTermsConditionsModal(e) {
   if (e && e.target) {
     const backdrop = document.getElementById('modal-terms-conditions-overlay');
-    if (e.target !== backdrop && !e.target.closest('.modal-close-btn') && !e.target.closest('.btn-close')) {
+    const isBackdropClick = (e.target === backdrop);
+    const isCloseBtnClick = !!(e.target.closest('button') || e.target.closest('.modal-close-btn') || e.target.closest('.btn-close') || e.target.closest('a'));
+    if (!isBackdropClick && !isCloseBtnClick) {
       return;
     }
   }
@@ -5926,6 +5950,10 @@ function openSettingsModal(e) {
   }
 
   closeOptionsMenu();
+  const privacyModal = document.getElementById('modal-privacy-policy-overlay');
+  if (privacyModal) { privacyModal.classList.add('hidden'); privacyModal.style.display = 'none'; }
+  const termsModal = document.getElementById('modal-terms-conditions-overlay');
+  if (termsModal) { termsModal.classList.add('hidden'); termsModal.style.display = 'none'; }
 
   const currentPin = state.managerPin || localStorage.getItem('ims_manager_pin') || '';
   const pinInput = document.getElementById('settings-manager-pin');
@@ -5953,7 +5981,9 @@ function openSettingsModal(e) {
 function closeSettingsModal(e) {
   if (e && e.target) {
     const backdrop = document.getElementById('modal-settings-overlay');
-    if (e.target !== backdrop && !e.target.closest('.modal-close-btn') && !e.target.closest('.modal-close') && !e.target.closest('.modal-close-button')) {
+    const isBackdropClick = (e.target === backdrop);
+    const isCloseBtnClick = !!(e.target.closest('button') || e.target.closest('.modal-close-btn') || e.target.closest('.modal-close') || e.target.closest('.modal-close-button') || e.target.closest('a'));
+    if (!isBackdropClick && !isCloseBtnClick) {
       return;
     }
   }
