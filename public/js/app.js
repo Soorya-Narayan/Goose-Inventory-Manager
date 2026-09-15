@@ -3857,6 +3857,7 @@ function renderRequests() {
       const name = (r.name || r.engineerName || r.engineer || '').toLowerCase();
       const empId = (r.employeeId || '').toLowerCase();
       const proj = (r.projectName || r.project || '').toLowerCase();
+      const spec = (r.specification || '').toLowerCase();
       const purp = (r.purpose || '').toLowerCase();
       const reqId = (r.id || '').toLowerCase();
       const mats = Array.isArray(r.materials) ? r.materials.map(m => (m.itemName || '') + ' ' + (m.itemSku || '')).join(' ').toLowerCase() : (r.itemName || '').toLowerCase();
@@ -3864,6 +3865,7 @@ function renderRequests() {
       return name.includes(_managerRequestsSearch) ||
              empId.includes(_managerRequestsSearch) ||
              proj.includes(_managerRequestsSearch) ||
+             spec.includes(_managerRequestsSearch) ||
              purp.includes(_managerRequestsSearch) ||
              reqId.includes(_managerRequestsSearch) ||
              mats.includes(_managerRequestsSearch);
@@ -3917,9 +3919,12 @@ function renderRequests() {
               ${matsHtml}
             </div>
             ${notesHtml}
-            <div style="font-size:0.72rem;color:var(--text-tertiary);display:flex;justify-content:space-between;align-items:center">
-              <span>${escHtml(r.purpose || '')}</span>
-              <span>${new Date(r.requestedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
+            <div style="font-size:0.72rem;color:var(--text-tertiary);display:flex;flex-direction:column;gap:0.15rem">
+              ${r.specification ? `<div style="color:var(--goose);font-weight:600">Spec: ${escHtml(r.specification)}</div>` : ''}
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span>${escHtml(r.purpose || '')}</span>
+                <span>${new Date(r.requestedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
+              </div>
             </div>
             ${isManager ? (() => {
               if (r.status === 'pending') return `
@@ -3989,6 +3994,7 @@ function renderRequests() {
                 <td style="max-width:240px">${matsHtml}</td>
                 <td>
                   <strong style="color:var(--text-primary)">${escHtml(r.projectName || r.project || 'General')}</strong>
+                  ${r.specification ? `<div style="font-size:0.72rem;color:var(--goose);font-weight:600">Spec: ${escHtml(r.specification)}</div>` : ''}
                   ${r.purpose ? `<div style="font-size:0.72rem;color:var(--text-tertiary)">${escHtml(r.purpose)}</div>` : ''}
                 </td>
                 <td>${reqStatusTag(r.status)}</td>
@@ -4233,7 +4239,8 @@ function renderMyRequests() {
             </div>
           </div>
 
-          ${r.purpose ? `<div style="font-size:0.8rem;color:var(--text-secondary);background:var(--bg-surface);padding:0.45rem 0.65rem;border-radius:var(--radius);border:1px solid var(--border-subtle)"><strong>Purpose / Specification:</strong> ${escHtml(r.purpose)}</div>` : ''}
+          ${r.specification ? `<div style="font-size:0.8rem;color:var(--goose);background:var(--bg-surface);padding:0.45rem 0.65rem;border-radius:var(--radius);border:1px solid var(--border-subtle);font-weight:600"><strong>Material Specification:</strong> ${escHtml(r.specification)}</div>` : ''}
+          ${r.purpose ? `<div style="font-size:0.8rem;color:var(--text-secondary);background:var(--bg-surface);padding:0.45rem 0.65rem;border-radius:var(--radius);border:1px solid var(--border-subtle)"><strong>Purpose:</strong> ${escHtml(r.purpose)}</div>` : ''}
 
           <div>
             <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);letter-spacing:0.05em;margin-bottom:0.35rem">Requested Materials</div>
@@ -4349,6 +4356,9 @@ function openEditRequestModal(requestId) {
   }
   if (document.getElementById('req-project')) {
     document.getElementById('req-project').value = req.projectName || req.project || '';
+  }
+  if (document.getElementById('req-specification')) {
+    document.getElementById('req-specification').value = req.specification || '';
   }
   if (document.getElementById('req-purpose')) {
     document.getElementById('req-purpose').value = req.purpose || '';
@@ -4512,6 +4522,7 @@ function openItemHistoryModal(itemId) {
                   </td>
                   <td>
                     <strong style="color:var(--text-primary)">${escHtml(r.projectName || r.project || 'General')}</strong>
+                    ${r.specification ? `<div style="font-size:0.72rem;color:var(--goose);font-weight:600">Spec: ${escHtml(r.specification)}</div>` : ''}
                     ${r.purpose ? `<div style="font-size:0.72rem;color:var(--text-tertiary)">${escHtml(r.purpose)}</div>` : ''}
                   </td>
                   <td style="font-family:var(--font-mono);font-weight:700;color:var(--goose);font-size:0.85rem">${qty} ${item.unit || 'pcs'}</td>
@@ -4616,6 +4627,7 @@ function openChecklistModal(reqId, readOnly = false) {
     row('Employee ID', req.employeeId) +
     row('Email ID', req.engineerEmail || req.email) +
     row('Target Project', req.projectName) +
+    (req.specification ? row('Specification', req.specification) : '') +
     row('Purpose', req.purpose);
 
   // Scan container visibility
@@ -5514,6 +5526,12 @@ function selectPickerItem(itemId) {
   const unitEl = document.getElementById(`mat-unit-${_pickerTargetRowId}`);
   if (unitEl) unitEl.textContent = item.unit || 'pcs';
 
+  // Auto-fill material specification if field exists and is currently empty
+  const specEl = document.getElementById('req-specification');
+  if (specEl && item.specification && !specEl.value.trim()) {
+    specEl.value = item.specification;
+  }
+
   // Close picker
   document.getElementById('modal-picker-overlay')?.classList.add('hidden');
   _pickerTargetRowId = null;
@@ -5522,12 +5540,13 @@ function selectPickerItem(itemId) {
 // ─── Material Request Draft Helpers ──────────────────────────────────────────
 
 function saveRequestDraft(closeAfterSave = false) {
-  const engineer   = document.getElementById('req-engineer')?.value.trim() || '';
-  const empDigits  = document.getElementById('req-employee-id')?.value.trim().replace(/[^0-9]/g, '') || '';
-  const employeeId = empDigits ? ('GIS' + empDigits) : '';
-  const email      = document.getElementById('req-email')?.value.trim() || '';
-  const project    = document.getElementById('req-project')?.value.trim() || '';
-  const purpose    = document.getElementById('req-purpose')?.value.trim() || '';
+  const engineer      = document.getElementById('req-engineer')?.value.trim() || '';
+  const empDigits     = document.getElementById('req-employee-id')?.value.trim().replace(/[^0-9]/g, '') || '';
+  const employeeId    = empDigits ? ('GIS' + empDigits) : '';
+  const email         = document.getElementById('req-email')?.value.trim() || '';
+  const project       = document.getElementById('req-project')?.value.trim() || '';
+  const specification = document.getElementById('req-specification')?.value.trim() || '';
+  const purpose       = document.getElementById('req-purpose')?.value.trim() || '';
 
   const container = document.getElementById('material-rows-container');
   const materials = [];
@@ -5545,7 +5564,7 @@ function saveRequestDraft(closeAfterSave = false) {
     }
   }
 
-  const hasContent = engineer || employeeId || email || project || purpose || materials.length > 0;
+  const hasContent = engineer || employeeId || email || project || specification || purpose || materials.length > 0;
 
   if (hasContent) {
     const draft = {
@@ -5553,6 +5572,7 @@ function saveRequestDraft(closeAfterSave = false) {
       employeeId,
       email,
       project,
+      specification,
       purpose,
       materials,
       savedAt: new Date().toISOString()
@@ -5590,7 +5610,7 @@ function loadRequestDraft() {
       return false;
     }
 
-    const hasContent = draft.engineer || draft.employeeId || draft.email || draft.project || draft.purpose || (Array.isArray(draft.materials) && draft.materials.length > 0);
+    const hasContent = draft.engineer || draft.employeeId || draft.email || draft.project || draft.specification || draft.purpose || (Array.isArray(draft.materials) && draft.materials.length > 0);
     if (!hasContent) {
       if (draftBanner) draftBanner.classList.add('hidden');
       return false;
@@ -5600,6 +5620,7 @@ function loadRequestDraft() {
     if (document.getElementById('req-employee-id')) document.getElementById('req-employee-id').value = String(draft.employeeId || '').replace(/[^0-9]/g, '');
     if (document.getElementById('req-email')) document.getElementById('req-email').value = draft.email || '';
     if (document.getElementById('req-project')) document.getElementById('req-project').value = draft.project || '';
+    if (document.getElementById('req-specification')) document.getElementById('req-specification').value = draft.specification || '';
     if (document.getElementById('req-purpose')) document.getElementById('req-purpose').value = draft.purpose || '';
 
     const container = document.getElementById('material-rows-container');
@@ -5746,6 +5767,7 @@ async function handleRequestSubmit(e) {
     engineerEmail: email,
     email:         email,
     projectName:   document.getElementById('req-project').value.trim(),
+    specification: document.getElementById('req-specification')?.value.trim() || '',
     purpose:       document.getElementById('req-purpose').value.trim(),
     materials,
   };
@@ -6302,6 +6324,7 @@ async function renderEngineerHistory() {
                   </td>
                   <td>
                     <div style="font-weight:600;color:var(--goose)">${escHtml(r.projectName || '—')}</div>
+                    ${r.specification ? `<div style="font-size:0.72rem;color:var(--goose);font-weight:600">Spec: ${escHtml(r.specification)}</div>` : ''}
                     <div style="font-size:0.72rem;color:var(--text-tertiary)">${escHtml(r.purpose || '')}</div>
                   </td>
                   <td style="font-size:0.82rem;line-height:1.4">${matsSummary}</td>

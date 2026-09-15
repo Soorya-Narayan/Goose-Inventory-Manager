@@ -720,7 +720,7 @@ app.put('/api/requests/:id', (req, res) => {
   const idx = data.requests.findIndex(r => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Request not found' });
 
-  const { status, processedBy, managerNotes, checklist, processedAt, name, engineerName, employeeId, engineerEmail, email, projectName, purpose, materials } = req.body;
+  const { status, processedBy, managerNotes, checklist, processedAt, name, engineerName, employeeId, engineerEmail, email, projectName, purpose, specification, materials } = req.body;
   const oldStatus = data.requests[idx].status;
 
   // Build the updated request — allow updating status and editable details
@@ -734,6 +734,7 @@ app.put('/api/requests/:id', (req, res) => {
     email: email !== undefined ? email : data.requests[idx].email,
     projectName: projectName !== undefined ? projectName : data.requests[idx].projectName,
     purpose: purpose !== undefined ? purpose : data.requests[idx].purpose,
+    specification: specification !== undefined ? specification : data.requests[idx].specification,
     materials: materials !== undefined ? materials : data.requests[idx].materials,
     processedBy: processedBy !== undefined ? processedBy : data.requests[idx].processedBy,
     managerNotes: managerNotes !== undefined ? managerNotes : data.requests[idx].managerNotes,
