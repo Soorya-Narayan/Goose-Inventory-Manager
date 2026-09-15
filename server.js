@@ -7,19 +7,18 @@ const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'data', 'inventory.json');
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const DATA_FILE = path.join(DATA_DIR, 'inventory.json');
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+const SEED_FILE = path.join(__dirname, 'data', 'inventory.seed.json');
 const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
 
 const SERVER_START_TIME = Date.now();
 const SYSTEM_VERSION = require('./package.json').version || '3.3.0';
 let maintenanceMode = false;
 
-const BACKUP_DIR = path.join(__dirname, 'data', 'backups');
-const SEED_FILE = path.join(__dirname, 'data', 'inventory.seed.json');
-
 // Ensure data, backup & uploads folders exist
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
@@ -701,14 +700,21 @@ app.get('/api/requests', (req, res) => {
 
 app.post('/api/requests', (req, res) => {
   const data = readData();
+  const existingIdx = req.body.id ? data.requests.findIndex(r => r.id === req.body.id) : -1;
+  if (existingIdx >= 0) {
+    data.requests[existingIdx] = { ...data.requests[existingIdx], ...req.body };
+    writeData(data);
+    return res.json(data.requests[existingIdx]);
+  }
   const request = {
-    id: uuidv4(),
+    id: req.body.id || uuidv4(),
     ...req.body,
-    status: 'pending',
-    requestedAt: new Date().toISOString(),
-    processedAt: null,
-    processedBy: null,
-    managerNotes: ''
+    status: req.body.status || 'pending',
+    requestedAt: req.body.requestedAt || new Date().toISOString(),
+    processedAt: req.body.processedAt || null,
+    processedBy: req.body.processedBy || null,
+    managerNotes: req.body.managerNotes || '',
+    checklist: Array.isArray(req.body.checklist) ? req.body.checklist : []
   };
   data.requests.push(request);
   writeData(data);

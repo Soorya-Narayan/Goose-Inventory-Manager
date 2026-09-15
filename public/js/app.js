@@ -315,7 +315,38 @@ async function loadAll(showLoader = true, customMsg = 'Synchronizing Warehouse D
     } else if (!state.items || state.items.length === 0) {
       state.items = items || [];
     }
-    state.requests = requests || [];
+    let serverRequests = requests || [];
+
+    // Auto-rehydrate requests from local device cache if server was redeployed/restarted
+    try {
+      const cachedReqsRaw = localStorage.getItem('ims_local_requests_cache');
+      const deletedReqsRaw = localStorage.getItem('ims_deleted_requests') || '[]';
+      let deletedIds = [];
+      try { deletedIds = JSON.parse(deletedReqsRaw); } catch(e) {}
+
+      if (cachedReqsRaw) {
+        const cachedReqs = JSON.parse(cachedReqsRaw);
+        if (Array.isArray(cachedReqs) && cachedReqs.length > 0) {
+          const serverIds = new Set(serverRequests.map(r => r.id));
+          const missingReqs = cachedReqs.filter(r => r && r.id && !serverIds.has(r.id) && !deletedIds.includes(r.id));
+          if (missingReqs.length > 0) {
+            console.log(`[Auto-Rehydration] Found ${missingReqs.length} client-cached requests missing on server (redeploy detected). Restoring...`);
+            for (const mReq of missingReqs) {
+              try {
+                await api.post('/api/requests', mReq);
+                serverRequests.push(mReq);
+              } catch(rehydErr) {
+                console.warn('Failed to rehydrate request:', mReq.id, rehydErr);
+              }
+            }
+          }
+        }
+      }
+    } catch (rehydCheckErr) {
+      console.warn('Rehydration check warning:', rehydCheckErr);
+    }
+
+    state.requests = serverRequests;
 
     // Sync LocalStorage cache with official server dataset
     try {
@@ -4130,6 +4161,13 @@ async function deleteRequest(reqId) {
   if (!confirm('Are you sure you want to delete this material request record?')) return;
   try {
     await api.delete(`/api/requests/${reqId}`);
+    try {
+      const delList = JSON.parse(localStorage.getItem('ims_deleted_requests') || '[]');
+      if (!delList.includes(reqId)) {
+        delList.push(reqId);
+        localStorage.setItem('ims_deleted_requests', JSON.stringify(delList.slice(-200)));
+      }
+    } catch (e) {}
     showToast('Material request record deleted', 'success');
     await loadAll();
     renderView('requests');
@@ -4445,6 +4483,13 @@ async function cancelEngineerRequest(requestId) {
 
   try {
     await api.delete(`/api/requests/${requestId}`);
+    try {
+      const delList = JSON.parse(localStorage.getItem('ims_deleted_requests') || '[]');
+      if (!delList.includes(requestId)) {
+        delList.push(requestId);
+        localStorage.setItem('ims_deleted_requests', JSON.stringify(delList.slice(-200)));
+      }
+    } catch (e) {}
     showToast(`Material request ${req.id} cancelled`, 'info');
     await loadAll();
     renderView(state.currentView);

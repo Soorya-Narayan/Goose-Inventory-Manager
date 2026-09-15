@@ -7611,8 +7611,8 @@
   "requests": [
     {
       "id": "bae1d2ae-f59b-4f55-948d-fe619097ca83",
-      "name": "Suresh PatelSuresh Patel",
-      "employeeId": "GIS10421042",
+      "name": "Suresh Patel",
+      "employeeId": "GIS1042",
       "engineerEmail": "suresh@goosesolutions.in",
       "email": "suresh@goosesolutions.in",
       "projectName": "Dairy Plant Expansion",
@@ -7631,6 +7631,31 @@
       "requestedAt": "2026-09-15T12:12:50.926Z",
       "processedAt": "2026-09-15T12:13:28.876Z",
       "processedBy": "Store Manager",
+      "managerNotes": "",
+      "checklist": []
+    },
+    {
+      "id": "req-hw-gis067-surya",
+      "name": "Surya",
+      "employeeId": "GIS067",
+      "engineerEmail": "surya@goosesolutions.in",
+      "email": "surya@goosesolutions.in",
+      "projectName": "HeatWatch",
+      "specification": "15\"HMI",
+      "purpose": "Display for HeatWatch",
+      "materials": [
+        {
+          "itemId": "ELE-224",
+          "itemName": "WEC-15\" HMI",
+          "itemSku": "WEC-PI8150ig",
+          "unit": "pcs",
+          "quantity": 1
+        }
+      ],
+      "status": "pending",
+      "requestedAt": "2026-09-15T12:18:06.000Z",
+      "processedAt": null,
+      "processedBy": null,
       "managerNotes": "",
       "checklist": []
     }
