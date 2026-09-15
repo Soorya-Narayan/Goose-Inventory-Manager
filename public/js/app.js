@@ -1924,6 +1924,25 @@ function closeCSVAuditExplorerModal() {
   if (modal) modal.classList.add('hidden');
 }
 
+function openTermsConditionsModal() {
+  closeOptionsMenu();
+  const modal = document.getElementById('modal-terms-conditions-overlay');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
+}
+
+function closeTermsConditionsModal() {
+  const modal = document.getElementById('modal-terms-conditions-overlay');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+}
+
+window.openTermsConditionsModal = openTermsConditionsModal;
+window.closeTermsConditionsModal = closeTermsConditionsModal;
 window.openSettingsModal = openSettingsModal;
 window.closeSettingsModal = closeSettingsModal;
 window.openZohoModal = openZohoModal;
