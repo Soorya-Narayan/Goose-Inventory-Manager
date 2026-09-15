@@ -213,7 +213,15 @@ function readData() {
 }
 
 function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  const content = JSON.stringify(data, null, 2);
+  fs.writeFileSync(DATA_FILE, content, 'utf-8');
+  try {
+    fs.writeFileSync(SEED_FILE, content, 'utf-8');
+    const autoBackup = path.join(BACKUP_DIR, 'inventory_auto_backup.json');
+    fs.writeFileSync(autoBackup, content, 'utf-8');
+  } catch (e) {
+    console.warn('[SEED AUTO-SYNC WARNING]', e.message);
+  }
 }
 
 // ─── Engineer OTP Authentication API ──────────────────────────────────────────
@@ -1118,6 +1126,24 @@ app.post('/api/system/import-backup', (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to restore database backup: ' + err.message });
+  }
+});
+
+app.post('/api/system/sync-seed', (req, res) => {
+  try {
+    const data = readData();
+    const content = JSON.stringify(data, null, 2);
+    fs.writeFileSync(SEED_FILE, content, 'utf-8');
+    const autoBackup = path.join(BACKUP_DIR, 'inventory_auto_backup.json');
+    fs.writeFileSync(autoBackup, content, 'utf-8');
+    res.json({
+      success: true,
+      message: `Starter seed data synchronized successfully! (${data.items.length} materials, ${data.requests.length} requests synced)`,
+      itemCount: data.items.length,
+      requestCount: data.requests.length
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to sync starter seed data: ' + err.message });
   }
 });
 

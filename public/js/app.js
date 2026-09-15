@@ -5747,6 +5747,30 @@ async function handleRestoreBackupFileSelected(event) {
   }
 }
 
+async function syncStarterSeedData() {
+  if (state.user?.role !== 'manager') {
+    showToast('Access Denied: Only Store Manager can sync starter seed data', 'error');
+    return;
+  }
+  const confirmSync = confirm('Are you sure you want to synchronize the live database (inventory.json) with the starter seed template (inventory.seed.json)?\n\nThis will update the seed template file used for fresh server deployments.');
+  if (!confirmSync) return;
+
+  showToast('Synchronizing starter seed data...', 'info');
+
+  try {
+    const res = await api.post('/api/system/sync-seed', {});
+    if (res && res.success) {
+      showToast(res.message || 'Starter seed data synchronized successfully!', 'success');
+    } else {
+      showToast(res?.error || 'Failed to sync starter seed data', 'error');
+    }
+  } catch (err) {
+    showToast('Failed to sync starter seed data: ' + err.message, 'error');
+  }
+}
+
+window.syncStarterSeedData = syncStarterSeedData;
+
 // ─── Forgot Manager Password (OTP Reset) Handlers ────────────────────────────
 function openForgotManagerPasswordModal() {
   const overlay = document.getElementById('modal-forgot-password-overlay');

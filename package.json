@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch --watch-path=server.js server.js"
+    "dev": "node --watch --watch-path=server.js server.js",
+    "sync-seed": "node -e \"const fs=require('fs'); fs.copyFileSync('./data/inventory.json', './data/inventory.seed.json'); console.log('Starter seed data synced successfully!');\""
   },
   "dependencies": {
     "cors": "^2.8.5",
