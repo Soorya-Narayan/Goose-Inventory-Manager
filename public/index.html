@@ -1592,6 +1592,29 @@
 
 
 
-  <script src="/js/app.js?v=3.1.2"></script>
+  <script>
+    // Inline modal helpers - defined directly in HTML so they always work regardless of JS cache
+    function openPrivacyPolicyModal(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      if (e && e.stopPropagation) e.stopPropagation();
+      var m = document.getElementById('modal-privacy-policy-overlay');
+      if (m) { m.classList.remove('hidden'); m.style.display = 'flex'; }
+    }
+    function closePrivacyPolicyModal() {
+      var m = document.getElementById('modal-privacy-policy-overlay');
+      if (m) { m.classList.add('hidden'); m.style.display = 'none'; }
+    }
+    function openTermsConditionsModal(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      if (e && e.stopPropagation) e.stopPropagation();
+      var m = document.getElementById('modal-terms-conditions-overlay');
+      if (m) { m.classList.remove('hidden'); m.style.display = 'flex'; }
+    }
+    function closeTermsConditionsModal() {
+      var m = document.getElementById('modal-terms-conditions-overlay');
+      if (m) { m.classList.add('hidden'); m.style.display = 'none'; }
+    }
+  </script>
+  <script src="/js/app.js?v=3.1.3"></script>
 </body>
 </html>
