@@ -1930,10 +1930,13 @@ function openPrivacyPolicyModal(e) {
   if (e && e.preventDefault) e.preventDefault();
   if (e && e.stopPropagation) e.stopPropagation();
   closeOptionsMenu();
+  closeTermsConditionsModal();
+  closeSettingsModal();
   const modal = document.getElementById('modal-privacy-policy-overlay');
   if (modal) {
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
+    void modal.offsetWidth;
   }
 }
 
@@ -1951,10 +1954,13 @@ function openTermsConditionsModal(e) {
   if (e && e.preventDefault) e.preventDefault();
   if (e && e.stopPropagation) e.stopPropagation();
   closeOptionsMenu();
+  closePrivacyPolicyModal();
+  closeSettingsModal();
   const modal = document.getElementById('modal-terms-conditions-overlay');
   if (modal) {
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
+    void modal.offsetWidth;
   }
 }
 
@@ -1972,6 +1978,10 @@ window.openPrivacyPolicyModal = openPrivacyPolicyModal;
 window.closePrivacyPolicyModal = closePrivacyPolicyModal;
 window.openTermsConditionsModal = openTermsConditionsModal;
 window.closeTermsConditionsModal = closeTermsConditionsModal;
+window.openSettingsModal = openSettingsModal;
+window.closeSettingsModal = closeSettingsModal;
+window.openZohoModal = openZohoModal;
+window.closeZohoModal = closeZohoModal;
 
 function checkCookieConsent() {
   try {
@@ -5913,24 +5923,23 @@ function openSettingsModal(e) {
     return;
   }
 
-  // 1. Immediately close options menu dropdown
   closeOptionsMenu();
+  closePrivacyPolicyModal();
+  closeTermsConditionsModal();
 
-  // 2. Pre-fill PIN input immediately from state / localStorage
   const currentPin = state.managerPin || localStorage.getItem('ims_manager_pin') || '';
   const pinInput = document.getElementById('settings-manager-pin');
   if (pinInput) pinInput.value = currentPin;
 
-  // 3. Reveal Settings modal IMMEDIATELY (0ms latency!)
   const modal = document.getElementById('modal-settings-overlay');
   if (modal) {
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
+    void modal.offsetWidth;
   }
 
   applyZohoVisibility();
 
-  // 4. Perform background non-blocking PIN refresh
   api.get('/api/auth/pin').then(res => {
     if (res && res.managerPin) {
       state.managerPin = res.managerPin;
@@ -5943,7 +5952,7 @@ function openSettingsModal(e) {
 }
 
 function closeSettingsModal(e) {
-  if (e && e.target !== document.getElementById('modal-settings-overlay') && !e.target?.closest('button')) return;
+  if (e && e.target !== document.getElementById('modal-settings-overlay') && !e.target?.closest?.('button')) return;
   const modal = document.getElementById('modal-settings-overlay');
   if (modal) {
     modal.classList.add('hidden');
