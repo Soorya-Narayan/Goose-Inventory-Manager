@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.2.0',
+  currentVersion: '3.3.0',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -5149,7 +5149,7 @@ function printMaterialRequest(reqId) {
     </div>
 
     <div class="slip-bottom-bar">
-      <span>System v${state.currentVersion || '3.2.0'} &middot; Physical Store Inventory Filing Copy</span>
+      <span>System v${state.currentVersion || '3.3.0'} &middot; Physical Store Inventory Filing Copy</span>
       <span>Req ID: ${escHtml(req.id)}</span>
     </div>
   </div>
@@ -6896,7 +6896,7 @@ async function checkSystemUpdateStatus(manual = false) {
 
     const tag = document.getElementById('system-update-version-tag');
     if (tag && res.version) tag.textContent = `v${res.version}`;
-    state.currentVersion = res.version || '3.2.0';
+    state.currentVersion = res.version || '3.3.0';
 
     // 1. Maintenance Mode
     if (res.maintenance) {
