@@ -6609,25 +6609,12 @@ function updateMaintenanceSettingBtn(active) {
 
 // ─── Secret Easter Egg System Handler ─────────────────────────────────────────
 
-let _versionClickCount = 0;
-let _versionClickTimer = null;
-
 function triggerVersionEasterEgg(e) {
   if (e) {
     e.preventDefault();
     e.stopPropagation();
   }
-  _versionClickCount++;
-
-  clearTimeout(_versionClickTimer);
-  _versionClickTimer = setTimeout(() => {
-    _versionClickCount = 0;
-  }, 1500);
-
-  if (_versionClickCount >= 5) {
-    _versionClickCount = 0;
-    openEasterEggModal();
-  }
+  openEasterEggModal();
 }
 
 function openEasterEggModal() {
