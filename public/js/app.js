@@ -1927,50 +1927,42 @@ function closeCSVAuditExplorerModal() {
 }
 
 function openPrivacyPolicyModal(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  if (e && e.stopPropagation) e.stopPropagation();
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   closeOptionsMenu();
-  closeTermsConditionsModal();
-  closeSettingsModal();
   const modal = document.getElementById('modal-privacy-policy-overlay');
   if (modal) {
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
-    void modal.offsetWidth;
   }
 }
 
 function closePrivacyPolicyModal(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  if (e && e.stopPropagation) e.stopPropagation();
+  if (e && e.target && e.target !== document.getElementById('modal-privacy-policy-overlay') && !e.target.closest?.('button')) return;
   const modal = document.getElementById('modal-privacy-policy-overlay');
   if (modal) {
     modal.classList.add('hidden');
-    modal.style.display = '';
+    modal.style.display = 'none';
   }
 }
 
 function openTermsConditionsModal(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  if (e && e.stopPropagation) e.stopPropagation();
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   closeOptionsMenu();
-  closePrivacyPolicyModal();
-  closeSettingsModal();
   const modal = document.getElementById('modal-terms-conditions-overlay');
   if (modal) {
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
-    void modal.offsetWidth;
   }
 }
 
 function closeTermsConditionsModal(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  if (e && e.stopPropagation) e.stopPropagation();
+  if (e && e.target && e.target !== document.getElementById('modal-terms-conditions-overlay') && !e.target.closest?.('button')) return;
   const modal = document.getElementById('modal-terms-conditions-overlay');
   if (modal) {
     modal.classList.add('hidden');
-    modal.style.display = '';
+    modal.style.display = 'none';
   }
 }
 
@@ -5915,8 +5907,8 @@ async function handleZohoApiSync(e) {
 
 // ─── Settings Modal Handlers ─────────────────────────────────────────────────
 function openSettingsModal(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  if (e && e.stopPropagation) e.stopPropagation();
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
 
   if (state.user?.role !== 'manager') {
     showToast('Access Denied: Settings & Manager PIN configuration are restricted to Store Manager only', 'error');
@@ -5924,8 +5916,6 @@ function openSettingsModal(e) {
   }
 
   closeOptionsMenu();
-  closePrivacyPolicyModal();
-  closeTermsConditionsModal();
 
   const currentPin = state.managerPin || localStorage.getItem('ims_manager_pin') || '';
   const pinInput = document.getElementById('settings-manager-pin');
@@ -5935,7 +5925,6 @@ function openSettingsModal(e) {
   if (modal) {
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
-    void modal.offsetWidth;
   }
 
   applyZohoVisibility();
@@ -5952,11 +5941,11 @@ function openSettingsModal(e) {
 }
 
 function closeSettingsModal(e) {
-  if (e && e.target !== document.getElementById('modal-settings-overlay') && !e.target?.closest?.('button')) return;
+  if (e && e.target && e.target !== document.getElementById('modal-settings-overlay') && !e.target.closest?.('button')) return;
   const modal = document.getElementById('modal-settings-overlay');
   if (modal) {
     modal.classList.add('hidden');
-    modal.style.display = '';
+    modal.style.display = 'none';
   }
 }
 
