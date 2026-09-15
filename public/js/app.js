@@ -1938,7 +1938,12 @@ function openPrivacyPolicyModal(e) {
 }
 
 function closePrivacyPolicyModal(e) {
-  if (e && e.target && e.target !== document.getElementById('modal-privacy-policy-overlay') && !e.target.closest?.('button')) return;
+  if (e && e.target) {
+    const backdrop = document.getElementById('modal-privacy-policy-overlay');
+    if (e.target !== backdrop && !e.target.closest('.modal-close-btn') && !e.target.closest('.btn-close')) {
+      return;
+    }
+  }
   const modal = document.getElementById('modal-privacy-policy-overlay');
   if (modal) {
     modal.classList.add('hidden');
@@ -1958,7 +1963,12 @@ function openTermsConditionsModal(e) {
 }
 
 function closeTermsConditionsModal(e) {
-  if (e && e.target && e.target !== document.getElementById('modal-terms-conditions-overlay') && !e.target.closest?.('button')) return;
+  if (e && e.target) {
+    const backdrop = document.getElementById('modal-terms-conditions-overlay');
+    if (e.target !== backdrop && !e.target.closest('.modal-close-btn') && !e.target.closest('.btn-close')) {
+      return;
+    }
+  }
   const modal = document.getElementById('modal-terms-conditions-overlay');
   if (modal) {
     modal.classList.add('hidden');
@@ -5941,7 +5951,12 @@ function openSettingsModal(e) {
 }
 
 function closeSettingsModal(e) {
-  if (e && e.target && e.target !== document.getElementById('modal-settings-overlay') && !e.target.closest?.('button')) return;
+  if (e && e.target) {
+    const backdrop = document.getElementById('modal-settings-overlay');
+    if (e.target !== backdrop && !e.target.closest('.modal-close-btn') && !e.target.closest('.modal-close') && !e.target.closest('.modal-close-button')) {
+      return;
+    }
+  }
   const modal = document.getElementById('modal-settings-overlay');
   if (modal) {
     modal.classList.add('hidden');
