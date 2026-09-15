@@ -397,6 +397,8 @@ window.addEventListener('keydown', (e) => {
   }
 
   if (e.key === 'Escape') {
+    closePrivacyPolicyModal();
+    closeTermsConditionsModal();
     closeCSVAuditExplorerModal();
   }
 
@@ -1924,7 +1926,29 @@ function closeCSVAuditExplorerModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-function openTermsConditionsModal() {
+function openPrivacyPolicyModal(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  closeOptionsMenu();
+  const modal = document.getElementById('modal-privacy-policy-overlay');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
+}
+
+function closePrivacyPolicyModal(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  const modal = document.getElementById('modal-privacy-policy-overlay');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+}
+
+function openTermsConditionsModal(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   closeOptionsMenu();
   const modal = document.getElementById('modal-terms-conditions-overlay');
   if (modal) {
@@ -1933,7 +1957,8 @@ function openTermsConditionsModal() {
   }
 }
 
-function closeTermsConditionsModal() {
+function closeTermsConditionsModal(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   const modal = document.getElementById('modal-terms-conditions-overlay');
   if (modal) {
     modal.classList.add('hidden');
@@ -1941,6 +1966,8 @@ function closeTermsConditionsModal() {
   }
 }
 
+window.openPrivacyPolicyModal = openPrivacyPolicyModal;
+window.closePrivacyPolicyModal = closePrivacyPolicyModal;
 window.openTermsConditionsModal = openTermsConditionsModal;
 window.closeTermsConditionsModal = closeTermsConditionsModal;
 window.openSettingsModal = openSettingsModal;
