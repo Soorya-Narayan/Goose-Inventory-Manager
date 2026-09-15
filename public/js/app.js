@@ -1950,8 +1950,10 @@ function openPrivacyPolicyModal(e) {
 function closePrivacyPolicyModal(e) {
   if (e && e.target) {
     const backdrop = document.getElementById('modal-privacy-policy-overlay');
+    if (!backdrop) return;
     const isBackdropClick = (e.target === backdrop);
-    const isCloseBtnClick = !!(e.target.closest('button') || e.target.closest('.modal-close-btn') || e.target.closest('.btn-close') || e.target.closest('a'));
+    const isInsideModal = backdrop.contains(e.target);
+    const isCloseBtnClick = isInsideModal && !!(e.target.closest('.modal-close-btn') || e.target.closest('.btn-close') || e.target.closest('button'));
     if (!isBackdropClick && !isCloseBtnClick) {
       return;
     }
@@ -1987,8 +1989,10 @@ function openTermsConditionsModal(e) {
 function closeTermsConditionsModal(e) {
   if (e && e.target) {
     const backdrop = document.getElementById('modal-terms-conditions-overlay');
+    if (!backdrop) return;
     const isBackdropClick = (e.target === backdrop);
-    const isCloseBtnClick = !!(e.target.closest('button') || e.target.closest('.modal-close-btn') || e.target.closest('.btn-close') || e.target.closest('a'));
+    const isInsideModal = backdrop.contains(e.target);
+    const isCloseBtnClick = isInsideModal && !!(e.target.closest('.modal-close-btn') || e.target.closest('.btn-close') || e.target.closest('button'));
     if (!isBackdropClick && !isCloseBtnClick) {
       return;
     }
@@ -5981,8 +5985,10 @@ function openSettingsModal(e) {
 function closeSettingsModal(e) {
   if (e && e.target) {
     const backdrop = document.getElementById('modal-settings-overlay');
+    if (!backdrop) return;
     const isBackdropClick = (e.target === backdrop);
-    const isCloseBtnClick = !!(e.target.closest('button') || e.target.closest('.modal-close-btn') || e.target.closest('.modal-close') || e.target.closest('.modal-close-button') || e.target.closest('a'));
+    const isInsideModal = backdrop.contains(e.target);
+    const isCloseBtnClick = isInsideModal && !!(e.target.closest('button') || e.target.closest('.modal-close-btn') || e.target.closest('.modal-close') || e.target.closest('.modal-close-button'));
     if (!isBackdropClick && !isCloseBtnClick) {
       return;
     }
