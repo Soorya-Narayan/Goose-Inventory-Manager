@@ -7608,7 +7608,33 @@
       "updatedAt": "2026-09-11T11:37:47.335Z"
     }
   ],
-  "requests": [],
+  "requests": [
+    {
+      "id": "bae1d2ae-f59b-4f55-948d-fe619097ca83",
+      "name": "Suresh PatelSuresh Patel",
+      "employeeId": "GIS10421042",
+      "engineerEmail": "suresh@goosesolutions.in",
+      "email": "suresh@goosesolutions.in",
+      "projectName": "Dairy Plant Expansion",
+      "specification": "",
+      "purpose": "Emergency valve replacement",
+      "materials": [
+        {
+          "itemId": "MEC-001",
+          "itemName": "UB - SMS UNION",
+          "itemSku": "UB-SMS UNION 25MM",
+          "unit": "pcs",
+          "quantity": 1
+        }
+      ],
+      "status": "approved",
+      "requestedAt": "2026-09-15T12:12:50.926Z",
+      "processedAt": "2026-09-15T12:13:28.876Z",
+      "processedBy": "Store Manager",
+      "managerNotes": "",
+      "checklist": []
+    }
+  ],
   "transactions": [],
   "settings": {
     "managerPin": "Mannar@200",

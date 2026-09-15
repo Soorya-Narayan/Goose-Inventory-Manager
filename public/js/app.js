@@ -3930,33 +3930,35 @@ function renderRequests() {
                 <span>${new Date(r.requestedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
               </div>
             </div>
-            ${isManager ? (() => {
-              if (r.status === 'pending') return `
-                <div style="display:flex;gap:0.5rem;margin-top:0.4rem">
-                  <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'approved')">Approve</button>
-                  <button class="btn btn-danger btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
-                </div>`;
-              if (r.status === 'approved') return `
-                <div style="display:flex;gap:0.4rem;margin-top:0.4rem">
-                  <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center;gap:0.3rem" onclick="openChecklistModal('${r.id}')" title="Open Issue Checklist">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-                    Issue
-                  </button>
-                  <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>
-                </div>`;
-              if (r.status === 'rejected') return `
-                <div style="display:flex;gap:0.4rem;margin-top:0.4rem">
-                  <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="revertApproval('${r.id}')" title="Reconsider & Revert to Pending">Reconsider Request</button>
-                </div>`;
-              if (r.status === 'issued') return `
-                <div style="margin-top:0.4rem">
-                  <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;gap:0.3rem;opacity:0.6" onclick="openChecklistModal('${r.id}', true)" title="View Issue Record">
+            <div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.4rem;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="printMaterialRequest('${r.id}')" title="Print Material Requisition Slip (Physical Copy)" style="gap:0.3rem;flex:1;justify-content:center">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                Print Slip
+              </button>
+              ${isManager ? (() => {
+                if (r.status === 'pending') return `
+                  <div style="display:flex;gap:0.4rem;flex:1">
+                    <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'approved')">Approve</button>
+                    <button class="btn btn-danger btn-sm" style="flex:1;justify-content:center" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
+                  </div>`;
+                if (r.status === 'approved') return `
+                  <div style="display:flex;gap:0.4rem;flex:1">
+                    <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center;gap:0.3rem" onclick="openChecklistModal('${r.id}')" title="Open Issue Checklist">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+                      Issue
+                    </button>
+                    <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>
+                  </div>`;
+                if (r.status === 'rejected') return `
+                  <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="revertApproval('${r.id}')" title="Reconsider & Revert to Pending">Reconsider Request</button>`;
+                if (r.status === 'issued') return `
+                  <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;gap:0.3rem;opacity:0.6" onclick="openChecklistModal('${r.id}', true)" title="View Issue Record">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
                     View Record
-                  </button>
-                </div>`;
-              return '';
-            })() : ''}
+                  </button>`;
+                return '';
+              })() : ''}
+            </div>
           </div>`;
         }).join('')}
       </div>
@@ -3974,7 +3976,7 @@ function renderRequests() {
               <th>Project / Purpose</th>
               <th>Status</th>
               <th>Remarks</th>
-              ${isManager ? '<th>Action</th>' : ''}
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -4003,10 +4005,14 @@ function renderRequests() {
                 </td>
                 <td>${reqStatusTag(r.status)}</td>
                 <td style="font-size:0.78rem;color:var(--text-secondary);max-width:180px">${escHtml(r.managerNotes || '—')}</td>
-                ${isManager ? `
-                  <td style="white-space:nowrap">
-                    <div style="display:flex;gap:0.4rem;align-items:center">
-                      ${r.status === 'pending' ? `
+                <td style="white-space:nowrap">
+                  <div style="display:flex;gap:0.35rem;align-items:center">
+                    <button class="btn btn-outline btn-sm" onclick="printMaterialRequest('${r.id}')" title="Print Material Requisition Slip (Physical Copy)" style="gap:0.25rem;padding:0.25rem 0.5rem">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                      Print Slip
+                    </button>
+                    ${isManager ? (
+                      r.status === 'pending' ? `
                         <button class="btn btn-primary btn-sm" onclick="processRequest('${r.id}', 'approved')">Approve</button>
                         <button class="btn btn-danger btn-sm" onclick="processRequest('${r.id}', 'rejected')">Reject</button>
                       ` : r.status === 'approved' ? `
@@ -4022,13 +4028,15 @@ function renderRequests() {
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
                           View Record
                         </button>
-                      ` : `<span style="font-size:0.75rem;color:var(--text-tertiary)">—</span>`}
+                      ` : ''
+                    ) : ''}
+                    ${isManager ? `
                       <button class="btn btn-ghost btn-sm" onclick="deleteRequest('${r.id}')" title="Delete Material Request" style="color:var(--text-tertiary);padding:0.25rem 0.4rem">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                       </button>
-                    </div>
-                  </td>
-                ` : ''}
+                    ` : ''}
+                  </div>
+                </td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -4257,7 +4265,11 @@ function renderMyRequests() {
             <div style="font-size:0.75rem;color:var(--text-tertiary)">
               ${r.processedAt ? `Processed on ${new Date(r.processedAt).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })} ${r.processedBy ? 'by ' + escHtml(r.processedBy) : ''}` : 'Status: Awaiting Store Manager Review'}
             </div>
-            <div style="display:flex;gap:0.5rem;align-items:center">
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="printMaterialRequest('${r.id}')" title="Print Material Requisition Slip (Physical Copy)" style="gap:0.3rem">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                Print Slip
+              </button>
               ${canEdit ? `
                 <button class="btn btn-outline btn-sm" onclick="openEditRequestModal('${r.id}')" title="Edit this request" style="gap:0.3rem">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -4837,6 +4849,353 @@ function revertApproval(reqId) {
     }
   });
 }
+
+// ─── Material Request Print Slip (Physical Copy) ─────────────────────────────
+function printMaterialRequest(reqId) {
+  const req = (state.requests || []).find(r => r.id === reqId);
+  if (!req) {
+    showToast('Material request record not found', 'warning');
+    return;
+  }
+
+  showToast('Preparing Material Slip for physical print...', 'info');
+
+  const mats = Array.isArray(req.materials) && req.materials.length ? req.materials : (
+    req.itemName ? [{ itemName: req.itemName, itemSku: req.itemSku || req.itemId, quantity: req.quantityRequested, unit: req.unit }] : []
+  );
+
+  const reqDateStr = req.requestedAt ? new Date(req.requestedAt).toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  }) : '—';
+  const printDateStr = new Date().toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+
+  const voucherCode = req.id ? `#REQ-${String(req.id).slice(-8).toUpperCase()}` : '#REQ-SLIP';
+  const statusUpper = String(req.status || 'PENDING').toUpperCase();
+
+  const rowsHtml = mats.map((m, idx) => {
+    const invItem = (state.items || []).find(i => i.id === m.itemId || i.sku === m.itemSku || i.barcode === m.itemSku);
+    const location = invItem?.location || 'Rack / Floor';
+    const checked = Array.isArray(req.checklist) ? (req.checklist.find(c => c.itemId === m.itemId)?.checked ? '✓ Verified' : 'Pending') : (req.status === 'issued' ? '✓ Issued' : '—');
+    return `
+      <tr>
+        <td style="text-align:center;width:35px">${idx + 1}</td>
+        <td>
+          <div style="font-weight:700;color:#0f172a">${escHtml(m.itemName || 'Material Item')}</div>
+          ${invItem?.category ? `<div style="font-size:7.5pt;color:#64748b">${escHtml(invItem.category)}</div>` : ''}
+        </td>
+        <td style="font-family:monospace;font-weight:600">${escHtml(m.itemSku || m.itemId || '—')}</td>
+        <td style="font-weight:600;color:#1e293b">${escHtml(location)}</td>
+        <td style="text-align:right;font-weight:700;font-family:monospace;font-size:10pt">${m.quantity || 1} ${escHtml(m.unit || 'pcs')}</td>
+        <td style="text-align:right;font-weight:700;font-family:monospace">${req.status === 'issued' ? (m.quantity || 1) + ' ' + escHtml(m.unit || 'pcs') : '_______'}</td>
+        <td style="text-align:center;font-size:8.5pt">${checked}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const slipHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Material Slip - ${voucherCode}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 12mm 14mm 12mm 14mm;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      padding: 10px;
+      line-height: 1.35;
+      font-size: 9.5pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .slip-card {
+      max-width: 800px;
+      margin: 0 auto;
+      border: 2px solid #0f172a;
+      padding: 18px 22px;
+    }
+    .slip-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+    .company-title {
+      font-size: 14pt;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+    }
+    .company-sub {
+      font-size: 8pt;
+      color: #475569;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+    .slip-badge-box {
+      text-align: right;
+    }
+    .slip-badge-pill {
+      display: inline-block;
+      background: #0f172a;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 8.5pt;
+      padding: 3px 9px;
+      letter-spacing: 0.06em;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+    .slip-voucher-code {
+      font-family: ui-monospace, monospace;
+      font-size: 9.5pt;
+      font-weight: 700;
+      margin-top: 3px;
+      color: #0f172a;
+    }
+    .slip-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 20px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 9px 12px;
+      margin-bottom: 12px;
+      font-size: 9pt;
+    }
+    .grid-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .grid-lbl {
+      font-size: 7.5pt;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      min-width: 105px;
+    }
+    .grid-val {
+      font-weight: 600;
+      color: #0f172a;
+      word-break: break-word;
+    }
+    .slip-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 14px 0;
+      font-size: 9pt;
+    }
+    .slip-table th {
+      background: #f1f5f9;
+      border: 1px solid #64748b;
+      padding: 6px 8px;
+      font-weight: 800;
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .slip-table td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 8px;
+      vertical-align: middle;
+    }
+    .slip-table tr:nth-child(even) td {
+      background: #fcfcfd;
+    }
+    .notes-box {
+      border: 1px dashed #94a3b8;
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin-bottom: 22px;
+      font-size: 8.5pt;
+      background: #fafafa;
+    }
+    .notes-title {
+      font-size: 7.5pt;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .signatures-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      margin-top: 24px;
+      page-break-inside: avoid;
+    }
+    .sig-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 85px;
+    }
+    .sig-role {
+      font-size: 7.5pt;
+      font-weight: 700;
+      color: #334155;
+      text-transform: uppercase;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 3px;
+    }
+    .sig-bottom {
+      border-top: 1px dotted #475569;
+      margin-top: 36px;
+      padding-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 7pt;
+      color: #64748b;
+    }
+    .slip-bottom-bar {
+      border-top: 1px solid #cbd5e1;
+      margin-top: 14px;
+      padding-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 7pt;
+      color: #64748b;
+      font-family: ui-monospace, monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="slip-card">
+    <div class="slip-top">
+      <div>
+        <div class="company-title">Goose Industrial Solutions Pvt Ltd</div>
+        <div class="company-sub">Store Inventory &amp; Material Management System &middot; Official Physical Voucher</div>
+      </div>
+      <div class="slip-badge-box">
+        <span class="slip-badge-pill">MATERIAL ISSUE VOUCHER</span>
+        <div class="slip-voucher-code">${voucherCode}</div>
+      </div>
+    </div>
+
+    <div class="slip-grid">
+      <div class="grid-row"><span class="grid-lbl">Requisitioner:</span><span class="grid-val">${escHtml(req.name || req.engineerName || req.engineer || 'Engineer')}</span></div>
+      <div class="grid-row"><span class="grid-lbl">Employee ID:</span><span class="grid-val" style="font-family:monospace">${escHtml(req.employeeId || '—')}</span></div>
+      <div class="grid-row"><span class="grid-lbl">Department / Project:</span><span class="grid-val">${escHtml(req.projectName || req.project || 'General')}</span></div>
+      <div class="grid-row"><span class="grid-lbl">Request Status:</span><span class="grid-val" style="font-weight:800">[ ${statusUpper} ]</span></div>
+      <div class="grid-row"><span class="grid-lbl">Date Requested:</span><span class="grid-val">${reqDateStr}</span></div>
+      <div class="grid-row"><span class="grid-lbl">Print / Slip Date:</span><span class="grid-val">${printDateStr}</span></div>
+      ${req.specification ? `<div class="grid-row" style="grid-column:1/-1"><span class="grid-lbl">Tech Spec:</span><span class="grid-val">${escHtml(req.specification)}</span></div>` : ''}
+      ${req.purpose ? `<div class="grid-row" style="grid-column:1/-1"><span class="grid-lbl">Purpose / Reason:</span><span class="grid-val">${escHtml(req.purpose)}</span></div>` : ''}
+    </div>
+
+    <table class="slip-table">
+      <thead>
+        <tr>
+          <th style="text-align:center;width:35px">#</th>
+          <th>Material Description</th>
+          <th style="width:125px">Zoho Code / SKU</th>
+          <th style="width:90px">Location</th>
+          <th style="text-align:right;width:75px">Req. Qty</th>
+          <th style="text-align:right;width:85px">Issued Qty</th>
+          <th style="text-align:center;width:75px">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml}
+      </tbody>
+    </table>
+
+    <div class="notes-box">
+      <div class="notes-title">Store Manager Remarks &amp; Handover Notes:</div>
+      <div>${escHtml(req.managerNotes || 'Materials verified and handed over as per store allocation policy.')}</div>
+    </div>
+
+    <div class="signatures-grid">
+      <div class="sig-card">
+        <div class="sig-role">1. Requisitioned By</div>
+        <div style="font-size:7.5pt;font-weight:600;margin-top:2px">${escHtml(req.name || req.engineerName || 'Engineer')}</div>
+        <div class="sig-bottom">
+          <span>Signature</span>
+          <span>Date: ____________</span>
+        </div>
+      </div>
+      <div class="sig-card">
+        <div class="sig-role">2. Issued By (Store Manager)</div>
+        <div style="font-size:7.5pt;font-weight:600;margin-top:2px">${escHtml(state.user?.name || 'Store Manager')}</div>
+        <div class="sig-bottom">
+          <span>Signature</span>
+          <span>Date: ____________</span>
+        </div>
+      </div>
+      <div class="sig-card">
+        <div class="sig-role">3. Received By</div>
+        <div style="font-size:7.5pt;font-weight:600;margin-top:2px">Name: _________________</div>
+        <div class="sig-bottom">
+          <span>Signature</span>
+          <span>Date: ____________</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="slip-bottom-bar">
+      <span>System v${state.currentVersion || '3.2.0'} &middot; Physical Store Inventory Filing Copy</span>
+      <span>Req ID: ${escHtml(req.id)}</span>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  // Use hidden iframe to trigger physical print dialog
+  const printIframe = document.createElement('iframe');
+  printIframe.style.position = 'fixed';
+  printIframe.style.right = '0';
+  printIframe.style.bottom = '0';
+  printIframe.style.width = '0';
+  printIframe.style.height = '0';
+  printIframe.style.border = '0';
+  document.body.appendChild(printIframe);
+
+  try {
+    const doc = printIframe.contentWindow.document;
+    doc.open();
+    doc.write(slipHtml);
+    doc.close();
+
+    printIframe.contentWindow.focus();
+    setTimeout(() => {
+      printIframe.contentWindow.print();
+      setTimeout(() => {
+        try { document.body.removeChild(printIframe); } catch (e) {}
+      }, 2500);
+    }, 300);
+  } catch (err) {
+    console.warn('Iframe print error, falling back to popup window:', err);
+    try { document.body.removeChild(printIframe); } catch (e) {}
+    const printWin = window.open('', '_blank', 'width=840,height=900');
+    if (printWin) {
+      printWin.document.open();
+      printWin.document.write(slipHtml);
+      printWin.document.close();
+      printWin.focus();
+      setTimeout(() => printWin.print(), 350);
+    } else {
+      showToast('Pop-up blocked. Please allow pop-ups to print physical slip.', 'warning');
+    }
+  }
+}
+
+window.printMaterialRequest = printMaterialRequest;
 
 // ─── Custom Confirm Modal ─────────────────────────────────────────────────────
 function showConfirmModal({ title, message, confirmLabel = 'Delete', onConfirm }) {

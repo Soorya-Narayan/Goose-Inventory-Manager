@@ -736,12 +736,18 @@
         </div>
 
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-ghost" onclick="closeChecklistModal()">Cancel</button>
-        <button type="button" class="btn btn-primary" id="checklist-issue-btn" onclick="submitIssue()" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%);border-color:#10b981;font-weight:700">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          Stock Out
+      <div class="modal-footer" style="justify-content:space-between">
+        <button type="button" class="btn btn-outline btn-sm" id="checklist-print-btn" onclick="printMaterialRequest(state.activeChecklistRequestId)" style="gap:0.35rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print Physical Slip
         </button>
+        <div style="display:flex;gap:0.5rem">
+          <button type="button" class="btn btn-ghost" onclick="closeChecklistModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" id="checklist-issue-btn" onclick="submitIssue()" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%);border-color:#10b981;font-weight:700">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            Stock Out
+          </button>
+        </div>
       </div>
     </div>
   </div>
