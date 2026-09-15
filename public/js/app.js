@@ -397,8 +397,6 @@ window.addEventListener('keydown', (e) => {
   }
 
   if (e.key === 'Escape') {
-    closePrivacyPolicyModal();
-    closeTermsConditionsModal();
     closeCSVAuditExplorerModal();
   }
 
@@ -1926,48 +1924,6 @@ function closeCSVAuditExplorerModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-function openPrivacyPolicyModal(e) {
-  if (e && typeof e.preventDefault === 'function') e.preventDefault();
-  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-  closeOptionsMenu();
-  const modal = document.getElementById('modal-privacy-policy-overlay');
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
-  }
-}
-
-function closePrivacyPolicyModal() {
-  const modal = document.getElementById('modal-privacy-policy-overlay');
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.style.display = 'none';
-  }
-}
-
-function openTermsConditionsModal(e) {
-  if (e && typeof e.preventDefault === 'function') e.preventDefault();
-  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-  closeOptionsMenu();
-  const modal = document.getElementById('modal-terms-conditions-overlay');
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
-  }
-}
-
-function closeTermsConditionsModal() {
-  const modal = document.getElementById('modal-terms-conditions-overlay');
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.style.display = 'none';
-  }
-}
-
-window.openPrivacyPolicyModal = openPrivacyPolicyModal;
-window.closePrivacyPolicyModal = closePrivacyPolicyModal;
-window.openTermsConditionsModal = openTermsConditionsModal;
-window.closeTermsConditionsModal = closeTermsConditionsModal;
 window.openSettingsModal = openSettingsModal;
 window.closeSettingsModal = closeSettingsModal;
 window.openZohoModal = openZohoModal;
