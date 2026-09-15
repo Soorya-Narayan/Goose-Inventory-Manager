@@ -1929,6 +1929,7 @@ function closeCSVAuditExplorerModal() {
 function openPrivacyPolicyModal(e) {
   if (e && e.preventDefault) e.preventDefault();
   if (e && e.stopPropagation) e.stopPropagation();
+  closeOptionsMenu();
   const modal = document.getElementById('modal-privacy-policy-overlay');
   if (modal) {
     modal.classList.remove('hidden');
@@ -1949,6 +1950,7 @@ function closePrivacyPolicyModal(e) {
 function openTermsConditionsModal(e) {
   if (e && e.preventDefault) e.preventDefault();
   if (e && e.stopPropagation) e.stopPropagation();
+  closeOptionsMenu();
   const modal = document.getElementById('modal-terms-conditions-overlay');
   if (modal) {
     modal.classList.remove('hidden');
@@ -5902,31 +5904,51 @@ async function handleZohoApiSync(e) {
 }
 
 // ─── Settings Modal Handlers ─────────────────────────────────────────────────
-async function openSettingsModal() {
+function openSettingsModal(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (e && e.stopPropagation) e.stopPropagation();
+
   if (state.user?.role !== 'manager') {
     showToast('Access Denied: Settings & Manager PIN configuration are restricted to Store Manager only', 'error');
     return;
   }
-  applyZohoVisibility();
-  try {
-    const res = await api.get('/api/auth/pin');
-    if (res && res.managerPin) {
-      state.managerPin = res.managerPin;
-      localStorage.setItem('ims_manager_pin', res.managerPin);
-    }
-  } catch (e) {}
 
+  // 1. Immediately close options menu dropdown
+  closeOptionsMenu();
+
+  // 2. Pre-fill PIN input immediately from state / localStorage
   const currentPin = state.managerPin || localStorage.getItem('ims_manager_pin') || '';
   const pinInput = document.getElementById('settings-manager-pin');
   if (pinInput) pinInput.value = currentPin;
 
-  document.getElementById('options-menu')?.classList.add('hidden');
-  document.getElementById('modal-settings-overlay')?.classList.remove('hidden');
+  // 3. Reveal Settings modal IMMEDIATELY (0ms latency!)
+  const modal = document.getElementById('modal-settings-overlay');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
+
+  applyZohoVisibility();
+
+  // 4. Perform background non-blocking PIN refresh
+  api.get('/api/auth/pin').then(res => {
+    if (res && res.managerPin) {
+      state.managerPin = res.managerPin;
+      localStorage.setItem('ims_manager_pin', res.managerPin);
+      if (pinInput && document.activeElement !== pinInput) {
+        pinInput.value = res.managerPin;
+      }
+    }
+  }).catch(() => {});
 }
 
 function closeSettingsModal(e) {
-  if (e && e.target !== document.getElementById('modal-settings-overlay')) return;
-  document.getElementById('modal-settings-overlay')?.classList.add('hidden');
+  if (e && e.target !== document.getElementById('modal-settings-overlay') && !e.target?.closest('button')) return;
+  const modal = document.getElementById('modal-settings-overlay');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = '';
+  }
 }
 
 async function handleSaveSettings(e) {
