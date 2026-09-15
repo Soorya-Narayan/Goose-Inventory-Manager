@@ -1930,16 +1930,6 @@ function openPrivacyPolicyModal(e) {
   if (e && typeof e.preventDefault === 'function') e.preventDefault();
   if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   closeOptionsMenu();
-  const termsModal = document.getElementById('modal-terms-conditions-overlay');
-  if (termsModal) {
-    termsModal.classList.add('hidden');
-    termsModal.style.display = 'none';
-  }
-  const settingsModal = document.getElementById('modal-settings-overlay');
-  if (settingsModal) {
-    settingsModal.classList.add('hidden');
-    settingsModal.style.display = 'none';
-  }
   const modal = document.getElementById('modal-privacy-policy-overlay');
   if (modal) {
     modal.classList.remove('hidden');
@@ -1947,17 +1937,7 @@ function openPrivacyPolicyModal(e) {
   }
 }
 
-function closePrivacyPolicyModal(e) {
-  if (e && e.target) {
-    const backdrop = document.getElementById('modal-privacy-policy-overlay');
-    if (!backdrop) return;
-    const isBackdropClick = (e.target === backdrop);
-    const isInsideModal = backdrop.contains(e.target);
-    const isCloseBtnClick = isInsideModal && !!(e.target.closest('.modal-close-btn') || e.target.closest('.btn-close') || e.target.closest('button'));
-    if (!isBackdropClick && !isCloseBtnClick) {
-      return;
-    }
-  }
+function closePrivacyPolicyModal() {
   const modal = document.getElementById('modal-privacy-policy-overlay');
   if (modal) {
     modal.classList.add('hidden');
@@ -1969,16 +1949,6 @@ function openTermsConditionsModal(e) {
   if (e && typeof e.preventDefault === 'function') e.preventDefault();
   if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   closeOptionsMenu();
-  const privacyModal = document.getElementById('modal-privacy-policy-overlay');
-  if (privacyModal) {
-    privacyModal.classList.add('hidden');
-    privacyModal.style.display = 'none';
-  }
-  const settingsModal = document.getElementById('modal-settings-overlay');
-  if (settingsModal) {
-    settingsModal.classList.add('hidden');
-    settingsModal.style.display = 'none';
-  }
   const modal = document.getElementById('modal-terms-conditions-overlay');
   if (modal) {
     modal.classList.remove('hidden');
@@ -1986,17 +1956,7 @@ function openTermsConditionsModal(e) {
   }
 }
 
-function closeTermsConditionsModal(e) {
-  if (e && e.target) {
-    const backdrop = document.getElementById('modal-terms-conditions-overlay');
-    if (!backdrop) return;
-    const isBackdropClick = (e.target === backdrop);
-    const isInsideModal = backdrop.contains(e.target);
-    const isCloseBtnClick = isInsideModal && !!(e.target.closest('.modal-close-btn') || e.target.closest('.btn-close') || e.target.closest('button'));
-    if (!isBackdropClick && !isCloseBtnClick) {
-      return;
-    }
-  }
+function closeTermsConditionsModal() {
   const modal = document.getElementById('modal-terms-conditions-overlay');
   if (modal) {
     modal.classList.add('hidden');
@@ -5982,17 +5942,7 @@ function openSettingsModal(e) {
   }).catch(() => {});
 }
 
-function closeSettingsModal(e) {
-  if (e && e.target) {
-    const backdrop = document.getElementById('modal-settings-overlay');
-    if (!backdrop) return;
-    const isBackdropClick = (e.target === backdrop);
-    const isInsideModal = backdrop.contains(e.target);
-    const isCloseBtnClick = isInsideModal && !!(e.target.closest('button') || e.target.closest('.modal-close-btn') || e.target.closest('.modal-close') || e.target.closest('.modal-close-button'));
-    if (!isBackdropClick && !isCloseBtnClick) {
-      return;
-    }
-  }
+function closeSettingsModal() {
   const modal = document.getElementById('modal-settings-overlay');
   if (modal) {
     modal.classList.add('hidden');

@@ -875,7 +875,7 @@
   </div>
 
   <!-- Settings Modal -->
-  <div class="modal-backdrop hidden" id="modal-settings-overlay" onclick="closeSettingsModal(event)">
+  <div class="modal-backdrop hidden" id="modal-settings-overlay" onclick="if(event.target===this)closeSettingsModal()">
     <div class="modal card" style="max-width:480px" onclick="event.stopPropagation()">
       <div class="modal-hdr">
         <h2 class="modal-title">System Settings</h2>
@@ -1365,7 +1365,7 @@
   </div>
 
   <!-- PRIVACY POLICY MODAL -->
-  <div class="modal-backdrop hidden" id="modal-privacy-policy-overlay" onclick="closePrivacyPolicyModal(event)" style="z-index:99995;background:rgba(8,12,20,0.85);backdrop-filter:blur(6px)">
+  <div class="modal-backdrop hidden" id="modal-privacy-policy-overlay" onclick="if(event.target===this)closePrivacyPolicyModal()" style="z-index:99995;background:rgba(8,12,20,0.85);backdrop-filter:blur(6px)">
     <div class="modal card" style="max-width:850px;width:92vw;max-height:88vh;padding:1.5rem;display:flex;flex-direction:column;gap:1rem;border:1px solid var(--border-highlight);box-shadow:0 24px 48px rgba(0,0,0,0.6)" onclick="event.stopPropagation()">
       
       <!-- Modal Header -->
@@ -1378,7 +1378,7 @@
           <h2 style="font-size:1.35rem;font-weight:800;color:var(--text-primary);margin-top:0.35rem;letter-spacing:-0.02em">Privacy &amp; Data Protection Policy</h2>
           <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.15rem">Goose Industrial Solutions Pvt Ltd &middot; Effective Date: September 2026</p>
         </div>
-        <button class="btn btn-ghost btn-icon modal-close-btn" onclick="closePrivacyPolicyModal(event)" style="font-size:1.25rem;line-height:1;padding:0.4rem 0.6rem">&times;</button>
+        <button class="btn btn-ghost btn-icon modal-close-btn" onclick="closePrivacyPolicyModal()" style="font-size:1.25rem;line-height:1;padding:0.4rem 0.6rem">&times;</button>
       </div>
 
       <!-- Scrollable Policy Content -->
@@ -1454,14 +1454,14 @@
 
       <!-- Modal Footer -->
       <div style="display:flex;justify-content:flex-end;align-items:center;border-top:1px solid var(--border-subtle);padding-top:1rem;flex-shrink:0">
-        <button class="btn btn-primary modal-close-btn" onclick="closePrivacyPolicyModal(event)">Close Policy</button>
+        <button class="btn btn-primary modal-close-btn" onclick="closePrivacyPolicyModal()">Close Policy</button>
       </div>
 
     </div>
   </div>
 
   <!-- TERMS & CONDITIONS MODAL -->
-  <div class="modal-backdrop hidden" id="modal-terms-conditions-overlay" onclick="closeTermsConditionsModal(event)" style="z-index:99996;background:rgba(8,12,20,0.85);backdrop-filter:blur(6px)">
+  <div class="modal-backdrop hidden" id="modal-terms-conditions-overlay" onclick="if(event.target===this)closeTermsConditionsModal()" style="z-index:99996;background:rgba(8,12,20,0.85);backdrop-filter:blur(6px)">
     <div class="modal card" style="max-width:850px;width:92vw;max-height:88vh;padding:1.5rem;display:flex;flex-direction:column;gap:1rem;border:1px solid var(--border-highlight);box-shadow:0 24px 48px rgba(0,0,0,0.6)" onclick="event.stopPropagation()">
       
       <!-- Modal Header -->
@@ -1474,7 +1474,7 @@
           <h2 style="font-size:1.35rem;font-weight:800;color:var(--text-primary);margin-top:0.35rem;letter-spacing:-0.02em">Terms &amp; Conditions of Use</h2>
           <p style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.15rem">Goose Industrial Solutions Pvt Ltd &middot; Effective Date: September 2026</p>
         </div>
-        <button class="btn btn-ghost btn-icon modal-close-btn" onclick="closeTermsConditionsModal(event)" style="font-size:1.25rem;line-height:1;padding:0.4rem 0.6rem">&times;</button>
+        <button class="btn btn-ghost btn-icon modal-close-btn" onclick="closeTermsConditionsModal()" style="font-size:1.25rem;line-height:1;padding:0.4rem 0.6rem">&times;</button>
       </div>
 
       <!-- Scrollable Content -->
@@ -1561,7 +1561,7 @@
 
       <!-- Modal Footer -->
       <div style="display:flex;justify-content:flex-end;align-items:center;border-top:1px solid var(--border-subtle);padding-top:1rem;flex-shrink:0">
-        <button class="btn btn-primary modal-close-btn" onclick="closeTermsConditionsModal(event)">Accept &amp; Close</button>
+        <button class="btn btn-primary modal-close-btn" onclick="closeTermsConditionsModal()">Accept &amp; Close</button>
       </div>
 
     </div>
