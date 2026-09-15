@@ -3802,6 +3802,7 @@ function filterAndRenderInventoryRows() {
         <div style="display:flex;gap:0.3rem">
           <button class="btn btn-ghost btn-sm" title="Print Barcode on Tej C15" onclick="openPrintModal('${item.id}')">Sticker</button>
           <button class="btn btn-ghost btn-sm" title="Request Material" onclick="openRequestModal('${item.id}')">Request</button>
+          <button class="btn btn-ghost btn-sm" title="View Request &amp; Stock History" onclick="openItemHistoryModal('${item.id}')" style="color:var(--accent-cyan)">History</button>
           ${isManager ? `<button class="btn btn-ghost btn-sm" onclick="openEditItemModal('${item.id}')">Edit</button>` : ''}
           ${isManager ? `<button class="btn btn-delete-icon btn-sm" onclick="deleteItem('${item.id}')" title="Delete Material">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -3818,20 +3819,64 @@ function filterAndRenderInventoryRows() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  REQUESTS
+//  REQUESTS & HISTORY DECISION LOG
 // ═══════════════════════════════════════════════════════════════════════════════
+let _managerRequestsStatusFilter = 'all';
+let _managerRequestsSearch = '';
+
+function setManagerRequestsFilter(status) {
+  _managerRequestsStatusFilter = status;
+  renderRequests();
+}
+
+function handleManagerRequestsSearch(val) {
+  _managerRequestsSearch = (val || '').trim().toLowerCase();
+  renderRequests();
+}
+
 function renderRequests() {
   const isManager = state.user?.role === 'manager';
   const reqs = state.requests || [];
   const isMobile = window.innerWidth <= 640;
 
+  // Calculate summary counts across all requests
+  const totalCount = reqs.length;
+  const pendingCount = reqs.filter(r => r.status === 'pending').length;
+  const approvedCount = reqs.filter(r => r.status === 'approved').length;
+  const issuedCount = reqs.filter(r => r.status === 'issued').length;
+  const rejectedCount = reqs.filter(r => r.status === 'rejected').length;
+
+  // Apply status & search filters
+  let filteredReqs = reqs;
+  if (_managerRequestsStatusFilter !== 'all') {
+    filteredReqs = filteredReqs.filter(r => r.status === _managerRequestsStatusFilter);
+  }
+
+  if (_managerRequestsSearch) {
+    filteredReqs = filteredReqs.filter(r => {
+      const name = (r.name || r.engineerName || r.engineer || '').toLowerCase();
+      const empId = (r.employeeId || '').toLowerCase();
+      const proj = (r.projectName || r.project || '').toLowerCase();
+      const purp = (r.purpose || '').toLowerCase();
+      const reqId = (r.id || '').toLowerCase();
+      const mats = Array.isArray(r.materials) ? r.materials.map(m => (m.itemName || '') + ' ' + (m.itemSku || '')).join(' ').toLowerCase() : (r.itemName || '').toLowerCase();
+
+      return name.includes(_managerRequestsSearch) ||
+             empId.includes(_managerRequestsSearch) ||
+             proj.includes(_managerRequestsSearch) ||
+             purp.includes(_managerRequestsSearch) ||
+             reqId.includes(_managerRequestsSearch) ||
+             mats.includes(_managerRequestsSearch);
+    });
+  }
+
   let contentHtml = '';
 
-  if (reqs.length === 0) {
+  if (filteredReqs.length === 0) {
     contentHtml = `
       <div style="text-align:center;padding:3.5rem 1rem;color:var(--text-tertiary)">
-        <div style="font-weight:700;font-size:1.05rem;color:var(--text-primary);margin-bottom:0.35rem">No Supplier Offers Submitted</div>
-        <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1.25rem">Engineers can request items from the inventory at any time.</div>
+        <div style="font-weight:700;font-size:1.05rem;color:var(--text-primary);margin-bottom:0.35rem">No Material Requests Found</div>
+        <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1.25rem">No requests match the current status filter or search query.</div>
         <button class="btn btn-primary btn-sm" onclick="openRequestModal()" style="margin:0 auto">+ Request Material</button>
       </div>
     `;
@@ -3839,7 +3884,7 @@ function renderRequests() {
     // Mobile Touch Cards
     contentHtml = `
       <div style="display:flex;flex-direction:column;gap:0.75rem;padding:0.75rem">
-        ${reqs.map(r => {
+        ${filteredReqs.map(r => {
           const mats = Array.isArray(r.materials) ? r.materials : (
             r.itemName ? [{ itemName: r.itemName, itemSku: r.itemSku || r.itemId, quantity: r.quantityRequested, unit: r.unit }] : []
           );
@@ -3849,6 +3894,13 @@ function renderRequests() {
               <span style="font-family:var(--font-mono);color:var(--goose);font-weight:700">${m.quantity} ${m.unit || 'pcs'}</span>
             </div>`
           ).join('');
+
+          let notesHtml = '';
+          if (r.managerNotes) {
+            const noteColor = r.status === 'rejected' ? 'var(--danger)' : r.status === 'approved' ? 'var(--accent-subtle)' : 'var(--text-tertiary)';
+            notesHtml = `<div style="font-size:0.75rem;padding:0.4rem 0.6rem;background:var(--bg-raised);border-left:3px solid ${noteColor};border-radius:4px;margin-top:0.25rem"><strong>Remarks:</strong> ${escHtml(r.managerNotes)}</div>`;
+          }
+
           return `
           <div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.875rem;display:flex;flex-direction:column;gap:0.5rem">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
@@ -3864,6 +3916,7 @@ function renderRequests() {
             <div style="background:var(--bg-surface);padding:0.4rem 0.625rem;border-radius:var(--radius);border:1px solid var(--border-muted);display:flex;flex-direction:column;gap:0.15rem">
               ${matsHtml}
             </div>
+            ${notesHtml}
             <div style="font-size:0.72rem;color:var(--text-tertiary);display:flex;justify-content:space-between;align-items:center">
               <span>${escHtml(r.purpose || '')}</span>
               <span>${new Date(r.requestedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
@@ -3881,6 +3934,10 @@ function renderRequests() {
                     Issue
                   </button>
                   <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>
+                </div>`;
+              if (r.status === 'rejected') return `
+                <div style="display:flex;gap:0.4rem;margin-top:0.4rem">
+                  <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="revertApproval('${r.id}')" title="Reconsider & Revert to Pending">Reconsider Request</button>
                 </div>`;
               if (r.status === 'issued') return `
                 <div style="margin-top:0.4rem">
@@ -3905,13 +3962,14 @@ function renderRequests() {
               <th>Submitted At</th>
               <th>Name / EID</th>
               <th>Materials</th>
-              <th>Project</th>
+              <th>Project / Purpose</th>
               <th>Status</th>
+              <th>Remarks</th>
               ${isManager ? '<th>Action</th>' : ''}
             </tr>
           </thead>
           <tbody>
-            ${reqs.map(r => {
+            ${filteredReqs.map(r => {
               const mats = Array.isArray(r.materials) ? r.materials : (
                 r.itemName ? [{ itemName: r.itemName, itemSku: r.itemSku || r.itemId, quantity: r.quantityRequested, unit: r.unit }] : []
               );
@@ -3929,8 +3987,12 @@ function renderRequests() {
                   ${r.employeeId ? `<div style="font-size:0.72rem;color:var(--text-tertiary)">${escHtml(r.employeeId)}</div>` : ''}
                 </td>
                 <td style="max-width:240px">${matsHtml}</td>
-                <td>${escHtml(r.projectName || r.project || 'General')}</td>
+                <td>
+                  <strong style="color:var(--text-primary)">${escHtml(r.projectName || r.project || 'General')}</strong>
+                  ${r.purpose ? `<div style="font-size:0.72rem;color:var(--text-tertiary)">${escHtml(r.purpose)}</div>` : ''}
+                </td>
                 <td>${reqStatusTag(r.status)}</td>
+                <td style="font-size:0.78rem;color:var(--text-secondary);max-width:180px">${escHtml(r.managerNotes || '—')}</td>
                 ${isManager ? `
                   <td style="white-space:nowrap">
                     <div style="display:flex;gap:0.4rem;align-items:center">
@@ -3943,6 +4005,8 @@ function renderRequests() {
                           Issue
                         </button>
                         <button class="btn btn-ghost btn-sm" onclick="revertApproval('${r.id}')" title="Revert to Pending">Revert</button>
+                      ` : r.status === 'rejected' ? `
+                        <button class="btn btn-ghost btn-sm" onclick="revertApproval('${r.id}')" title="Reconsider & Revert to Pending">Reconsider</button>
                       ` : r.status === 'issued' ? `
                         <button class="btn btn-ghost btn-sm" style="gap:0.3rem;opacity:0.6" onclick="openChecklistModal('${r.id}', true)" title="View Issue Record">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
@@ -3966,11 +4030,49 @@ function renderRequests() {
   document.getElementById('view-requests').innerHTML = `
     <div class="page-hdr">
       <div>
-        <h1 class="page-title">Supplier Offers</h1>
-        <p class="page-subtitle">${isManager ? 'Review &amp; approve supplier offers' : 'Your submitted supplier offers'}</p>
+        <h1 class="page-title">Material Requests &amp; Decision History</h1>
+        <p class="page-subtitle">${isManager ? 'Review, approve, reject or inspect complete material request decision history' : 'Your submitted material requests'}</p>
       </div>
       <div>
         <button class="btn btn-primary" onclick="openRequestModal()">+ Request Material</button>
+      </div>
+    </div>
+
+    <!-- Summary Stats Chips -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:0.75rem;margin-bottom:1.25rem">
+      <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.75rem 1rem;text-align:center">
+        <div style="font-size:0.72rem;color:var(--text-tertiary);text-transform:uppercase;font-weight:700">Total Offers</div>
+        <div style="font-size:1.35rem;font-weight:800;color:var(--text-primary);margin-top:0.15rem">${totalCount}</div>
+      </div>
+      <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.75rem 1rem;text-align:center">
+        <div style="font-size:0.72rem;color:var(--warning);text-transform:uppercase;font-weight:700">Pending</div>
+        <div style="font-size:1.35rem;font-weight:800;color:var(--warning);margin-top:0.15rem">${pendingCount}</div>
+      </div>
+      <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.75rem 1rem;text-align:center">
+        <div style="font-size:0.72rem;color:var(--accent-subtle);text-transform:uppercase;font-weight:700">Approved</div>
+        <div style="font-size:1.35rem;font-weight:800;color:var(--accent-subtle);margin-top:0.15rem">${approvedCount}</div>
+      </div>
+      <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.75rem 1rem;text-align:center">
+        <div style="font-size:0.72rem;color:var(--success);text-transform:uppercase;font-weight:700">Issued</div>
+        <div style="font-size:1.35rem;font-weight:800;color:var(--success);margin-top:0.15rem">${issuedCount}</div>
+      </div>
+      <div style="background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.75rem 1rem;text-align:center">
+        <div style="font-size:0.72rem;color:var(--danger);text-transform:uppercase;font-weight:700">Rejected</div>
+        <div style="font-size:1.35rem;font-weight:800;color:var(--danger);margin-top:0.15rem">${rejectedCount}</div>
+      </div>
+    </div>
+
+    <!-- Filter & Search Control Bar -->
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:0.75rem;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border-subtle)">
+      <div style="display:flex;gap:0.4rem;overflow-x:auto;padding-bottom:0.25rem">
+        <button class="btn btn-sm ${_managerRequestsStatusFilter === 'all' ? 'btn-primary' : 'btn-ghost'}" onclick="setManagerRequestsFilter('all')">All (${totalCount})</button>
+        <button class="btn btn-sm ${_managerRequestsStatusFilter === 'pending' ? 'btn-primary' : 'btn-ghost'}" onclick="setManagerRequestsFilter('pending')">Pending (${pendingCount})</button>
+        <button class="btn btn-sm ${_managerRequestsStatusFilter === 'approved' ? 'btn-primary' : 'btn-ghost'}" onclick="setManagerRequestsFilter('approved')">Approved (${approvedCount})</button>
+        <button class="btn btn-sm ${_managerRequestsStatusFilter === 'issued' ? 'btn-primary' : 'btn-ghost'}" onclick="setManagerRequestsFilter('issued')">Issued (${issuedCount})</button>
+        <button class="btn btn-sm ${_managerRequestsStatusFilter === 'rejected' ? 'btn-primary' : 'btn-ghost'}" onclick="setManagerRequestsFilter('rejected')">Rejected (${rejectedCount})</button>
+      </div>
+      <div style="min-width:220px;flex:1;max-width:320px">
+        <input type="text" class="field-input" placeholder="Search history by engineer, project, item..." value="${escHtml(_managerRequestsSearch)}" oninput="handleManagerRequestsSearch(this.value)" style="height:36px;font-size:0.8rem" />
       </div>
     </div>
 
@@ -3982,7 +4084,17 @@ function renderRequests() {
 
 async function processRequest(reqId, status) {
   try {
-    await api.put(`/api/requests/${reqId}`, { status, processedBy: state.user?.name });
+    let notes = undefined;
+    if (status === 'rejected') {
+      const reason = prompt('Reason or remarks for rejecting this material request (optional):');
+      if (reason === null) return; // User cancelled
+      notes = reason.trim();
+    }
+    await api.put(`/api/requests/${reqId}`, {
+      status,
+      processedBy: state.user?.name,
+      ...(notes !== undefined ? { managerNotes: notes } : {})
+    });
     const labels = { approved: 'Request approved', rejected: 'Request rejected', pending: 'Reverted to pending' };
     showToast(labels[status] || `Status: ${status}`, 'success');
     await loadAll();
@@ -4314,6 +4426,158 @@ async function cancelEngineerRequest(requestId) {
     showToast('Failed to cancel request', 'error');
   }
 }
+
+// ─── Per-Item History & Audit Log Modal ──────────────────────────────────────
+function openItemHistoryModal(itemId) {
+  const item = (state.items || []).find(i => i.id === itemId);
+  if (!item) {
+    showToast('Material item not found', 'error');
+    return;
+  }
+
+  const titleEl = document.getElementById('item-history-modal-title');
+  const subtitleEl = document.getElementById('item-history-modal-subtitle');
+  const bodyEl = document.getElementById('item-history-modal-body');
+
+  if (titleEl) titleEl.textContent = `History: ${item.name} (${item.sku || item.id})`;
+  if (subtitleEl) subtitleEl.textContent = `Complete request decision history & stock movement audit log for ${item.name}`;
+
+  // Find requests involving this item
+  const itemRequests = (state.requests || []).filter(r => {
+    if (r.itemId === itemId) return true;
+    if (Array.isArray(r.materials)) {
+      return r.materials.some(m => m.itemId === itemId || m.itemSku === item.sku);
+    }
+    return false;
+  });
+
+  // Find stock transactions involving this item
+  const itemTxns = (state.transactions || []).filter(t => t.itemId === itemId || t.sku === item.sku);
+
+  let html = `
+    <!-- Item Snapshot Header -->
+    <div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:0.875rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem">
+      <div>
+        <strong style="font-size:1.05rem;color:var(--text-primary);display:block">${escHtml(item.name)}</strong>
+        <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:0.2rem">
+          SKU: <span class="mono" style="color:var(--goose);font-weight:600">${escHtml(item.sku)}</span> &bull; 
+          Code: <span class="mono">${escHtml(item.zohoCode || item.barcode || '-')}</span> &bull; 
+          Category: ${escHtml(item.category)} &bull; 
+          Location: ${escHtml(item.location || '-')}
+        </div>
+      </div>
+      <div style="display:flex;gap:1.25rem">
+        <div style="text-align:right">
+          <div style="font-size:0.75rem;color:var(--text-tertiary);text-transform:uppercase;font-weight:700">Available Stock</div>
+          <div style="font-size:1.25rem;font-weight:800;color:var(--goose);font-family:var(--font-mono)">${item.quantity} ${item.unit || 'pcs'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:0.75rem;color:var(--text-tertiary);text-transform:uppercase;font-weight:700">Total Requests</div>
+          <div style="font-size:1.25rem;font-weight:800;color:var(--text-primary);font-family:var(--font-mono)">${itemRequests.length}</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:0.75rem;font-weight:700;font-size:0.85rem;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.04em">1. Material Request Decision History</div>
+  `;
+
+  if (itemRequests.length === 0) {
+    html += `<div style="text-align:center;padding:1.5rem;color:var(--text-tertiary);background:var(--bg-surface);border-radius:var(--radius);border:1px solid var(--border-subtle);margin-bottom:1.25rem;font-size:0.82rem">No material requests recorded for this item.</div>`;
+  } else {
+    html += `
+      <div class="table-wrap" style="margin-bottom:1.25rem">
+        <table>
+          <thead>
+            <tr>
+              <th>Date &amp; Time</th>
+              <th>Engineer / EID</th>
+              <th>Project / Purpose</th>
+              <th>Qty Requested</th>
+              <th>Status</th>
+              <th>Manager Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemRequests.map(r => {
+              const matInfo = Array.isArray(r.materials)
+                ? r.materials.find(m => m.itemId === itemId || m.itemSku === item.sku)
+                : null;
+              const qty = matInfo ? matInfo.quantity : (r.quantityRequested || 1);
+              return `
+                <tr>
+                  <td style="font-size:0.75rem;color:var(--text-tertiary);font-family:var(--font-mono)">${new Date(r.requestedAt).toLocaleString('en-IN')}</td>
+                  <td>
+                    <strong>${escHtml(r.name || r.engineerName || 'Engineer')}</strong>
+                    ${r.employeeId ? `<div style="font-size:0.72rem;color:var(--text-tertiary)">${escHtml(r.employeeId)}</div>` : ''}
+                  </td>
+                  <td>
+                    <strong style="color:var(--text-primary)">${escHtml(r.projectName || r.project || 'General')}</strong>
+                    ${r.purpose ? `<div style="font-size:0.72rem;color:var(--text-tertiary)">${escHtml(r.purpose)}</div>` : ''}
+                  </td>
+                  <td style="font-family:var(--font-mono);font-weight:700;color:var(--goose);font-size:0.85rem">${qty} ${item.unit || 'pcs'}</td>
+                  <td>${reqStatusTag(r.status)}</td>
+                  <td style="font-size:0.78rem;color:var(--text-secondary)">${escHtml(r.managerNotes || '—')}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  html += `<div style="margin-bottom:0.75rem;font-weight:700;font-size:0.85rem;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.04em">2. Stock Movements &amp; Dispatch History</div>`;
+
+  if (itemTxns.length === 0) {
+    html += `<div style="text-align:center;padding:1.5rem;color:var(--text-tertiary);background:var(--bg-surface);border-radius:var(--radius);border:1px solid var(--border-subtle);font-size:0.82rem">No stock transaction logs recorded for this item yet.</div>`;
+  } else {
+    html += `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Movement Type</th>
+              <th>Recipient / Project</th>
+              <th>Delta Qty</th>
+              <th>New Stock Balance</th>
+              <th>Notes / Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemTxns.map(t => {
+              const isOut = t.delta < 0 || t.type === 'outward';
+              return `
+                <tr>
+                  <td style="font-size:0.75rem;color:var(--text-tertiary);font-family:var(--font-mono)">${new Date(t.timestamp).toLocaleString('en-IN')}</td>
+                  <td><span class="status-tag ${isOut ? 'out' : 'ok'}">${isOut ? 'Stock Out' : 'Stock In'}</span></td>
+                  <td style="font-size:0.8rem">
+                    <strong>${escHtml(t.recipientName || 'Store Action')}</strong>
+                    ${t.projectName ? `<div style="font-size:0.72rem;color:var(--text-tertiary)">Project: ${escHtml(t.projectName)}</div>` : ''}
+                  </td>
+                  <td style="font-family:var(--font-mono);font-weight:700;color:${isOut ? 'var(--danger)' : 'var(--success)'}">${t.delta > 0 ? '+' + t.delta : t.delta} ${item.unit || 'pcs'}</td>
+                  <td style="font-family:var(--font-mono);font-weight:700">${t.newQuantity} ${item.unit || 'pcs'}</td>
+                  <td style="font-size:0.78rem;color:var(--text-secondary)">${escHtml(t.notes || '—')}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  bodyEl.innerHTML = html;
+  document.getElementById('modal-item-history-overlay')?.classList.remove('hidden');
+}
+
+function closeItemHistoryModal(e) {
+  if (e && e.target !== document.getElementById('modal-item-history-overlay')) return;
+  document.getElementById('modal-item-history-overlay')?.classList.add('hidden');
+}
+
+window.openItemHistoryModal = openItemHistoryModal;
+window.closeItemHistoryModal = closeItemHistoryModal;
 
 // ─── Issue Checklist & Barcode Verification Modal ────────────────────────────
 function openChecklistModal(reqId, readOnly = false) {
