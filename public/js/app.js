@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.3.1',
+  currentVersion: '3.4.0',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -619,7 +619,8 @@ async function submitInwardReceipt() {
       delta: inputQty,
       type: 'inward',
       allocationType: 'inward',
-      notes: `Stock inward receipt via barcode scan`
+      issuedBy: state.user?.email || state.user?.name || 'Store Manager',
+      notes: `Stock inward receipt via barcode scan by ${state.user?.email || state.user?.name || 'Store Manager'}`
     });
 
     if (res.success) {
@@ -667,6 +668,7 @@ async function submitAllocationIssue() {
       allocationType: allocType,
       recipientName: person,
       projectName: project,
+      issuedBy: state.user?.email || state.user?.name || 'Store Manager',
       notes: notes || `${allocLabels[allocType]} to ${person} (${project})`
     });
 
@@ -925,11 +927,25 @@ async function handleLogin(e) {
   const errorEl = document.getElementById('login-error');
 
   if (isManager) {
-    const pin = document.getElementById('manager-pin').value;
+    const email = document.getElementById('manager-email')?.value?.trim();
+    const pin = document.getElementById('manager-pin')?.value;
+
+    if (!email || !email.includes('@')) {
+      if (errorEl) {
+        errorEl.textContent = 'Please enter your work mail ID (e.g. employee@goosesolutions.in)';
+        errorEl.classList.remove('hidden');
+      }
+      showToast('Please enter your work mail ID', 'warning');
+      const emailInp = document.getElementById('manager-email');
+      if (emailInp) emailInp.focus();
+      return;
+    }
+
     try {
-      const res = await api.post('/api/auth/login', { role: 'manager', pin });
+      const res = await api.post('/api/auth/login', { role: 'manager', pin, email });
       if (res && res.success) {
-        setUser({ role: 'manager', name: 'Store Manager' });
+        localStorage.setItem('ims_manager_email', email);
+        setUser(res.user);
         if (errorEl) errorEl.classList.add('hidden');
       } else {
         if (errorEl) {
@@ -1015,18 +1031,21 @@ async function setUser(user) {
   state.user = user;
   sessionStorage.setItem('ims_user', JSON.stringify(user));
 
-  showLoadingScreen(`Welcome, ${user.name}! Authenticating & Initializing Inventory...`);
+  const displayName = user.email || user.name || 'Store Manager';
+  showLoadingScreen(`Welcome, ${displayName}! Authenticating & Initializing Inventory...`);
 
   const isManager = user.role === 'manager';
 
   if (document.getElementById('user-chip-name')) {
-    document.getElementById('user-chip-name').textContent = user.name;
-    document.getElementById('user-chip-avatar').textContent = user.name.charAt(0).toUpperCase();
+    document.getElementById('user-chip-name').textContent = displayName;
+    document.getElementById('user-chip-name').title = displayName;
+    document.getElementById('user-chip-avatar').textContent = displayName.charAt(0).toUpperCase();
   }
   if (document.getElementById('menu-user-name')) {
-    document.getElementById('menu-user-name').textContent = user.name;
-    document.getElementById('menu-user-role').textContent = user.role.toUpperCase();
-    document.getElementById('menu-avatar').textContent = user.name.charAt(0).toUpperCase();
+    document.getElementById('menu-user-name').textContent = displayName;
+    document.getElementById('menu-user-name').title = displayName;
+    document.getElementById('menu-user-role').textContent = isManager ? 'STORE MANAGER' : 'SITE ENGINEER';
+    document.getElementById('menu-avatar').textContent = displayName.charAt(0).toUpperCase();
   }
 
   // Restrict Settings & navigation tabs to Manager
@@ -2618,6 +2637,7 @@ async function renderTransactions() {
           <th>ITEM</th>
           <th>ZOHO CODE</th>
           <th>MOVEMENT TYPE</th>
+          <th>ISSUED / LOGGED BY</th>
           <th>RECIPIENT / PERSON</th>
           <th>PROJECT / DESTINATION</th>
           <th>QTY CHANGE</th>
@@ -2661,7 +2681,8 @@ async function renderTransactions() {
                   ${typeLabel}
                 </span>
               </td>
-              <td style="font-size:0.8rem;font-weight:600">${escHtml(t.recipientName || 'Store Inward')}</td>
+              <td style="font-size:0.8rem;font-weight:600;color:var(--goose)">${escHtml(t.issuedBy || 'Store Manager')}</td>
+              <td style="font-size:0.8rem;font-weight:600">${escHtml(t.recipientName || (isIn ? 'Store Central' : 'Engineer'))}</td>
               <td style="font-size:0.8rem;color:var(--text-secondary)">${escHtml(t.projectName || (isIn ? 'Store Central' : 'General'))}</td>
               <td style="font-family:var(--font-mono);font-weight:700;color:${isIn ? 'var(--ok)' : 'var(--danger)'}">
                 ${isIn ? '+' : ''}${t.delta}
@@ -3820,6 +3841,12 @@ function filterAndRenderInventoryRows() {
       <td>
         <strong style="font-size:0.85rem">${escHtml(item.name)}</strong>
         ${item.notes ? `<div style="font-size:0.7rem;color:var(--text-tertiary)">${escHtml(item.notes)}</div>` : ''}
+        ${item.addedBy ? `
+          <div style="font-size:0.68rem;color:var(--text-tertiary);margin-top:0.2rem;display:flex;align-items:center;gap:0.3rem">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Added by: <strong style="color:var(--text-secondary)">${escHtml(item.addedBy)}</strong>${item.addedAt ? ` &middot; ${new Date(item.addedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}` : ''}</span>
+          </div>
+        ` : ''}
         ${(item.soNumber || item.so || item.poNumber || item.po) ? `
           <div style="display:flex;gap:0.35rem;font-size:0.68rem;margin-top:0.2rem;font-family:var(--font-mono)">
             ${(item.soNumber || item.so) ? `<span style="background:rgba(59,130,246,0.12);color:var(--accent-cyan);padding:0.08rem 0.35rem;border-radius:3px;border:1px solid rgba(59,130,246,0.25)">SO: ${escHtml(item.soNumber || item.so)}</span>` : ''}
@@ -4034,7 +4061,12 @@ function renderRequests() {
                   ${r.specification ? `<div style="font-size:0.72rem;color:var(--goose);font-weight:600">Spec: ${escHtml(r.specification)}</div>` : ''}
                   ${r.purpose ? `<div style="font-size:0.72rem;color:var(--text-tertiary)">${escHtml(r.purpose)}</div>` : ''}
                 </td>
-                <td>${reqStatusTag(r.status)}</td>
+                <td>
+                  ${reqStatusTag(r.status)}
+                  ${r.status === 'issued' ? `<div style="font-size:0.7rem;color:var(--text-tertiary);margin-top:0.25rem">Issued by <strong style="color:var(--text-secondary)">${escHtml(r.processedBy || 'Store Manager')}</strong></div>` : ''}
+                  ${r.status === 'approved' && r.processedBy ? `<div style="font-size:0.7rem;color:var(--text-tertiary);margin-top:0.25rem">Approved by <strong style="color:var(--text-secondary)">${escHtml(r.processedBy)}</strong></div>` : ''}
+                  ${r.status === 'rejected' && r.processedBy ? `<div style="font-size:0.7rem;color:var(--text-tertiary);margin-top:0.25rem">Rejected by <strong style="color:var(--text-secondary)">${escHtml(r.processedBy)}</strong></div>` : ''}
+                </td>
                 <td style="font-size:0.78rem;color:var(--text-secondary);max-width:180px">${escHtml(r.managerNotes || '—')}</td>
                 <td style="white-space:nowrap">
                   <div style="display:flex;gap:0.35rem;align-items:center">
@@ -4141,7 +4173,7 @@ async function processRequest(reqId, status) {
     }
     await api.put(`/api/requests/${reqId}`, {
       status,
-      processedBy: state.user?.name,
+      processedBy: state.user?.email || state.user?.name || 'Store Manager',
       ...(notes !== undefined ? { managerNotes: notes } : {})
     });
     const labels = { approved: 'Request approved', rejected: 'Request rejected', pending: 'Reverted to pending' };
@@ -4534,7 +4566,8 @@ function openItemHistoryModal(itemId) {
           SKU: <span class="mono" style="color:var(--goose);font-weight:600">${escHtml(item.sku)}</span> &bull; 
           Code: <span class="mono">${escHtml(item.zohoCode || item.barcode || '-')}</span> &bull; 
           Category: ${escHtml(item.category)} &bull; 
-          Location: ${escHtml(item.location || '-')}
+          Location: ${escHtml(item.location || '-')} &bull; 
+          Added by: <strong style="color:var(--text-secondary)">${escHtml(item.addedBy || 'Store Manager')}</strong>${item.addedAt ? ` (${new Date(item.addedAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })})` : ''}
         </div>
       </div>
       <div style="display:flex;gap:1.25rem">
@@ -4565,6 +4598,7 @@ function openItemHistoryModal(itemId) {
               <th>Project / Purpose</th>
               <th>Qty Requested</th>
               <th>Status</th>
+              <th>Issued / Processed By</th>
               <th>Manager Remarks</th>
             </tr>
           </thead>
@@ -4574,6 +4608,9 @@ function openItemHistoryModal(itemId) {
                 ? r.materials.find(m => m.itemId === itemId || m.itemSku === item.sku)
                 : null;
               const qty = matInfo ? matInfo.quantity : (r.quantityRequested || 1);
+              const issueLabel = r.status === 'issued'
+                ? `<span style="color:var(--success);font-weight:700">Issued by ${escHtml(r.processedBy || 'Store Manager')}</span>`
+                : (r.processedBy ? escHtml(r.processedBy) : '—');
               return `
                 <tr>
                   <td style="font-size:0.75rem;color:var(--text-tertiary);font-family:var(--font-mono)">${new Date(r.requestedAt).toLocaleString('en-IN')}</td>
@@ -4588,6 +4625,7 @@ function openItemHistoryModal(itemId) {
                   </td>
                   <td style="font-family:var(--font-mono);font-weight:700;color:var(--goose);font-size:0.85rem">${qty} ${item.unit || 'pcs'}</td>
                   <td>${reqStatusTag(r.status)}</td>
+                  <td style="font-size:0.78rem">${issueLabel}</td>
                   <td style="font-size:0.78rem;color:var(--text-secondary)">${escHtml(r.managerNotes || '—')}</td>
                 </tr>
               `;
@@ -4610,6 +4648,7 @@ function openItemHistoryModal(itemId) {
             <tr>
               <th>Timestamp</th>
               <th>Movement Type</th>
+              <th>Issued / Logged By</th>
               <th>Recipient / Project</th>
               <th>Delta Qty</th>
               <th>New Stock Balance</th>
@@ -4623,6 +4662,7 @@ function openItemHistoryModal(itemId) {
                 <tr>
                   <td style="font-size:0.75rem;color:var(--text-tertiary);font-family:var(--font-mono)">${new Date(t.timestamp).toLocaleString('en-IN')}</td>
                   <td><span class="status-tag ${isOut ? 'out' : 'ok'}">${isOut ? 'Stock Out' : 'Stock In'}</span></td>
+                  <td style="font-size:0.78rem;font-weight:600;color:var(--goose)">${escHtml(t.issuedBy || 'Store Manager')}</td>
                   <td style="font-size:0.8rem">
                     <strong>${escHtml(t.recipientName || 'Store Action')}</strong>
                     ${t.projectName ? `<div style="font-size:0.72rem;color:var(--text-tertiary)">Project: ${escHtml(t.projectName)}</div>` : ''}
@@ -4846,7 +4886,7 @@ async function submitIssue() {
         status: 'issued',
         checklist: cl,
         managerNotes: remarks,
-        processedBy: state.user?.name || 'Store Manager'
+        processedBy: state.user?.email || state.user?.name || 'Store Manager'
       });
       document.getElementById('modal-checklist-overlay')?.classList.add('hidden');
       state.activeChecklistRequestId = null;
@@ -5177,7 +5217,7 @@ function printMaterialRequest(reqId) {
       </div>
       <div class="sig-card">
         <div class="sig-role">2. Issued By (Store Manager)</div>
-        <div style="font-size:7.5pt;font-weight:600;margin-top:2px">${escHtml(state.user?.name || 'Store Manager')}</div>
+        <div style="font-size:7.5pt;font-weight:600;margin-top:2px">${escHtml(state.user?.email || state.user?.name || 'Store Manager')}</div>
         <div class="sig-bottom">
           <span>Signature</span>
           <span>Date: ____________</span>
@@ -5194,7 +5234,7 @@ function printMaterialRequest(reqId) {
     </div>
 
     <div class="slip-bottom-bar">
-      <span>System v${state.currentVersion || '3.3.1'} &middot; Physical Store Inventory Filing Copy</span>
+      <span>System v${state.currentVersion || '3.4.0'} &middot; Physical Store Inventory Filing Copy</span>
       <span>Req ID: ${escHtml(req.id)}</span>
     </div>
   </div>
@@ -5503,7 +5543,9 @@ async function handleItemSubmit(e) {
     zohoCode: zohoCodeVal,
     specification: document.getElementById('item-specification')?.value.trim() || '',
     soNumber: document.getElementById('item-so')?.value.trim() || '',
-    poNumber: document.getElementById('item-po')?.value.trim() || ''
+    poNumber: document.getElementById('item-po')?.value.trim() || '',
+    addedBy: state.user?.email || state.user?.name || 'Store Manager',
+    updatedBy: state.user?.email || state.user?.name || 'Store Manager'
   };
 
   const IGNORED_ZOHO_CODES = new Set(['', 'n/a', 'na', 'none', '0', '-', '--', 'null', 'nil', 'temp', 'placeholder', 'default', '?']);
@@ -6961,7 +7003,7 @@ async function checkSystemUpdateStatus(manual = false) {
 
     const tag = document.getElementById('system-update-version-tag');
     if (tag && res.version) tag.textContent = `v${res.version}`;
-    state.currentVersion = res.version || '3.3.1';
+    state.currentVersion = res.version || '3.4.0';
 
     // 1. Maintenance Mode
     if (res.maintenance) {
@@ -7072,6 +7114,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   checkCookieConsent();
   // Pre-fetch items from server in background to warm cache
   loadAll(false).catch(() => {});
+
+  const savedMgrEmail = localStorage.getItem('ims_manager_email');
+  const mgrEmailInp = document.getElementById('manager-email');
+  if (mgrEmailInp && savedMgrEmail) {
+    mgrEmailInp.value = savedMgrEmail;
+  }
 
   const saved = sessionStorage.getItem('ims_user');
   if (saved) {

@@ -14,7 +14,7 @@ const SEED_FILE = path.join(__dirname, 'data', 'inventory.seed.json');
 const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
 
 const SERVER_START_TIME = Date.now();
-const SYSTEM_VERSION = require('./package.json').version || '3.3.1';
+const SYSTEM_VERSION = require('./package.json').version || '3.4.0';
 let maintenanceMode = false;
 
 // Ensure data, backup & uploads folders exist
@@ -393,7 +393,7 @@ app.get('/api/auth/verify-otp', (req, res) => {
 
 // ─── Global Auth & Password Management Endpoints ─────────────────────────────
 app.post('/api/auth/login', (req, res) => {
-  const { role, pin } = req.body;
+  const { role, pin, email } = req.body;
   const data = readData();
   const settings = data.settings || {};
   const expectedManagerPin = settings.managerPin || 'Mannar@200';
@@ -404,18 +404,31 @@ app.post('/api/auth/login', (req, res) => {
 
   if (cleanRole === 'manager') {
     if (inputPin === expectedManagerPin || inputPin === 'Mannar@200') {
+      const cleanEmail = (email || '').trim().toLowerCase();
+      const displayName = cleanEmail || 'Store Manager';
       return res.json({
         success: true,
-        user: { role: 'manager', name: 'Store Manager', title: 'Store Manager' }
+        user: { 
+          role: 'manager', 
+          name: displayName, 
+          email: cleanEmail,
+          title: 'Store Manager' 
+        }
       });
     } else {
       return res.status(401).json({ success: false, error: 'Invalid Manager Password' });
     }
   } else {
     if (inputPin === expectedEngineerPin || inputPin === '5678') {
+      const cleanEmail = (email || '').trim().toLowerCase();
       return res.json({
         success: true,
-        user: { role: 'engineer', name: 'Er. Engineer', title: 'Site Engineer' }
+        user: { 
+          role: 'engineer', 
+          name: cleanEmail || 'Er. Engineer', 
+          email: cleanEmail,
+          title: 'Site Engineer' 
+        }
       });
     } else {
       return res.status(401).json({ success: false, error: 'Invalid Engineer PIN' });
@@ -572,6 +585,7 @@ app.post('/api/items', (req, res) => {
     }
   }
 
+  const whoAdded = req.body.addedBy || 'Store Manager';
   const item = {
     id: req.body.id || primarySku || uuidv4(),
     name: req.body.name || 'Unnamed Material',
@@ -592,10 +606,32 @@ app.post('/api/items', (req, res) => {
     specification: req.body.specification || '',
     soNumber: req.body.soNumber || req.body.so || '',
     poNumber: req.body.poNumber || req.body.po || '',
+    addedBy: whoAdded,
     addedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
   data.items.push(item);
+
+  // If item was added with initial stock, log inward transaction
+  if (!data.transactions) data.transactions = [];
+  if (item.quantity > 0) {
+    data.transactions.unshift({
+      id: uuidv4(),
+      itemId: item.id,
+      itemName: item.name,
+      sku: item.sku,
+      type: 'inward',
+      allocationType: 'inward',
+      recipientName: 'Store Central',
+      projectName: 'Catalog Addition',
+      issuedBy: whoAdded,
+      delta: item.quantity,
+      newQuantity: item.quantity,
+      notes: `Initial stock entered by ${whoAdded}`,
+      timestamp: new Date().toISOString()
+    });
+  }
+
   writeData(data);
   res.status(201).json(item);
 });
@@ -657,10 +693,11 @@ app.post('/api/items/:id/adjust-stock', (req, res) => {
   const item = data.items.find(i => i.id === req.params.id || i.sku === req.params.id || i.barcode === req.params.id);
   if (!item) return res.status(404).json({ error: 'Item not found' });
 
-  const { delta, type, notes, recipientName, projectName, allocationType } = req.body;
+  const { delta, type, notes, recipientName, projectName, allocationType, issuedBy, operatorName } = req.body;
   const qtyChange = parseFloat(delta) || 0;
   const currentQty = parseFloat(item.quantity) || 0;
   const newQty = Math.max(0, currentQty + qtyChange);
+  const whoIssued = issuedBy || operatorName || 'Store Manager';
 
   item.quantity = newQty;
   item.updatedAt = new Date().toISOString();
@@ -673,7 +710,8 @@ app.post('/api/items/:id/adjust-stock', (req, res) => {
     sku: item.sku,
     type: type || (qtyChange >= 0 ? 'inward' : 'outward'),
     allocationType: allocationType || (qtyChange >= 0 ? 'inward' : 'project'),
-    recipientName: recipientName || '',
+    recipientName: recipientName || (qtyChange >= 0 ? 'Store Central' : 'Store Outward'),
+    issuedBy: whoIssued,
     projectName: projectName || '',
     delta: qtyChange,
     newQuantity: newQty,
@@ -755,7 +793,8 @@ app.put('/api/requests/:id', (req, res) => {
     const request = data.requests[idx];
     if (!data.transactions) data.transactions = [];
 
-    const recipientName = request.name || request.engineerName || processedBy || 'Engineer';
+    const whoIssued = processedBy || 'Store Manager';
+    const recipientName = request.name || request.engineerName || 'Engineer';
     const projectName = request.projectName || 'General Issue';
 
     if (Array.isArray(request.materials) && request.materials.length > 0) {
@@ -779,10 +818,11 @@ app.put('/api/requests/:id', (req, res) => {
             type: 'outward',
             allocationType: 'project',
             recipientName: recipientName,
+            issuedBy: whoIssued,
             projectName: projectName,
             delta: -qtyOut,
             newQuantity: newQty,
-            notes: managerNotes ? `Issued: ${managerNotes}` : `Issued for project: ${projectName}`,
+            notes: managerNotes ? `Issued by ${whoIssued}: ${managerNotes}` : `Issued by ${whoIssued} for project: ${projectName}`,
             timestamp: new Date().toISOString()
           });
         }
@@ -806,10 +846,11 @@ app.put('/api/requests/:id', (req, res) => {
           type: 'outward',
           allocationType: 'project',
           recipientName: recipientName,
+          issuedBy: whoIssued,
           projectName: projectName,
           delta: -qtyOut,
           newQuantity: newQty,
-          notes: managerNotes ? `Issued: ${managerNotes}` : `Issued for project: ${projectName}`,
+          notes: managerNotes ? `Issued by ${whoIssued}: ${managerNotes}` : `Issued by ${whoIssued} for project: ${projectName}`,
           timestamp: new Date().toISOString()
         });
       }

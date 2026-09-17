@@ -7660,7 +7660,38 @@
       "checklist": []
     }
   ],
-  "transactions": [],
+  "transactions": [
+    {
+      "id": "d8e5db5f-8f59-4547-b936-0e747e6ce4da",
+      "itemId": "Test-Item",
+      "itemName": "Test_Item",
+      "sku": "Test-Item",
+      "type": "inward",
+      "allocationType": "inward",
+      "recipientName": "Store Central",
+      "projectName": "Catalog Addition",
+      "issuedBy": "surya@goosesolutions.in",
+      "delta": 1,
+      "newQuantity": 1,
+      "notes": "Initial stock entered by surya@goosesolutions.in",
+      "timestamp": "2026-09-17T07:14:09.651Z"
+    },
+    {
+      "id": "2ae13560-c454-4fd3-bde8-481c0743d83a",
+      "itemId": "Test_ITEM",
+      "itemName": "Test Item #1",
+      "sku": "Test_ITEM",
+      "type": "inward",
+      "allocationType": "inward",
+      "recipientName": "Store Central",
+      "projectName": "Catalog Addition",
+      "issuedBy": "Store Manager",
+      "delta": 1,
+      "newQuantity": 1,
+      "notes": "Initial stock entered by Store Manager",
+      "timestamp": "2026-09-17T06:58:52.301Z"
+    }
+  ],
   "settings": {
     "managerPin": "Mannar@200",
     "engineerPin": "5678"
