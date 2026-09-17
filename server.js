@@ -14,7 +14,7 @@ const SEED_FILE = path.join(__dirname, 'data', 'inventory.seed.json');
 const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
 
 const SERVER_START_TIME = Date.now();
-const SYSTEM_VERSION = require('./package.json').version || '3.3.0';
+const SYSTEM_VERSION = require('./package.json').version || '3.3.1';
 let maintenanceMode = false;
 
 // Ensure data, backup & uploads folders exist

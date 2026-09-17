@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.3.0',
+  currentVersion: '3.3.1',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -5194,7 +5194,7 @@ function printMaterialRequest(reqId) {
     </div>
 
     <div class="slip-bottom-bar">
-      <span>System v${state.currentVersion || '3.3.0'} &middot; Physical Store Inventory Filing Copy</span>
+      <span>System v${state.currentVersion || '3.3.1'} &middot; Physical Store Inventory Filing Copy</span>
       <span>Req ID: ${escHtml(req.id)}</span>
     </div>
   </div>
@@ -5423,6 +5423,15 @@ function togglePasswordVisibility(inputId, btn) {
   }
 }
 
+function normalizeItemName(str) {
+  return String(str || '')
+    .toLowerCase()
+    .replace(/[×x]/g, 'x')
+    .replace(/[^a-z0-9]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function checkDuplicateZohoCode(inputVal) {
   const zohoCodeVal = (inputVal || document.getElementById('item-zoho-code')?.value || '').trim();
   const nameVal = (document.getElementById('item-name')?.value || '').trim();
@@ -5433,27 +5442,38 @@ function checkDuplicateZohoCode(inputVal) {
 
   const IGNORED_ZOHO_CODES = new Set(['', 'n/a', 'na', 'none', '0', '-', '--', 'null', 'nil', 'temp', 'placeholder', 'default', '?']);
   const cleanZoho = zohoCodeVal.toLowerCase();
+  const hasValidZoho = cleanZoho.length >= 2 && !IGNORED_ZOHO_CODES.has(cleanZoho);
 
-  // Check Zoho Code match first
+  // Check Zoho Code match first (authoritative SKU duplicate)
   let match = null;
-  if (cleanZoho.length >= 2 && !IGNORED_ZOHO_CODES.has(cleanZoho)) {
+  let matchType = null;
+
+  if (hasValidZoho) {
     match = state.items.find(i => 
-      !state.editingItemId || i.id !== state.editingItemId ? 
-      (i.zohoCode || i.sku || '').toLowerCase() === cleanZoho : false
+      (!state.editingItemId || i.id !== state.editingItemId) &&
+      (i.zohoCode || i.sku || '').trim().toLowerCase() === cleanZoho
     );
+    if (match) matchType = 'zoho';
   }
 
-  // Fallback: check name match
-  if (!match && nameVal.length >= 4) {
-    const lowerName = nameVal.toLowerCase();
-    match = state.items.find(i => 
-      !state.editingItemId || i.id !== state.editingItemId ? 
-      (i.name || '').toLowerCase().includes(lowerName.slice(0, Math.min(lowerName.length, 12))) : false
-    );
+  // Fallback: check exact material name match ONLY when no distinct Zoho Code is provided
+  if (!match && !hasValidZoho && nameVal.length >= 3) {
+    const normInput = normalizeItemName(nameVal);
+    if (normInput.length >= 3) {
+      match = state.items.find(i => {
+        if (state.editingItemId && i.id === state.editingItemId) return false;
+        const normExisting = normalizeItemName(i.name);
+        return normExisting === normInput;
+      });
+      if (match) matchType = 'name';
+    }
   }
 
-  if (match) {
-    warnText.innerHTML = `<strong>Existing Material Found:</strong> "${escHtml(match.name)}" (Zoho Code: <strong>${escHtml(match.zohoCode || match.sku)}</strong>, Stock: <strong>${match.quantity} ${match.unit}</strong> on shelf <strong>${escHtml(match.location || 'A1')}</strong>). Submitting will automatically merge new stock into this item.`;
+  if (match && matchType === 'zoho') {
+    warnText.innerHTML = `<strong>Duplicate Zoho Code Found:</strong> "${escHtml(match.name)}" (Zoho Code: <strong>${escHtml(match.zohoCode || match.sku)}</strong>, Stock: <strong>${match.quantity} ${match.unit}</strong> on shelf <strong>${escHtml(match.location || 'A1')}</strong>). Submitting will automatically merge new stock into this item.`;
+    warn.classList.remove('hidden');
+  } else if (match && matchType === 'name') {
+    warnText.innerHTML = `<strong>Identical Material Name:</strong> An item named "${escHtml(match.name)}" already exists in store (Zoho Code: <strong>${escHtml(match.zohoCode || match.sku || 'None')}</strong>, Stock: <strong>${match.quantity} ${match.unit}</strong> on shelf <strong>${escHtml(match.location || 'A1')}</strong>). If this is the same item, enter its Zoho Code to merge stock; if this is a different variant, provide a distinct Zoho Code or specification.`;
     warn.classList.remove('hidden');
   } else {
     warn.classList.add('hidden');
@@ -6941,7 +6961,7 @@ async function checkSystemUpdateStatus(manual = false) {
 
     const tag = document.getElementById('system-update-version-tag');
     if (tag && res.version) tag.textContent = `v${res.version}`;
-    state.currentVersion = res.version || '3.3.0';
+    state.currentVersion = res.version || '3.3.1';
 
     // 1. Maintenance Mode
     if (res.maintenance) {
