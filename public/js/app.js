@@ -8,7 +8,7 @@ const state = {
   items: [],
   requests: [],
   stats: {},
-  filters: { zone: 'all', stockAvailability: 'all', category: '' },
+  filters: { zone: 'all', stockAvailability: 'all', category: '', shelf: 'all' },
   searchQuery: '',
   editingItemId: null,
   requestingItemId: null,
@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.4.0',
+  currentVersion: '3.5.0',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -3464,17 +3464,123 @@ function addItemToCurrentShelf() {
 
 function filterTableByCurrentShelf() {
   closeShelfDetailModal();
-  state.searchQuery = currentInspectedShelf;
-  const searchInput = document.getElementById('inventory-search-input') || document.getElementById('search-input');
-  if (searchInput) searchInput.value = currentInspectedShelf;
+  state.filters.shelf = currentInspectedShelf;
+  state.searchQuery = '';
   navigateTo('inventory');
 }
 
+function setInventoryShelfFilter(shelf) {
+  state.filters.shelf = shelf || 'all';
+  renderInventory();
+}
+
+function clearInventoryFilters() {
+  state.filters.zone = 'all';
+  state.filters.stockAvailability = 'all';
+  state.filters.shelf = 'all';
+  state.searchQuery = '';
+  const searchInput = document.getElementById('inventory-search-input');
+  if (searchInput) searchInput.value = '';
+  renderInventory();
+}
+
+function getFilteredInventoryItems() {
+  let items = [...(state.items || [])];
+
+  if (state.filters.zone && state.filters.zone !== 'all') {
+    items = items.filter(i => i.zone === state.filters.zone);
+  }
+
+  const avail = state.filters.stockAvailability || 'all';
+  if (avail === 'instock') {
+    items = items.filter(i => (i.quantity || 0) > (i.minStock || 0));
+  } else if (avail === 'low') {
+    items = items.filter(i => (i.quantity || 0) > 0 && (i.quantity || 0) <= (i.minStock || 0));
+  } else if (avail === 'out') {
+    items = items.filter(i => (i.quantity || 0) === 0);
+  }
+
+  if (state.filters.shelf && state.filters.shelf !== 'all') {
+    const shelfCode = state.filters.shelf.toLowerCase().trim();
+    items = items.filter(i => {
+      const loc = (i.location || '').toLowerCase().trim();
+      return loc === shelfCode || loc === `r-${shelfCode}` || loc === `m-${shelfCode}` || loc === `shelf-${shelfCode}` || loc.split(/[\s,-]+/).includes(shelfCode);
+    });
+  }
+
+  if (state.searchQuery) {
+    const q = state.searchQuery.toLowerCase().trim();
+    items = items.filter(i => 
+      (i.name || '').toLowerCase().includes(q) || 
+      (i.sku || '').toLowerCase().includes(q) || 
+      (i.barcode || '').toLowerCase().includes(q) || 
+      (i.location || '').toLowerCase().includes(q) ||
+      (i.category || '').toLowerCase().includes(q) ||
+      (i.specification || '').toLowerCase().includes(q) ||
+      (i.soNumber || i.so || '').toLowerCase().includes(q) ||
+      (i.poNumber || i.po || '').toLowerCase().includes(q)
+    );
+  }
+
+  return items;
+}
+
+function getActiveInventoryFilterInfo(filteredItems) {
+  const hasZone = state.filters.zone && state.filters.zone !== 'all';
+  const hasAvail = state.filters.stockAvailability && state.filters.stockAvailability !== 'all';
+  const hasShelf = state.filters.shelf && state.filters.shelf !== 'all';
+  const hasSearch = Boolean(state.searchQuery && state.searchQuery.trim().length > 0);
+  const isFiltered = hasZone || hasAvail || hasShelf || hasSearch;
+
+  let shelfName = null;
+  if (hasShelf) {
+    shelfName = state.filters.shelf;
+  } else if (hasSearch) {
+    const q = state.searchQuery.trim().toLowerCase();
+    const matched = (state.items || []).find(i => (i.location || '').toLowerCase().trim() === q);
+    if (matched) {
+      shelfName = matched.location;
+    } else if (filteredItems && filteredItems.length > 0) {
+      const firstLoc = (filteredItems[0].location || '').trim();
+      if (firstLoc && filteredItems.every(i => (i.location || '').trim().toLowerCase() === firstLoc.toLowerCase())) {
+        shelfName = firstLoc;
+      }
+    }
+  }
+
+  let label = 'Full Inventory';
+  if (shelfName) {
+    label = `Shelf ${shelfName}`;
+  } else if (isFiltered) {
+    const parts = [];
+    if (hasZone) parts.push(`Zone: ${state.filters.zone}`);
+    if (hasAvail) parts.push(`Stock: ${state.filters.stockAvailability}`);
+    if (hasSearch) parts.push(`"${state.searchQuery.trim()}"`);
+    label = parts.join(', ') || 'Filtered View';
+  }
+
+  return { isFiltered, shelfName, label };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
-//  EXPORT INVENTORY DATA (CSV & PDF FORMATS)
+//  EXPORT INVENTORY DATA (CSV & PDF FORMATS — SUPPORTS SHELF & FILTERED SCOPES)
 // ═══════════════════════════════════════════════════════════════════════════════
-function exportInventoryCSV() {
-  const items = state.items;
+function exportInventoryCSV(mode = 'auto') {
+  const filtered = getFilteredInventoryItems();
+  const filterInfo = getActiveInventoryFilterInfo(filtered);
+
+  let items = state.items;
+  let filename = `Goose_Store_Inventory_${new Date().toISOString().split('T')[0]}.csv`;
+
+  if (mode === 'filtered' || (mode === 'auto' && filterInfo.isFiltered)) {
+    items = filtered;
+    if (filterInfo.shelfName) {
+      filename = `Goose_Store_Inventory_Shelf_${filterInfo.shelfName.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+    } else {
+      filename = `Goose_Store_Inventory_Filtered_${new Date().toISOString().split('T')[0]}.csv`;
+    }
+  }
+
   if (!items || items.length === 0) {
     showToast('No material inventory to export', 'warning');
     return;
@@ -3530,25 +3636,82 @@ function exportInventoryCSV() {
   const url = URL.createObjectURL(blob);
 
   const link = document.createElement('a');
-  const dateStr = new Date().toISOString().split('T')[0];
   link.href = url;
-  link.download = `Goose_Store_Inventory_${dateStr}.csv`;
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 
-  showToast(`Exported ${items.length} materials to CSV spreadsheet!`, 'success');
+  showToast(`Exported ${items.length} materials${filterInfo.shelfName ? ` on Shelf ${filterInfo.shelfName}` : ''} to CSV spreadsheet!`, 'success');
 }
 
-function exportInventoryPDF() {
-  const items = state.items;
+function exportShelfPDF(shelfCode) {
+  if (!shelfCode) {
+    showToast('No shelf location specified', 'warning');
+    return;
+  }
+  const items = getItemsForShelf(shelfCode);
+  if (!items || items.length === 0) {
+    showToast(`No materials stored on Shelf ${shelfCode} to export`, 'warning');
+    return;
+  }
+  generateInventoryPDF(items, {
+    scope: 'shelf',
+    shelfName: shelfCode,
+    title: `STORE INVENTORY AUDIT REPORT — SHELF: ${shelfCode.toUpperCase()}`,
+    filename: `Goose_Store_Inventory_Shelf_${shelfCode.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
+  });
+}
+
+function exportInventoryPDF(mode = 'auto') {
+  const filtered = getFilteredInventoryItems();
+  const filterInfo = getActiveInventoryFilterInfo(filtered);
+
+  let targetItems = state.items;
+  let options = { scope: 'all', title: 'STORE INVENTORY MANAGEMENT REPORT — FULL INVENTORY' };
+
+  if (mode === 'all') {
+    targetItems = state.items;
+    options = { scope: 'all', title: 'STORE INVENTORY MANAGEMENT REPORT — FULL INVENTORY' };
+  } else if (mode === 'filtered' || (mode === 'auto' && filterInfo.isFiltered)) {
+    targetItems = filtered;
+    if (filterInfo.shelfName) {
+      options = {
+        scope: 'shelf',
+        shelfName: filterInfo.shelfName,
+        title: `STORE INVENTORY AUDIT REPORT — SHELF: ${filterInfo.shelfName.toUpperCase()}`,
+        filename: `Goose_Store_Inventory_Shelf_${filterInfo.shelfName.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
+      };
+    } else {
+      options = {
+        scope: 'filtered',
+        filterLabel: filterInfo.label,
+        title: `STORE INVENTORY REPORT — FILTERED: ${filterInfo.label.toUpperCase()}`,
+        filename: `Goose_Store_Inventory_Filtered_${new Date().toISOString().split('T')[0]}.pdf`
+      };
+    }
+  }
+
+  if (!targetItems || targetItems.length === 0) {
+    showToast('No materials to export for this view', 'warning');
+    return;
+  }
+
+  generateInventoryPDF(targetItems, options);
+}
+
+function generateInventoryPDF(items, options = {}) {
   if (!items || items.length === 0) {
     showToast('No material inventory to export', 'warning');
     return;
   }
 
-  showToast('Generating Inventory PDF Report...', 'info');
+  const isShelf = options.scope === 'shelf' && options.shelfName;
+  const isFiltered = options.scope === 'filtered';
+  const shelfName = options.shelfName || '';
+
+  showToast(`Generating ${isShelf ? `Shelf ${shelfName}` : (isFiltered ? 'Filtered' : 'Inventory')} PDF Report...`, 'info');
 
   try {
     if (!window.jspdf || !window.jspdf.jsPDF) {
@@ -3569,23 +3732,29 @@ function exportInventoryPDF() {
     const lowStockItems = items.filter(i => getStockStatus(i) === 'low');
     const noStockItems = items.filter(i => getStockStatus(i) === 'out');
 
-    // Title Header
+    // Title Header Bar
     doc.setFillColor(15, 23, 42); // Dark industrial navy
     doc.rect(0, 0, 210, 26, 'F');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
+    doc.setFontSize(13);
     doc.setTextColor(255, 255, 255);
-    doc.text('GOOSE INDUSTRIAL SOLUTIONS PVT LTD', 14, 11);
+    doc.text('GOOSE INDUSTRIAL SOLUTIONS PVT LTD', 14, 10);
 
     doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(56, 189, 248);
-    doc.text('STORE INVENTORY MANAGEMENT REPORT', 14, 19);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(56, 189, 248); // Cyan accent
+    const reportSubtitle = isShelf 
+      ? `STORE INVENTORY AUDIT REPORT — SHELF LOCATION: ${shelfName.toUpperCase()}`
+      : (isFiltered 
+          ? `STORE INVENTORY REPORT — FILTERED: ${(options.filterLabel || '').toUpperCase()}`
+          : 'STORE INVENTORY MANAGEMENT REPORT — FULL INVENTORY');
+    doc.text(reportSubtitle, 14, 18);
 
     doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
     doc.setTextColor(203, 213, 225);
-    doc.text(`Generated: ${dateStr}, ${timeStr}`, 145, 19);
+    doc.text(`Generated: ${dateStr}, ${timeStr}`, 145, 18);
 
     // Summary Box
     doc.setFillColor(248, 250, 252);
@@ -3595,17 +3764,27 @@ function exportInventoryPDF() {
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 41, 59);
-    doc.text(`Total Materials: ${items.length}`, 18, 39);
-    doc.text(`Qty: ${totalQty.toLocaleString('en-IN')}`, 55, 39);
 
-    doc.setTextColor(217, 119, 6); // Amber
-    doc.text(`Low Stock (Amber): ${lowStockItems.length}`, 92, 39);
-
-    doc.setTextColor(220, 38, 38); // Red
-    doc.text(`No Stock (Red): ${noStockItems.length}`, 132, 39);
-
-    doc.setTextColor(30, 41, 59);
-    doc.text(`Value: INR ${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 166, 39);
+    if (isShelf) {
+      doc.text(`Shelf: ${shelfName}`, 18, 39);
+      doc.text(`Items: ${items.length}`, 48, 39);
+      doc.text(`Qty: ${totalQty.toLocaleString('en-IN')}`, 75, 39);
+      doc.setTextColor(217, 119, 6);
+      doc.text(`Low: ${lowStockItems.length}`, 110, 39);
+      doc.setTextColor(220, 38, 38);
+      doc.text(`Out: ${noStockItems.length}`, 135, 39);
+      doc.setTextColor(30, 41, 59);
+      doc.text(`Value: INR ${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 158, 39);
+    } else {
+      doc.text(`Materials: ${items.length}`, 18, 39);
+      doc.text(`Qty: ${totalQty.toLocaleString('en-IN')}`, 55, 39);
+      doc.setTextColor(217, 119, 6);
+      doc.text(`Low Stock (Amber): ${lowStockItems.length}`, 90, 39);
+      doc.setTextColor(220, 38, 38);
+      doc.text(`No Stock (Red): ${noStockItems.length}`, 130, 39);
+      doc.setTextColor(30, 41, 59);
+      doc.text(`Value: INR ${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 164, 39);
+    }
 
     // AutoTable
     const tableHeaders = [['#', 'ZOHO CODE', 'MATERIAL NAME', 'SPECIFICATION', 'ZONE', 'QTY', 'STATUS', 'SHELF']];
@@ -3624,7 +3803,7 @@ function exportInventoryPDF() {
         zoneName,
         `${item.quantity || 0} ${item.unit || 'pcs'}`,
         statusLabel,
-        item.location || 'A1'
+        item.location || '-'
       ];
     });
 
@@ -3665,15 +3844,15 @@ function exportInventoryPDF() {
             if (item) {
               const status = getStockStatus(item);
               if (status === 'out') {
-                data.cell.styles.fillColor = [254, 226, 226]; // Soft Red background #fee2e2
+                data.cell.styles.fillColor = [254, 226, 226];
                 if (data.column.index === 5 || data.column.index === 6) {
-                  data.cell.styles.textColor = [185, 28, 28]; // Dark Red text #b91c1c
+                  data.cell.styles.textColor = [185, 28, 28];
                   data.cell.styles.fontStyle = 'bold';
                 }
               } else if (status === 'low') {
-                data.cell.styles.fillColor = [254, 243, 199]; // Soft Amber background #fef3c7
+                data.cell.styles.fillColor = [254, 243, 199];
                 if (data.column.index === 5 || data.column.index === 6) {
-                  data.cell.styles.textColor = [180, 83, 9]; // Dark Amber text #b45309
+                  data.cell.styles.textColor = [180, 83, 9];
                   data.cell.styles.fontStyle = 'bold';
                 }
               }
@@ -3683,14 +3862,18 @@ function exportInventoryPDF() {
         didDrawPage: function (data) {
           doc.setFontSize(7.5);
           doc.setTextColor(148, 163, 184);
-          doc.text(`Page ${data.pageNumber} — Goose Store Inventory System`, 14, doc.internal.pageSize.height - 8);
+          doc.text(`Page ${data.pageNumber} — Goose Store Inventory System${isShelf ? ` · Shelf: ${shelfName}` : ''}`, 14, doc.internal.pageSize.height - 8);
           doc.text('Store Manager Sign-Off: ____________________', 125, doc.internal.pageSize.height - 8);
         }
       });
     }
 
-    doc.save(`Goose_Store_Inventory_${now.toISOString().split('T')[0]}.pdf`);
-    showToast('Inventory PDF report downloaded successfully!', 'success');
+    const exportFileName = options.filename || (isShelf
+      ? `Goose_Store_Inventory_Shelf_${shelfName.replace(/[^a-zA-Z0-9_-]/g, '_')}_${now.toISOString().split('T')[0]}.pdf`
+      : `Goose_Store_Inventory_${now.toISOString().split('T')[0]}.pdf`);
+
+    doc.save(exportFileName);
+    showToast(`Exported ${items.length} materials${isShelf ? ` on Shelf ${shelfName}` : ''} to PDF report!`, 'success');
   } catch (err) {
     console.error('PDF Export Error:', err);
     showToast('Failed to generate PDF. Opening printable report...', 'warning');
@@ -3703,6 +3886,7 @@ function exportInventoryPDF() {
 // ═══════════════════════════════════════════════════════════════════════════════
 function renderInventory() {
   const isManager = state.user?.role === 'manager';
+  const allShelves = [...new Set((state.items || []).map(i => (i.location || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(undefined, { numeric: true, sensitivity: 'base' }));
 
   document.getElementById('view-inventory').innerHTML = `
     <div class="page-hdr">
@@ -3710,16 +3894,8 @@ function renderInventory() {
         <h1 class="page-title">Store Inventory</h1>
         <p class="page-subtitle" id="inventory-subtitle-count">Showing 0 of 0 materials</p>
       </div>
-      <div style="display:flex;gap:0.625rem;align-items:center">
-        <button class="btn btn-ghost" onclick="exportInventoryCSV()" title="Export Inventory to CSV Spreadsheet">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Export CSV
-        </button>
-        <button class="btn btn-ghost" onclick="exportInventoryPDF()" title="Export Inventory PDF Report">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Export PDF
-        </button>
-        ${isManager ? `<button class="btn btn-primary" onclick="openAddItemModal()">+ Add Item</button>` : ''}
+      <div id="inventory-export-actions" style="display:flex;gap:0.625rem;align-items:center;flex-wrap:wrap">
+        <!-- Rendered dynamically by filterAndRenderInventoryRows() -->
       </div>
     </div>
 
@@ -3729,12 +3905,12 @@ function renderInventory() {
         value="${escHtml(state.searchQuery)}" oninput="state.searchQuery=this.value;filterAndRenderInventoryRows()" style="font-size:0.9rem;padding:0.7rem 0.875rem" />
     </div>
 
-    <!-- Filter Bar: Zone & Stock Availability -->
+    <!-- Filter Bar: Zone, Stock Availability & Shelf Location -->
     <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem;align-items:center;justify-content:space-between">
       
       <!-- Zone Filter Pills -->
-      <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
-        <span style="font-size:0.75rem;font-weight:600;color:var(--text-tertiary);display:flex;align-items:center;margin-right:0.25rem">ZONE:</span>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">
+        <span style="font-size:0.75rem;font-weight:600;color:var(--text-tertiary);margin-right:0.25rem">ZONE:</span>
         <button class="btn btn-sm ${state.filters.zone==='all'?'btn-primary active':'btn-ghost'}" onclick="state.filters.zone='all';renderInventory()">All Zones</button>
         <button class="btn btn-sm ${state.filters.zone==='mechanical'?'btn-primary active':'btn-ghost'}" onclick="state.filters.zone='mechanical';renderInventory()">Mechanical</button>
         <button class="btn btn-sm ${state.filters.zone==='electrical'?'btn-primary active':'btn-ghost'}" onclick="state.filters.zone='electrical';renderInventory()">Electrical</button>
@@ -3742,15 +3918,32 @@ function renderInventory() {
       </div>
 
       <!-- Stock Availability Filter Pills -->
-      <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
-        <span style="font-size:0.75rem;font-weight:600;color:var(--text-tertiary);display:flex;align-items:center;margin-right:0.25rem">STOCK:</span>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">
+        <span style="font-size:0.75rem;font-weight:600;color:var(--text-tertiary);margin-right:0.25rem">STOCK:</span>
         <button class="btn btn-sm ${(state.filters.stockAvailability||'all')==='all'?'btn-primary active':'btn-ghost'}" onclick="state.filters.stockAvailability='all';renderInventory()">All Stock</button>
         <button class="btn btn-sm ${(state.filters.stockAvailability)==='instock'?'btn-primary active':'btn-ghost'}" onclick="state.filters.stockAvailability='instock';renderInventory()">In Stock</button>
         <button class="btn btn-sm ${(state.filters.stockAvailability)==='out'?'btn-filter-out active':'btn-ghost'}" onclick="state.filters.stockAvailability='out';renderInventory()">Out of Stock</button>
         <button class="btn btn-sm ${(state.filters.stockAvailability)==='low'?'btn-filter-low active':'btn-ghost'}" onclick="state.filters.stockAvailability='low';renderInventory()">Stock Alerts</button>
       </div>
 
+      <!-- Shelf Location Filter Selector -->
+      <div style="display:flex;gap:0.4rem;align-items:center">
+        <span style="font-size:0.75rem;font-weight:600;color:var(--text-tertiary)">SHELF:</span>
+        <select id="inventory-shelf-filter" class="field-input" style="height:32px;padding:0 1.75rem 0 0.6rem;font-size:0.8rem;width:auto;min-width:115px;background-position:right 0.5rem center" onchange="setInventoryShelfFilter(this.value)">
+          <option value="all">All Shelves (${allShelves.length})</option>
+          ${allShelves.map(s => `<option value="${escHtml(s)}" ${state.filters.shelf === s ? 'selected' : ''}>Shelf ${escHtml(s)}</option>`).join('')}
+        </select>
+        ${state.filters.shelf && state.filters.shelf !== 'all' ? `
+          <button class="btn btn-ghost btn-sm" onclick="setInventoryShelfFilter('all')" title="Clear shelf filter" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--goose)">
+            &times; Clear
+          </button>
+        ` : ''}
+      </div>
+
     </div>
+
+    <!-- Active Filter / Shelf Notification Banner -->
+    <div id="inventory-active-filter-banner"></div>
 
     <div class="card">
       <div class="table-wrap">
@@ -3780,54 +3973,109 @@ function renderInventory() {
 }
 
 function filterAndRenderInventoryRows() {
-  let items = [...state.items];
-  if (state.filters.zone && state.filters.zone !== 'all') items = items.filter(i => i.zone === state.filters.zone);
-  
-  const avail = state.filters.stockAvailability || 'all';
-  if (avail === 'instock') {
-    // In Stock (Green): quantity > minStock
-    items = items.filter(i => (i.quantity || 0) > (i.minStock || 0));
-  } else if (avail === 'low') {
-    // Low Stock (Yellow): quantity > 0 AND quantity <= minStock
-    items = items.filter(i => (i.quantity || 0) > 0 && (i.quantity || 0) <= (i.minStock || 0));
-  } else if (avail === 'out') {
-    // Out of Stock (Red): quantity === 0
-    items = items.filter(i => (i.quantity || 0) === 0);
-  }
+  const items = getFilteredInventoryItems();
+  const filterInfo = getActiveInventoryFilterInfo(items);
+  const isManager = state.user?.role === 'manager';
 
-  if (state.searchQuery) {
-    const q = state.searchQuery.toLowerCase();
-    items = items.filter(i => 
-      (i.name || '').toLowerCase().includes(q) || 
-      (i.sku || '').toLowerCase().includes(q) || 
-      (i.barcode || '').toLowerCase().includes(q) || 
-      (i.location || '').toLowerCase().includes(q) ||
-      (i.category || '').toLowerCase().includes(q) ||
-      (i.specification || '').toLowerCase().includes(q) ||
-      (i.soNumber || i.so || '').toLowerCase().includes(q) ||
-      (i.poNumber || i.po || '').toLowerCase().includes(q)
-    );
-  }
-
+  // Update subtitle
   const subtitle = document.getElementById('inventory-subtitle-count');
-  const filterLabelMap = {
-    instock: 'In Stock',
-    low: 'Low Stock Alerts',
-    out: 'Out of Stock'
-  };
-  const activeLabel = filterLabelMap[avail] ? ` &middot; Filtered: ${filterLabelMap[avail]}` : '';
-  if (subtitle) subtitle.innerHTML = `Showing ${items.length} of ${state.items.length} materials${activeLabel}`;
+  if (subtitle) {
+    if (filterInfo.shelfName) {
+      subtitle.innerHTML = `Showing <strong>${items.length}</strong> of ${state.items.length} materials &middot; <span style="color:var(--goose);font-weight:600">Shelf Location: ${escHtml(filterInfo.shelfName)}</span>`;
+    } else if (filterInfo.isFiltered) {
+      subtitle.innerHTML = `Showing <strong>${items.length}</strong> of ${state.items.length} materials &middot; <span style="color:var(--goose);font-weight:600">Filtered: ${escHtml(filterInfo.label)}</span>`;
+    } else {
+      subtitle.innerHTML = `Showing ${items.length} of ${state.items.length} materials`;
+    }
+  }
+
+  // Update Shelf Filter Dropdown if shelf was recognized via search
+  const shelfSelect = document.getElementById('inventory-shelf-filter');
+  if (shelfSelect && state.filters.shelf && state.filters.shelf !== 'all') {
+    shelfSelect.value = state.filters.shelf;
+  }
+
+  // Update Top Action Bar Buttons (Export CSV & Export PDF)
+  const exportActions = document.getElementById('inventory-export-actions');
+  if (exportActions) {
+    if (filterInfo.isFiltered) {
+      const shelfBtnText = filterInfo.shelfName 
+        ? `Export Shelf ${escHtml(filterInfo.shelfName)} PDF (${items.length})` 
+        : `Export Filtered PDF (${items.length})`;
+
+      exportActions.innerHTML = `
+        <button class="btn btn-ghost btn-sm" onclick="exportInventoryCSV('filtered')" title="Export currently filtered materials to CSV">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV (${items.length})
+        </button>
+        <div style="display:inline-flex;align-items:center;background:var(--bg-elevated);border:1px solid var(--border-muted);border-radius:var(--radius-md);overflow:hidden">
+          <button class="btn btn-primary btn-sm" onclick="exportInventoryPDF('filtered')" title="Download PDF of the ${items.length} materials in ${filterInfo.shelfName ? 'Shelf ' + escHtml(filterInfo.shelfName) : 'this filtered list'}" style="border-radius:0;border:none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            ${shelfBtnText}
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="exportInventoryPDF('all')" title="Export complete catalog of all ${state.items.length} materials" style="border-radius:0;border:none;border-left:1px solid var(--border-muted);padding:0.4rem 0.6rem;font-size:0.75rem;color:var(--text-tertiary)">
+            All (${state.items.length})
+          </button>
+        </div>
+        ${isManager ? `<button class="btn btn-primary" onclick="openAddItemModal()">+ Add Item</button>` : ''}
+      `;
+    } else {
+      exportActions.innerHTML = `
+        <button class="btn btn-ghost" onclick="exportInventoryCSV('all')" title="Export Inventory to CSV Spreadsheet">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+        <button class="btn btn-ghost" onclick="exportInventoryPDF('all')" title="Export Inventory PDF Report">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Export PDF
+        </button>
+        ${isManager ? `<button class="btn btn-primary" onclick="openAddItemModal()">+ Add Item</button>` : ''}
+      `;
+    }
+  }
+
+  // Update Shelf / Active Filter Banner above table
+  const bannerEl = document.getElementById('inventory-active-filter-banner');
+  if (bannerEl) {
+    if (filterInfo.isFiltered) {
+      const totalUnits = items.reduce((sum, i) => sum + (parseInt(i.quantity) || 0), 0);
+      bannerEl.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:var(--radius);padding:0.6rem 1rem;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+          <div style="display:flex;align-items:center;gap:0.65rem">
+            <div style="width:28px;height:28px;border-radius:6px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;color:var(--accent-cyan)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div>
+              <div style="font-size:0.85rem;font-weight:700;color:var(--text-primary)">
+                ${filterInfo.shelfName ? `Filtered Shelf Location: <span style="color:var(--accent-cyan)">Shelf ${escHtml(filterInfo.shelfName)}</span>` : `Active Filter: <span style="color:var(--accent-cyan)">${escHtml(filterInfo.label)}</span>`}
+              </div>
+              <div style="font-size:0.75rem;color:var(--text-secondary)">
+                Found <strong>${items.length}</strong> ${items.length === 1 ? 'material item' : 'material items'} &middot; Total Units: <strong>${totalUnits.toLocaleString('en-IN')}</strong>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <button class="btn btn-primary btn-sm" onclick="exportInventoryPDF('filtered')" title="Download PDF report for ${filterInfo.shelfName ? 'Shelf ' + escHtml(filterInfo.shelfName) : 'this filtered list'}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Export ${filterInfo.shelfName ? 'Shelf ' + escHtml(filterInfo.shelfName) : 'Filtered'} PDF
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="clearInventoryFilters()" title="Reset all active filters">✕ Clear</button>
+          </div>
+        </div>
+      `;
+    } else {
+      bannerEl.innerHTML = '';
+    }
+  }
 
   const tbody = document.getElementById('inventory-tbody-content');
   if (!tbody) return;
-
-  const isManager = state.user?.role === 'manager';
 
   if (items.length === 0) {
     tbody.innerHTML = `
       <tr>
         <td colspan="10" style="text-align:center;padding:3rem;color:var(--text-tertiary)">
-          No materials matching "${escHtml(state.searchQuery)}"
+          No materials matching "${escHtml(state.searchQuery || state.filters.shelf || '')}"
         </td>
       </tr>
     `;
