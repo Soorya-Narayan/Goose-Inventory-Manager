@@ -615,7 +615,7 @@ async function submitInwardReceipt() {
   const inputQty = parseInt(document.getElementById('scan-inward-input-qty').value) || 1;
 
   try {
-    const res = await api.post(`/api/items/${currentScannedItem.id}/adjust-stock`, {
+    const res = await api.post(`/api/items/${encodeURIComponent(currentScannedItem.id)}/adjust-stock`, {
       delta: inputQty,
       type: 'inward',
       allocationType: 'inward',
@@ -662,7 +662,7 @@ async function submitAllocationIssue() {
   };
 
   try {
-    const res = await api.post(`/api/items/${currentScannedItem.id}/adjust-stock`, {
+    const res = await api.post(`/api/items/${encodeURIComponent(currentScannedItem.id)}/adjust-stock`, {
       delta: -qty,
       type: 'outward',
       allocationType: allocType,
@@ -2358,7 +2358,7 @@ async function handleAnalyticsAPISync(e) {
 
 async function syncStoreQtyToZoho(storeId, targetZohoQty) {
   try {
-    await api.put(`/api/items/${storeId}`, { quantity: targetZohoQty });
+    await api.put(`/api/items/${encodeURIComponent(storeId)}`, { quantity: targetZohoQty });
     showToast('Store stock quantity updated to match Zoho Books!', 'success');
     await loadAll();
 
@@ -5569,7 +5569,7 @@ async function deleteItem(id, name) {
     confirmLabel: 'Delete',
     onConfirm: async () => {
       try {
-        const res = await api.delete(`/api/items/${id}`);
+        const res = await api.delete(`/api/items/${encodeURIComponent(id)}`);
         if (res.success) {
           showToast(`"${itemName}" deleted from inventory`, 'success');
           state.items = state.items.filter(i => i.id !== id);
@@ -5822,7 +5822,7 @@ async function submitItemData(data) {
   try {
     let savedItem = null;
     if (state.editingItemId) {
-      savedItem = await api.put(`/api/items/${state.editingItemId}`, data);
+      savedItem = await api.put(`/api/items/${encodeURIComponent(state.editingItemId)}`, data);
       showToast('Item updated successfully', 'success');
       document.getElementById('modal-item-overlay').classList.add('hidden');
     } else {

@@ -636,7 +636,7 @@ app.post('/api/items', (req, res) => {
   res.status(201).json(item);
 });
 
-app.put('/api/items/:id', (req, res) => {
+app.put(['/api/items/:id', '/api/items/:id(*)'], (req, res) => {
   const data = readData();
   const idx = data.items.findIndex(i => i.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Item not found' });
@@ -679,7 +679,7 @@ app.put('/api/items/:id', (req, res) => {
   res.json(data.items[idx]);
 });
 
-app.delete('/api/items/:id', (req, res) => {
+app.delete(['/api/items/:id', '/api/items/:id(*)'], (req, res) => {
   const data = readData();
   const idx = data.items.findIndex(i => i.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Item not found' });
@@ -688,7 +688,7 @@ app.delete('/api/items/:id', (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/items/:id/adjust-stock', (req, res) => {
+app.post(['/api/items/:id/adjust-stock', '/api/items/:id(*)/adjust-stock'], (req, res) => {
   const data = readData();
   const item = data.items.find(i => i.id === req.params.id || i.sku === req.params.id || i.barcode === req.params.id);
   if (!item) return res.status(404).json({ error: 'Item not found' });
