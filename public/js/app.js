@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.5.0',
+  currentVersion: '3.5.1',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -2721,7 +2721,7 @@ async function deleteTransaction(id) {
     confirmLabel: 'Delete Entry',
     onConfirm: async () => {
       try {
-        await api.del(`/api/transactions/${id}`);
+        await api.del(`/api/transactions/${encodeURIComponent(id)}`);
         showToast('Movement entry deleted', 'success');
         renderTransactions();
       } catch (err) {
@@ -3380,7 +3380,7 @@ function renderStoreMap() {
 
                       return `
                         <button type="button" 
-                                onclick="openShelfDetailModal('${shelf}')"
+                                onclick="openShelfDetailModal('${escJs(shelf)}')"
                                 style="${badgeStyle};border:1px solid;border-radius:6px;padding:0.45rem 0.25rem;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.15s ease, border-color 0.15s ease"
                                 title="${shelf}: ${items.length} materials stored">
                           <div style="display:flex;align-items:center;gap:0.25rem;font-family:var(--font-mono);font-size:0.85rem;font-weight:800">
@@ -4110,11 +4110,11 @@ function filterAndRenderInventoryRows() {
       <td>${stockTag(item)}</td>
       <td>
         <div style="display:flex;gap:0.3rem">
-          <button class="btn btn-ghost btn-sm" title="Print Barcode on Tej C15" onclick="openPrintModal('${item.id}')">Sticker</button>
-          <button class="btn btn-ghost btn-sm" title="Request Material" onclick="openRequestModal('${item.id}')">Request</button>
-          <button class="btn btn-ghost btn-sm" title="View Request &amp; Stock History" onclick="openItemHistoryModal('${item.id}')" style="color:var(--accent-cyan)">History</button>
-          ${isManager ? `<button class="btn btn-ghost btn-sm" onclick="openEditItemModal('${item.id}')">Edit</button>` : ''}
-          ${isManager ? `<button class="btn btn-delete-icon btn-sm" onclick="deleteItem('${item.id}')" title="Delete Material">
+          <button class="btn btn-ghost btn-sm" title="Print Barcode on Tej C15" onclick="openPrintModal('${escJs(item.id)}')">Sticker</button>
+          <button class="btn btn-ghost btn-sm" title="Request Material" onclick="openRequestModal('${escJs(item.id)}')">Request</button>
+          <button class="btn btn-ghost btn-sm" title="View Request &amp; Stock History" onclick="openItemHistoryModal('${escJs(item.id)}')" style="color:var(--accent-cyan)">History</button>
+          ${isManager ? `<button class="btn btn-ghost btn-sm" onclick="openEditItemModal('${escJs(item.id)}')">Edit</button>` : ''}
+          ${isManager ? `<button class="btn btn-delete-icon btn-sm" onclick="deleteItem('${escJs(item.id)}')" title="Delete Material">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -4419,7 +4419,7 @@ async function processRequest(reqId, status) {
       if (reason === null) return; // User cancelled
       notes = reason.trim();
     }
-    await api.put(`/api/requests/${reqId}`, {
+    await api.put(`/api/requests/${encodeURIComponent(reqId)}`, {
       status,
       processedBy: state.user?.email || state.user?.name || 'Store Manager',
       ...(notes !== undefined ? { managerNotes: notes } : {})
@@ -4440,7 +4440,7 @@ async function deleteRequest(reqId) {
   }
   if (!confirm('Are you sure you want to delete this material request record?')) return;
   try {
-    await api.delete(`/api/requests/${reqId}`);
+    await api.delete(`/api/requests/${encodeURIComponent(reqId)}`);
     try {
       const delList = JSON.parse(localStorage.getItem('ims_deleted_requests') || '[]');
       if (!delList.includes(reqId)) {
@@ -4762,7 +4762,7 @@ async function cancelEngineerRequest(requestId) {
   if (!confirm(`Are you sure you want to cancel request ${req.id}?`)) return;
 
   try {
-    await api.delete(`/api/requests/${requestId}`);
+    await api.delete(`/api/requests/${encodeURIComponent(requestId)}`);
     try {
       const delList = JSON.parse(localStorage.getItem('ims_deleted_requests') || '[]');
       if (!delList.includes(requestId)) {
@@ -5130,7 +5130,7 @@ async function submitIssue() {
 
   const doIssue = async () => {
     try {
-      await api.put(`/api/requests/${reqId}`, {
+      await api.put(`/api/requests/${encodeURIComponent(reqId)}`, {
         status: 'issued',
         checklist: cl,
         managerNotes: remarks,
@@ -5166,7 +5166,7 @@ function revertApproval(reqId) {
     confirmLabel: 'Revert',
     onConfirm: async () => {
       try {
-        await api.put(`/api/requests/${reqId}`, {
+        await api.put(`/api/requests/${encodeURIComponent(reqId)}`, {
           status: 'pending',
           processedBy: null,
           processedAt: null,
@@ -5964,7 +5964,11 @@ function reqStatusTag(status) {
 }
 
 function escHtml(str) {
-  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function escJs(str) {
+  return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
 
 function showToast(msg, type = 'info') {
@@ -6503,7 +6507,7 @@ async function handleRequestSubmit(e) {
 
   if (_editingRequestId) {
     try {
-      const res = await api.put(`/api/requests/${_editingRequestId}`, data);
+      const res = await api.put(`/api/requests/${encodeURIComponent(_editingRequestId)}`, data);
       if (res && res.error) {
         showToast(res.error, 'error');
         return;

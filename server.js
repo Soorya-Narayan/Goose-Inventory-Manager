@@ -14,7 +14,7 @@ const SEED_FILE = path.join(__dirname, 'data', 'inventory.seed.json');
 const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
 
 const SERVER_START_TIME = Date.now();
-const SYSTEM_VERSION = require('./package.json').version || '3.4.0';
+const SYSTEM_VERSION = require('./package.json').version || '3.5.1';
 let maintenanceMode = false;
 
 // Ensure data, backup & uploads folders exist
@@ -759,7 +759,7 @@ app.post('/api/requests', (req, res) => {
   res.status(201).json(request);
 });
 
-app.put('/api/requests/:id', (req, res) => {
+app.put(['/api/requests/:id', '/api/requests/:id(*)'], (req, res) => {
   const data = readData();
   const idx = data.requests.findIndex(r => r.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Request not found' });
@@ -862,7 +862,7 @@ app.put('/api/requests/:id', (req, res) => {
   res.json(data.requests[idx]);
 });
 
-app.delete('/api/requests/:id', (req, res) => {
+app.delete(['/api/requests/:id', '/api/requests/:id(*)'], (req, res) => {
   const data = readData();
   if (!data.requests) return res.json({ success: true });
   const before = data.requests.length;
@@ -1083,7 +1083,7 @@ app.post('/api/zoho/sync-api', async (req, res) => {
 });
 
 // ─── Delete Transaction ───────────────────────────────────────────────────────
-app.delete('/api/transactions/:id', (req, res) => {
+app.delete(['/api/transactions/:id', '/api/transactions/:id(*)'], (req, res) => {
   const data = readData();
   if (!data.transactions) return res.json({ success: true });
   const before = data.transactions.length;
