@@ -3565,22 +3565,7 @@ function getActiveInventoryFilterInfo(filteredItems) {
 // ═══════════════════════════════════════════════════════════════════════════════
 //  EXPORT INVENTORY DATA (CSV & PDF FORMATS — SUPPORTS SHELF & FILTERED SCOPES)
 // ═══════════════════════════════════════════════════════════════════════════════
-function exportInventoryCSV(mode = 'auto') {
-  const filtered = getFilteredInventoryItems();
-  const filterInfo = getActiveInventoryFilterInfo(filtered);
-
-  let items = state.items;
-  let filename = `Goose_Store_Inventory_${new Date().toISOString().split('T')[0]}.csv`;
-
-  if (mode === 'filtered' || (mode === 'auto' && filterInfo.isFiltered)) {
-    items = filtered;
-    if (filterInfo.shelfName) {
-      filename = `Goose_Store_Inventory_Shelf_${filterInfo.shelfName.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
-    } else {
-      filename = `Goose_Store_Inventory_Filtered_${new Date().toISOString().split('T')[0]}.csv`;
-    }
-  }
-
+function generateInventoryCSV(items, filename, label = '') {
   if (!items || items.length === 0) {
     showToast('No material inventory to export', 'warning');
     return;
@@ -3637,13 +3622,49 @@ function exportInventoryCSV(mode = 'auto') {
 
   const link = document.createElement('a');
   link.href = url;
-  link.download = filename;
+  link.download = filename || `Goose_Store_Inventory_${new Date().toISOString().split('T')[0]}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 
-  showToast(`Exported ${items.length} materials${filterInfo.shelfName ? ` on Shelf ${filterInfo.shelfName}` : ''} to CSV spreadsheet!`, 'success');
+  showToast(`Exported ${items.length} materials ${label} to CSV spreadsheet!`, 'success');
+}
+
+function exportShelfCSV(shelfCode) {
+  if (!shelfCode) {
+    showToast('No shelf location specified', 'warning');
+    return;
+  }
+  const items = getItemsForShelf(shelfCode);
+  if (!items || items.length === 0) {
+    showToast(`No materials stored on Shelf ${shelfCode} to export`, 'warning');
+    return;
+  }
+  const filename = `Goose_Store_Inventory_Shelf_${shelfCode.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+  generateInventoryCSV(items, filename, `on Shelf ${shelfCode}`);
+}
+
+function exportInventoryCSV(mode = 'auto') {
+  const filtered = getFilteredInventoryItems();
+  const filterInfo = getActiveInventoryFilterInfo(filtered);
+
+  let items = state.items;
+  let filename = `Goose_Store_Inventory_${new Date().toISOString().split('T')[0]}.csv`;
+  let label = '';
+
+  if (mode === 'filtered' || (mode === 'auto' && filterInfo.isFiltered)) {
+    items = filtered;
+    if (filterInfo.shelfName) {
+      filename = `Goose_Store_Inventory_Shelf_${filterInfo.shelfName.replace(/[^a-zA-Z0-9_-]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+      label = `on Shelf ${filterInfo.shelfName}`;
+    } else {
+      filename = `Goose_Store_Inventory_Filtered_${new Date().toISOString().split('T')[0]}.csv`;
+      label = `(Filtered)`;
+    }
+  }
+
+  generateInventoryCSV(items, filename, label);
 }
 
 function exportShelfPDF(shelfCode) {
@@ -4002,12 +4023,20 @@ function filterAndRenderInventoryRows() {
       const shelfBtnText = filterInfo.shelfName 
         ? `Export Shelf ${escHtml(filterInfo.shelfName)} PDF (${items.length})` 
         : `Export Filtered PDF (${items.length})`;
+      const shelfCsvText = filterInfo.shelfName
+        ? `Export Shelf ${escHtml(filterInfo.shelfName)} CSV (${items.length})`
+        : `Export CSV (${items.length})`;
 
       exportActions.innerHTML = `
-        <button class="btn btn-ghost btn-sm" onclick="exportInventoryCSV('filtered')" title="Export currently filtered materials to CSV">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Export CSV (${items.length})
-        </button>
+        <div style="display:inline-flex;align-items:center;background:var(--bg-elevated);border:1px solid var(--border-muted);border-radius:var(--radius-md);overflow:hidden">
+          <button class="btn btn-ghost btn-sm" onclick="exportInventoryCSV('filtered')" title="Download CSV of the ${items.length} materials in ${filterInfo.shelfName ? 'Shelf ' + escHtml(filterInfo.shelfName) : 'this filtered list'}" style="border-radius:0;border:none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            ${shelfCsvText}
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="exportInventoryCSV('all')" title="Export complete catalog of all ${state.items.length} materials to CSV" style="border-radius:0;border:none;border-left:1px solid var(--border-muted);padding:0.4rem 0.6rem;font-size:0.75rem;color:var(--text-tertiary)">
+            All (${state.items.length})
+          </button>
+        </div>
         <div style="display:inline-flex;align-items:center;background:var(--bg-elevated);border:1px solid var(--border-muted);border-radius:var(--radius-md);overflow:hidden">
           <button class="btn btn-primary btn-sm" onclick="exportInventoryPDF('filtered')" title="Download PDF of the ${items.length} materials in ${filterInfo.shelfName ? 'Shelf ' + escHtml(filterInfo.shelfName) : 'this filtered list'}" style="border-radius:0;border:none">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -4054,7 +4083,11 @@ function filterAndRenderInventoryRows() {
               </div>
             </div>
           </div>
-          <div style="display:flex;gap:0.4rem;align-items:center">
+          <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="exportInventoryCSV('filtered')" title="Download CSV spreadsheet for ${filterInfo.shelfName ? 'Shelf ' + escHtml(filterInfo.shelfName) : 'this filtered list'}" style="background:var(--bg-surface)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export ${filterInfo.shelfName ? 'Shelf ' + escHtml(filterInfo.shelfName) : 'Filtered'} CSV
+            </button>
             <button class="btn btn-primary btn-sm" onclick="exportInventoryPDF('filtered')" title="Download PDF report for ${filterInfo.shelfName ? 'Shelf ' + escHtml(filterInfo.shelfName) : 'this filtered list'}">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
               Export ${filterInfo.shelfName ? 'Shelf ' + escHtml(filterInfo.shelfName) : 'Filtered'} PDF
