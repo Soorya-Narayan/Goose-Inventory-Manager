@@ -7,5 +7,4 @@ data/label_*
 .tempmediaStorage/
 .env
 *.pdf
-
-
+brag-output/
