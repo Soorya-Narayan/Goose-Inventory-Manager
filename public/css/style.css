@@ -1380,6 +1380,13 @@ td {
   border: 1px solid transparent;
   transition: var(--fast);
   cursor: pointer;
+  box-shadow: none;
+}
+
+.btn:focus,
+.btn:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .btn-primary {
@@ -1409,7 +1416,7 @@ td {
   color: #000000 !important;
   border-color: var(--goose) !important;
   font-weight: 700 !important;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4) !important;
+  box-shadow: none !important;
 }
 
 .btn-filter-out.active {
@@ -1417,7 +1424,7 @@ td {
   color: #ffffff !important;
   border-color: #dc2626 !important;
   font-weight: 700 !important;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4) !important;
+  box-shadow: none !important;
 }
 
 .btn-filter-low.active {
@@ -1425,7 +1432,7 @@ td {
   color: #000000 !important;
   border-color: #d97706 !important;
   font-weight: 700 !important;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4) !important;
+  box-shadow: none !important;
 }
 
 .btn-danger {
