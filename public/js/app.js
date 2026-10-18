@@ -7288,7 +7288,9 @@ async function checkSystemUpdateStatus(manual = false) {
 
     const tag = document.getElementById('system-update-version-tag');
     if (tag && res.version) tag.textContent = `v${res.version}`;
-    state.currentVersion = res.version || '3.4.0';
+    const sidebarVer = document.getElementById('sidebar-system-version');
+    if (sidebarVer && res.version) sidebarVer.textContent = `System v${res.version}`;
+    state.currentVersion = res.version || '3.5.3';
 
     // 1. Maintenance Mode
     if (res.maintenance) {
