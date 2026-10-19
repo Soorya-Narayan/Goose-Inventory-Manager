@@ -3950,12 +3950,12 @@ function renderInventory() {
       <!-- Shelf Location Filter Selector -->
       <div style="display:flex;gap:0.4rem;align-items:center">
         <span style="font-size:0.75rem;font-weight:600;color:var(--text-tertiary)">SHELF:</span>
-        <select id="inventory-shelf-filter" class="field-input" style="height:32px;padding:0 1.75rem 0 0.6rem;font-size:0.8rem;width:auto;min-width:115px;background-position:right 0.5rem center" onchange="setInventoryShelfFilter(this.value)">
+        <select id="inventory-shelf-filter" class="field-input" style="height:38px;border-radius:var(--radius);padding:0 1.75rem 0 0.75rem;font-size:0.8rem;font-weight:600;width:auto;min-width:120px;background-position:right 0.6rem center;cursor:pointer" onchange="setInventoryShelfFilter(this.value)">
           <option value="all">All Shelves (${allShelves.length})</option>
           ${allShelves.map(s => `<option value="${escHtml(s)}" ${state.filters.shelf === s ? 'selected' : ''}>Shelf ${escHtml(s)}</option>`).join('')}
         </select>
         ${state.filters.shelf && state.filters.shelf !== 'all' ? `
-          <button class="btn btn-ghost btn-sm" onclick="setInventoryShelfFilter('all')" title="Clear shelf filter" style="padding:0.2rem 0.4rem;font-size:0.75rem;color:var(--goose)">
+          <button class="btn btn-ghost btn-sm" onclick="setInventoryShelfFilter('all')" title="Clear shelf filter" style="padding:0.3rem 0.6rem;font-size:0.75rem;color:var(--goose);border-radius:var(--radius)">
             &times; Clear
           </button>
         ` : ''}

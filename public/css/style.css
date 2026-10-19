@@ -48,6 +48,7 @@
   --rail-h: 56px;
   --bnav-h: 60px;
   --radius-sm: 4px;
+  --radius-md: 8px;
   --radius: 8px;
   --radius-lg: 12px;
 
@@ -1433,6 +1434,31 @@ td {
   border-color: #d97706 !important;
   font-weight: 700 !important;
   box-shadow: none !important;
+}
+
+/* Shelf Location Dropdown Filter (Squircle shape matching buttons) */
+#inventory-shelf-filter {
+  height: 38px;
+  border-radius: var(--radius) !important;
+  font-weight: 600;
+  font-size: 0.8rem;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-muted);
+  color: var(--text-primary);
+  cursor: pointer;
+  box-shadow: none !important;
+  transition: var(--fast);
+}
+
+#inventory-shelf-filter:hover {
+  background-color: var(--bg-overlay);
+  border-color: var(--border-base);
+}
+
+#inventory-shelf-filter:focus {
+  border-color: var(--goose);
+  box-shadow: none !important;
+  outline: none;
 }
 
 .btn-danger {
