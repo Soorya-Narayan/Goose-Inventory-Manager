@@ -23,7 +23,7 @@ const state = {
   activeChecklist: [],
   // System Update & Maintenance
   initialServerStartTime: null,
-  currentVersion: '3.5.4',
+  currentVersion: '3.5.5',
   isUpdateOverlayShowing: false,
   maintenanceActive: false,
   // Zoho Analytics & Audit
@@ -7290,7 +7290,7 @@ async function checkSystemUpdateStatus(manual = false) {
     if (tag && res.version) tag.textContent = `v${res.version}`;
     const sidebarVer = document.getElementById('sidebar-system-version');
     if (sidebarVer && res.version) sidebarVer.textContent = `System v${res.version}`;
-    state.currentVersion = res.version || '3.5.4';
+    state.currentVersion = res.version || '3.5.5';
 
     // 1. Maintenance Mode
     if (res.maintenance) {
