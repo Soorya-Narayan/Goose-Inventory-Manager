@@ -13,6 +13,19 @@
 
 ---
 
+## What's New in v3.5.5
+
+The **v3.5.5** release brings interface polishing, design system alignment, and operational ergonomics across the store management portal:
+
+- **Shelf Inspector Action Alignment**: Re-engineered the action footer in the **Shelf Location Inspector** modal so the `Close` button sits cleanly alongside `+ Add Item Here` and the shelf export utilities (`Export Shelf CSV`, `Export Shelf PDF`, `View in Inventory Table`), standardizing all actions to `btn-sm` with consistent horizontal and vertical baseline alignment.
+- **Squircle Dropdown & Filter Consistency**: Standardized the "All Shelves" dropdown selector in the **Store Inventory** tab with the system squircle border radius (`border-radius: 8px`), unified `38px` button height, and matching elevated background styling. Fixed `--radius-md` variable definition across the design system.
+- **Clean Button Visuals & Glow Removal**: Stripped distracting glowing `box-shadow` artifacts from active filter pills (`All Zones`, `All Stock`, `Out of Stock`, `Stock Alerts`) and button focus rings for a cleaner, high-contrast industrial dashboard aesthetic.
+- **Distinct "My Activity" Pulse Icon**: Replaced the duplicated document icon on the **My Activity** tab with a distinct **Activity Pulse Wave** (`lucide-activity`) across both the desktop sidebar and mobile navigation bar to clearly differentiate personal activity from **Material Requests**.
+- **Real-Time Dynamic Version Synchronization**: Bound the sidebar system version badge (`#sidebar-system-version`) to the background `/api/system/status` health polling cycle, automatically syncing and displaying live version updates without requiring manual browser hard reloads.
+- **Privacy & Compliance Modal Enhancements**: Fixed the Privacy & Data Protection Policy modal footer, converting plain unstyled text into a styled primary button consistent with enterprise modal guidelines.
+
+---
+
 ## System Screenshots
 
 | **Store Overview Dashboard** | **Material Directory & Inventory** |
